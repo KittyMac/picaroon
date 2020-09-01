@@ -24,5 +24,5 @@ update:
 
 xcode:
 	swift package generate-xcodeproj
-	meta/addBuildPhase picaroon.xcodeproj/project.pbxproj 'picaroon::PicaroonFramework' 'cd $${SRCROOT}; ./meta/CombinedBuildPhases.sh'
+	meta/addBuildPhase picaroon.xcodeproj/project.pbxproj 'Picaroon::PicaroonFramework' 'cd $${SRCROOT}; ./meta/CombinedBuildPhases.sh'
 

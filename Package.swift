@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "picaroon",
+    name: "Picaroon",
     platforms: [
         .macOS(.v10_13)
     ],
