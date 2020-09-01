@@ -23,12 +23,30 @@ final class picaroonTests: XCTestCase {
             "-c", "100",
             "http://localhost:8080/hello/world"
         ]
+        
+        let outputPipe = Pipe()
+        task.standardOutput = outputPipe
 
         try! task.run()
         
-        task.waitUntilExit()
+        let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+        let output = String(decoding: outputData, as: UTF8.self)
         
+        var requestsPerSecond: Float = 0.0
+        output.matches(#"Requests\/sec:\s*([\d]+\.[\d]+)"#) { (_, groups) in
+            if groups.count >= 2 {
+                if let f = Float(groups[1]) {
+                    requestsPerSecond = f
+                }
+            }
+        }
+        
+        task.waitUntilExit()
         server.stop()
+        
+        print(output)
+        
+        XCTAssertTrue(requestsPerSecond > 90000)
     }
 
     static var allTests = [

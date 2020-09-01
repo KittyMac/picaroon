@@ -19,32 +19,48 @@ extension Picaroon {
             self.port = port
         }
 
+        @discardableResult
+        private func loop() -> Bool {
+            do {
+                let serverSocket = try Socket.create()
+                try serverSocket.listen(on: self.port, node: self.address)
+
+                repeat {
+#if os(Linux)
+                    if let newSocket = try? serverSocket.acceptClientConnection() {
+                        _ = Connection(newSocket, userSessionManager)
+                    }
+#else
+                    autoreleasepool {
+                        if let newSocket = try? serverSocket.acceptClientConnection() {
+                            _ = Connection(newSocket, self.userSessionManager)
+                        }
+                    }
+#endif
+                } while self.listening
+
+            } catch {
+                print("socket error: \(error)")
+                return false
+            }
+            return true
+        }
+
+        @discardableResult
+        public func run() -> Bool {
+            // run the server synchronously
+            guard !listening else { return false }
+            listening = true
+            return loop()
+        }
+
         public func listen() {
+            // run the server asynchronously
             guard !listening else { return }
 
             listening = true
             DispatchQueue.global(qos: .background).async {
-                do {
-                    let serverSocket = try Socket.create()
-                    try serverSocket.listen(on: self.port, node: self.address)
-
-                    repeat {
-#if os(Linux)
-                        if let newSocket = try? serverSocket.acceptClientConnection() {
-                            _ = Connection(newSocket, userSessionManager)
-                        }
-#else
-                        autoreleasepool {
-                            if let newSocket = try? serverSocket.acceptClientConnection() {
-                                _ = Connection(newSocket, self.userSessionManager)
-                            }
-                        }
-#endif
-                    } while self.listening
-
-                } catch {
-                    print("socket error: \(error)")
-                }
+                self.loop()
             }
         }
 
