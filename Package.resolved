@@ -1,0 +1,52 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Socket",
+        "repositoryURL": "https://github.com/IBM-Swift/BlueSocket.git",
+        "state": {
+          "branch": null,
+          "revision": "c46a3d41f5b2401d18bcb46d0101cdc5cd13e307",
+          "version": "1.0.52"
+        }
+      },
+      {
+        "package": "Flynn",
+        "repositoryURL": "https://github.com/KittyMac/Flynn.git",
+        "state": {
+          "branch": "master",
+          "revision": "b7b8a7d9137b28bba0ad6a7a9a1299547f310014",
+          "version": null
+        }
+      },
+      {
+        "package": "FlynnHttp",
+        "repositoryURL": "https://github.com/KittyMac/FlynnHttp.git",
+        "state": {
+          "branch": "master",
+          "revision": "929b31232b9d879f340c2c73889ea4af38246dc0",
+          "version": null
+        }
+      },
+      {
+        "package": "Ipecac",
+        "repositoryURL": "https://github.com/KittyMac/Ipecac.git",
+        "state": {
+          "branch": "master",
+          "revision": "d32093cffcd1c23ace9e6d65f93ae817b1bb0d45",
+          "version": null
+        }
+      },
+      {
+        "package": "swift-argument-parser",
+        "repositoryURL": "https://github.com/apple/swift-argument-parser",
+        "state": {
+          "branch": null,
+          "revision": "15351c1cd009eba0b6e438bfef55ea9847a8dc4a",
+          "version": "0.3.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
