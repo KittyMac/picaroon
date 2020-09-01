@@ -1,11 +1,10 @@
 import Flynn
-import FlynnHttp
 import Foundation
 import Socket
 
 public protocol AnyConnection {
     @discardableResult func beSendData(_ data: Data) -> Self
-    @discardableResult func beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) -> Self
+    @discardableResult func beSendDataIfChanged(_ httpRequest: Picaroon.HttpRequest, _ data: Data) -> Self
     @discardableResult func beSendInternalError() -> Self
     @discardableResult func beSendServiceUnavailable() -> Self
     @discardableResult func beSendSuccess() -> Self
@@ -72,7 +71,7 @@ extension Picaroon {
             checkForMoreDataIfNeeded()
         }
 
-        private func _beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) {
+        private func _beSendDataIfChanged(_ httpRequest: Picaroon.HttpRequest, _ data: Data) {
     #if DEBUG
             _beSendData(data)
     #else
@@ -203,7 +202,7 @@ extension Picaroon.Connection {
         return self
     }
     @discardableResult
-    public func beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) -> Self {
+    public func beSendDataIfChanged(_ httpRequest: Picaroon.HttpRequest, _ data: Data) -> Self {
         unsafeSend { self._beSendDataIfChanged(httpRequest, data) }
         return self
     }

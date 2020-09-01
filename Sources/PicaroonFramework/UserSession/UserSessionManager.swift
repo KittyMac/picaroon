@@ -1,5 +1,4 @@
 import Flynn
-import FlynnHttp
 import Foundation
 import Socket
 

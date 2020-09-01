@@ -1,5 +1,4 @@
 import Flynn
-import FlynnHttp
 import Foundation
 import Socket
 
@@ -22,7 +21,7 @@ extension Picaroon {
             connection.beSendInternalError()
         }
 
-        private func _beHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
+        private func _beHandleRequest(_ connection: AnyConnection, _ httpRequest: Picaroon.HttpRequest) {
             safeHandleRequest(connection, httpRequest)
         }
     }
@@ -34,7 +33,7 @@ extension Picaroon {
 extension Picaroon.UserSession {
 
     @discardableResult
-    public func beHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) -> Self {
+    public func beHandleRequest(_ connection: AnyConnection, _ httpRequest: Picaroon.HttpRequest) -> Self {
         unsafeSend { self._beHandleRequest(connection, httpRequest) }
         return self
     }

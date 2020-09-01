@@ -20,15 +20,6 @@
         }
       },
       {
-        "package": "FlynnHttp",
-        "repositoryURL": "https://github.com/KittyMac/FlynnHttp.git",
-        "state": {
-          "branch": "master",
-          "revision": "929b31232b9d879f340c2c73889ea4af38246dc0",
-          "version": null
-        }
-      },
-      {
         "package": "Ipecac",
         "repositoryURL": "https://github.com/KittyMac/Ipecac.git",
         "state": {

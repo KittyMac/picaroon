@@ -1,15 +1,37 @@
 import XCTest
-@testable import picaroon
+@testable import PicaroonFramework
 
 final class picaroonTests: XCTestCase {
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct
-        // results.
-        XCTAssertEqual(picaroon().text, "Hello, World!")
+    
+    class HelloWorld: Picaroon.UserSession {
+        override func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
+            connection.beSendData(HttpResponse.asData(self, .ok, .txt, "Hello World"))
+        }
+    }
+    
+    func testPerformance1() {
+        
+        let server = Picaroon.Server<HelloWorld>("0.0.0.0", 8080)
+        server.listen()
+        
+        sleep(1)
+        
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/local/bin/wrk")
+        task.arguments = [
+            "-t", "4",
+            "-c", "100",
+            "http://localhost:8080/hello/world"
+        ]
+
+        try! task.run()
+        
+        task.waitUntilExit()
+        
+        server.stop()
     }
 
     static var allTests = [
-        ("testExample", testExample),
+        ("testPerformance1", testPerformance1),
     ]
 }
