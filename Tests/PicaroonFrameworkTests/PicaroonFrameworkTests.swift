@@ -4,8 +4,8 @@ import XCTest
 final class picaroonTests: XCTestCase {
     
     class HelloWorld: Picaroon.UserSession {
-        override func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
-            connection.beSendData(HttpResponse.asData(self, .ok, .txt, "Hello World"))
+        override func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: Picaroon.HttpRequest) {
+            connection.beSendData(Picaroon.HttpResponse.asData(self, .ok, .txt, "Hello World"))
         }
     }
     
