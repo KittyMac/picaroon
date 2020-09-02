@@ -5,6 +5,7 @@ import Socket
 public protocol AnyConnection {
     @discardableResult func beSendData(_ data: Data) -> Self
     @discardableResult func beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) -> Self
+    @discardableResult func beEndUserSession() -> Self
     @discardableResult func beSendInternalError() -> Self
     @discardableResult func beSendServiceUnavailable() -> Self
     @discardableResult func beSendSuccess() -> Self
