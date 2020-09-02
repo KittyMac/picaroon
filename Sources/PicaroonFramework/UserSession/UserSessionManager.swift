@@ -6,6 +6,7 @@ public typealias GetUserSessionCallback = (UserSession?) -> Void
 
 protocol AnyUserSessionManager {
     func get(_ sessionUUID: String?) -> UserSession
+    func end(_ sessionUUID: String)
 }
 
 public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
@@ -29,7 +30,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         return userSession
     }
 
-    func endUserSession(_ sessionUUID: String) {
+    func end(_ sessionUUID: String) {
         lock.lock()
         allUserSessions.removeValue(forKey: sessionUUID)
         lock.unlock()

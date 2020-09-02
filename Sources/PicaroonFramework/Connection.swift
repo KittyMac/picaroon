@@ -82,6 +82,13 @@ public class Connection: Actor, AnyConnection {
 #endif
     }
 
+    private func _beEndUserSession() {
+        if let userSession = userSession {
+            userSessionManager.end(userSession.unsafeSessionUUID)
+        }
+        userSession = nil
+    }
+
     private func _beSendInternalError() {
         _beSendData(HttpResponse.asData(userSession, .internalServerError, .txt))
     }
@@ -202,6 +209,11 @@ extension Connection {
     @discardableResult
     public func beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) -> Self {
         unsafeSend { self._beSendDataIfChanged(httpRequest, data) }
+        return self
+    }
+    @discardableResult
+    public func beEndUserSession() -> Self {
+        unsafeSend(_beEndUserSession)
         return self
     }
     @discardableResult
