@@ -2,6 +2,8 @@ import Flynn
 import Foundation
 import Socket
 
+// swiftlint: disable cyclomatic_complexity
+
 public protocol AnyConnection {
     @discardableResult func beSendData(_ data: Data) -> Self
     @discardableResult func beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) -> Self
@@ -34,12 +36,16 @@ public class Connection: Actor, AnyConnection {
     private var userSession: UserSession?
     private let userSessionManager: AnyUserSessionManager
 
+    private let staticStorageHandler: StaticStorageHandler?
+
     private var checkForMoreDataScheduled = false
 
     init(_ socket: Socket,
+         _ staticStorageHandler: StaticStorageHandler?,
          _ userSessionManager: AnyUserSessionManager) {
         self.socket = socket
         self.userSessionManager = userSessionManager
+        self.staticStorageHandler = staticStorageHandler
 
         try? socket.setReadTimeout(value: 5)
 
@@ -165,6 +171,13 @@ public class Connection: Actor, AnyConnection {
 
             // reset current pointer to be read for the next http request
             currentPtr = buffer
+
+            // check to see if this is handled by the static storage handler
+            if  let staticStorageHandler = staticStorageHandler,
+                let data = staticStorageHandler(httpRequest) {
+                _beSendDataIfChanged(httpRequest, data)
+                return
+            }
 
             // Handle requests for static resources
             // Before we give any resources to the client, we need to assign a user session to this connection

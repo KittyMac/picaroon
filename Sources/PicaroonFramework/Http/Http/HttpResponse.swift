@@ -19,17 +19,30 @@ public struct HttpResponse {
                               _ payload: Data) -> Data {
         var combined = Data(capacity: payload.count + 500)
 
-        let header = """
-        HTTP/1.1 \(status.rawValue) \(status.string)
-        Content-Type: \(type.string)
-        Content-Length:\(payload.count)
-        Set-Cookie: \(Picaroon.userSessionCookie)=\(session?.unsafeSessionUUID ?? ""); HttpOnly
-        Connection: keep-alive
-        Server: Picaroon
-        Last-Modified:\(lastModified)\n\n
-        """
-        combined.append(Data(header.utf8))
-        combined.append(payload)
+        if let session = session {
+            let header = """
+            HTTP/1.1 \(status.rawValue) \(status.string)
+            Content-Type: \(type.string)
+            Content-Length:\(payload.count)
+            Set-Cookie: \(Picaroon.userSessionCookie)=\(session.unsafeSessionUUID); HttpOnly
+            Connection: keep-alive
+            Server: Picaroon
+            Last-Modified:\(lastModified)\n\n
+            """
+            combined.append(Data(header.utf8))
+            combined.append(payload)
+        } else {
+            let header = """
+            HTTP/1.1 \(status.rawValue) \(status.string)
+            Content-Type: \(type.string)
+            Content-Length:\(payload.count)
+            Connection: keep-alive
+            Server: Picaroon
+            Last-Modified:\(lastModified)\n\n
+            """
+            combined.append(Data(header.utf8))
+            combined.append(payload)
+        }
 
         return combined
     }
@@ -42,18 +55,32 @@ public struct HttpResponse {
 
         var combined = Data(capacity: payloadUtf8.count + 500)
 
-        let header = """
-        HTTP/1.1 \(status.rawValue) \(status.string)
-        Content-Type: \(type.string)
-        Content-Length:\(payloadUtf8.count)
-        Set-Cookie: \(Picaroon.userSessionCookie)=\(session?.unsafeSessionUUID ?? ""); HttpOnly
-        Connection: keep-alive
-        Server: Picaroon
-        Last-Modified:\(lastModified)
+        if let session = session {
+            let header = """
+            HTTP/1.1 \(status.rawValue) \(status.string)
+            Content-Type: \(type.string)
+            Content-Length:\(payloadUtf8.count)
+            Set-Cookie: \(Picaroon.userSessionCookie)=\(session.unsafeSessionUUID); HttpOnly
+            Connection: keep-alive
+            Server: Picaroon
+            Last-Modified:\(lastModified)
 
-        \(payloadUtf8)
-        """
-        combined.append(Data(header.utf8))
+            \(payloadUtf8)
+            """
+            combined.append(Data(header.utf8))
+        } else {
+            let header = """
+            HTTP/1.1 \(status.rawValue) \(status.string)
+            Content-Type: \(type.string)
+            Content-Length:\(payloadUtf8.count)
+            Connection: keep-alive
+            Server: Picaroon
+            Last-Modified:\(lastModified)
+
+            \(payloadUtf8)
+            """
+            combined.append(Data(header.utf8))
+        }
 
         return combined
     }

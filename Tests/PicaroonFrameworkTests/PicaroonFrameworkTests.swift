@@ -3,15 +3,22 @@ import XCTest
 
 final class picaroonTests: XCTestCase {
     
+    let helloWorldResponse = HttpResponse.asData(nil, .ok, .txt, "Hello World")
+
     class HelloWorld: UserSession {
         override func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
-            connection.beSendData(HttpResponse.asData(self, .ok, .txt, "Hello World"))
+            connection.beSendInternalError()
         }
     }
+
+    func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
+        return helloWorldResponse
+    }
+
     
     func testPerformance1() {
         
-        let server = Server<HelloWorld>("0.0.0.0", 8080)
+        let server = Server<HelloWorld>("0.0.0.0", 8080, handleStaticRequest)
         server.listen()
         
         sleep(1)

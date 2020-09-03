@@ -2,6 +2,8 @@ import Foundation
 import Flynn
 import Socket
 
+public typealias StaticStorageHandler = (HttpRequest) -> Data?
+
 public class Server<T: UserSession> {
     // A server which listens on an address and a port
 
@@ -11,11 +13,14 @@ public class Server<T: UserSession> {
     private var listening = false
 
     private var userSessionManager = UserSessionManager<T>()
+    public var staticStorageHandler: StaticStorageHandler?
 
     public init(_ address: String,
-                _ port: Int) {
+                _ port: Int,
+                _ staticStorageHandler: StaticStorageHandler? = nil) {
         self.address = address
         self.port = port
+        self.staticStorageHandler = staticStorageHandler
     }
 
     @discardableResult
@@ -27,12 +32,12 @@ public class Server<T: UserSession> {
             repeat {
 #if os(Linux)
                 if let newSocket = try? serverSocket.acceptClientConnection() {
-                    _ = Connection(newSocket, userSessionManager)
+                    _ = Connection(newSocket, staticStorageHandler, userSessionManager)
                 }
 #else
                 autoreleasepool {
                     if let newSocket = try? serverSocket.acceptClientConnection() {
-                        _ = Connection(newSocket, self.userSessionManager)
+                        _ = Connection(newSocket, self.staticStorageHandler, self.userSessionManager)
                     }
                 }
 #endif
