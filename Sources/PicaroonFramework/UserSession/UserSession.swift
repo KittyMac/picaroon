@@ -2,13 +2,17 @@ import Flynn
 import Foundation
 import Socket
 
-open class UserSession: Actor {
+open class UserSession: Actor, Equatable {
     // In Picaroon, a user sessions encapsulates on browser's "session" with the server. So when
     // the clinet connects for the very first time, a unique user session is created and assigned
     // to the connection. A cookie is used to store the user session uuid, so it is for multiple
     // connections to utilize the same user session.
 
     // UserSessions are intented to be subclassed by the application code
+
+    public static func == (lhs: UserSession, rhs: UserSession) -> Bool {
+        return lhs.unsafeSessionUUID == rhs.unsafeSessionUUID
+    }
 
     public let unsafeSessionUUID: String = UUID().uuidString
 
