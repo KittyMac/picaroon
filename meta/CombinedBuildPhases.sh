@@ -8,6 +8,8 @@
 #
 # This script assumes that the current directory is the Server project directory
 
+set -e
+
 # FlynnLint - Confirms all Flynn code is concurrently safe
 FLYNNLINTSWIFTPM=./.build/checkouts/flynn/meta/FlynnLint
 FLYNNLINTLOCAL=./../../flynn/meta/FlynnLint
