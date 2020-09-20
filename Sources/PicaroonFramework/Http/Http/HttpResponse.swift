@@ -4,11 +4,12 @@ import Socket
 
 public struct HttpResponse {
 
-    public static let lastModified = "\(Date())"
+    public static let sharedLastModifiedDate = Date()
+    public static let sharedLastModifiedDateString = "\(sharedLastModifiedDate)"
 
     public static func isNew(_ request: HttpRequest) -> Bool {
         if let modifiedDate = request.ifModifiedSince {
-            return lastModified != modifiedDate
+            return sharedLastModifiedDateString != modifiedDate
         }
         return true
     }
@@ -17,7 +18,8 @@ public struct HttpResponse {
                               _ status: HttpStatus,
                               _ type: HttpContentType,
                               _ payload: Data,
-                              _ encoding: String = "identity") -> Data {
+                              _ encoding: String = "identity",
+                              _ lastModified: Date = sharedLastModifiedDate) -> Data {
         var combined = Data(capacity: payload.count + 500)
 
         if let session = session {
@@ -54,7 +56,8 @@ public struct HttpResponse {
                               _ status: HttpStatus,
                               _ type: HttpContentType,
                               _ payload: String,
-                              _ encoding: String = "identity") -> Data {
+                              _ encoding: String = "identity",
+                              _ lastModified: Date = sharedLastModifiedDate) -> Data {
         let payloadUtf8 = payload.utf8
 
         var combined = Data(capacity: payloadUtf8.count + 500)

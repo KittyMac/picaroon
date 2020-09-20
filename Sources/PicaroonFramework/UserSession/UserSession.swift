@@ -35,7 +35,8 @@ open class UserSession: Actor, Equatable {
 extension UserSession {
 
     @discardableResult
-    public func beHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) -> Self {
+    public func beHandleRequest(_ connection: AnyConnection,
+                                _ httpRequest: HttpRequest) -> Self {
         unsafeSend { self._beHandleRequest(connection, httpRequest) }
         return self
     }

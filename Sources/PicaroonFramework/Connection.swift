@@ -2,7 +2,8 @@ import Flynn
 import Foundation
 import Socket
 
-// swiftlint: disable cyclomatic_complexity
+// swiftlint:disable function_body_length
+// swiftlint:disable line_length
 
 public protocol AnyConnection {
     @discardableResult func beSendData(_ data: Data) -> Self
@@ -225,7 +226,8 @@ extension Connection {
         return self
     }
     @discardableResult
-    public func beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) -> Self {
+    public func beSendDataIfChanged(_ httpRequest: HttpRequest,
+                                    _ data: Data) -> Self {
         unsafeSend { self._beSendDataIfChanged(httpRequest, data) }
         return self
     }
