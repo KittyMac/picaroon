@@ -132,6 +132,7 @@ public class Connection: Actor, AnyConnection {
         // Whether we process one or not, we call beNextCommand() to check again in
         // the future for another command.
         if socket.remoteConnectionClosed {
+            socket.close()
             return
         }
 
