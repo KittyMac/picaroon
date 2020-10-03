@@ -4,6 +4,7 @@ import Socket
 
 // swiftlint:disable function_body_length
 // swiftlint:disable line_length
+// swiftlint:disable cyclomatic_complexity
 
 public protocol AnyConnection {
     @discardableResult func beSendData(_ data: Data) -> Self
@@ -22,11 +23,8 @@ public class Connection: Actor, AnyConnection {
 
     private let socket: Socket
 
-#if DEBUG
-    private let timeout: TimeInterval = 5.0
-#else
-    private let timeout: TimeInterval = 20.0
-#endif
+    private var timeout: TimeInterval = 30.0
+
     private var lastCommunicationTime: TimeInterval = ProcessInfo.processInfo.systemUptime
 
     private let bufferSize = 16384
@@ -202,6 +200,10 @@ public class Connection: Actor, AnyConnection {
             if shouldGenerateNewSession {
                 //print("retrieving user session for: \(sessionToken)")
                 userSession = userSessionManager.get(sessionToken)
+
+                if let userSession = userSession {
+                    timeout = userSession.unsafeConnectionTimeout
+                }
             }
 
             if let userSession = userSession {

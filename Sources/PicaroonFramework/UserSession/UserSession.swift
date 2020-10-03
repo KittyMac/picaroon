@@ -10,6 +10,12 @@ open class UserSession: Actor, Equatable {
 
     // UserSessions are intented to be subclassed by the application code
 
+#if DEBUG
+    public var unsafeConnectionTimeout: TimeInterval = 5
+#else
+    public var unsafeConnectionTimeout: TimeInterval = 20
+#endif
+
     public static func == (lhs: UserSession, rhs: UserSession) -> Bool {
         return lhs.unsafeSessionUUID == rhs.unsafeSessionUUID
     }
