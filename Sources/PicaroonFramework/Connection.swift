@@ -24,7 +24,11 @@ public class Connection: Actor, AnyConnection {
 
     private let socket: Socket
 
-    private var timeout: TimeInterval = 30.0
+#if DEBUG
+    private var timeout: TimeInterval = 5
+#else
+    private var timeout: TimeInterval = 30
+#endif
 
     private var lastCommunicationTime: TimeInterval = ProcessInfo.processInfo.systemUptime
 
@@ -205,10 +209,6 @@ public class Connection: Actor, AnyConnection {
             if shouldGenerateNewSession {
                 //print("retrieving user session for: \(sessionToken)")
                 userSession = userSessionManager.get(sessionToken)
-
-                if let userSession = userSession {
-                    timeout = userSession.unsafeConnectionTimeout
-                }
             }
 
             if let userSession = userSession {
