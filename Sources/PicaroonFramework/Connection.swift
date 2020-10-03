@@ -15,6 +15,7 @@ public protocol AnyConnection {
     @discardableResult func beSendSuccess() -> Self
     @discardableResult func beSendError(_ error: String) -> Self
     @discardableResult func beSendNotModified() -> Self
+    @discardableResult func beSetTimeout(_ timeout: TimeInterval) -> Self
 }
 
 public class Connection: Actor, AnyConnection {
