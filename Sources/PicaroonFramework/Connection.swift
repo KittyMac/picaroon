@@ -65,6 +65,10 @@ public class Connection: Actor, AnyConnection {
         buffer.deallocate()
     }
 
+    private func _beSetTimeout(_ timeout: TimeInterval) {
+        self.timeout = timeout
+    }
+
     private func _beSendData(_ data: Data) {
         do {
             try socket.write(from: data)
@@ -223,6 +227,11 @@ public class Connection: Actor, AnyConnection {
 
 extension Connection {
 
+    @discardableResult
+    public func beSetTimeout(_ timeout: TimeInterval) -> Self {
+        unsafeSend { self._beSetTimeout(timeout) }
+        return self
+    }
     @discardableResult
     public func beSendData(_ data: Data) -> Self {
         unsafeSend { self._beSendData(data) }
