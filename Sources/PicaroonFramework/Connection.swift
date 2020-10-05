@@ -19,16 +19,19 @@ public protocol AnyConnection {
 }
 
 public class Connection: Actor, AnyConnection {
+
+#if DEBUG
+    public static var defaultTimeout: TimeInterval = 5
+#else
+    public static var defaultTimeout: TimeInterval = 30
+#endif
+
     // Handle a single TCP connection to a client. Multiple connections can link to the
     // same UserSession.
 
     private let socket: Socket
 
-#if DEBUG
-    private var timeout: TimeInterval = 5
-#else
-    private var timeout: TimeInterval = 30
-#endif
+    private var timeout: TimeInterval = defaultTimeout
 
     private var lastCommunicationTime: TimeInterval = ProcessInfo.processInfo.systemUptime
 
