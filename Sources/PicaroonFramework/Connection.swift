@@ -4,7 +4,6 @@ import Socket
 
 // swiftlint:disable function_body_length
 // swiftlint:disable line_length
-// swiftlint:disable cyclomatic_complexity
 
 public protocol AnyConnection {
     @discardableResult func beSendData(_ data: Data) -> Self
@@ -12,7 +11,7 @@ public protocol AnyConnection {
     @discardableResult func beEndUserSession() -> Self
     @discardableResult func beSendInternalError() -> Self
     @discardableResult func beSendServiceUnavailable() -> Self
-    @discardableResult func beSendSuccess() -> Self
+    @discardableResult func beSendSuccess(_ message: String) -> Self
     @discardableResult func beSendError(_ error: String) -> Self
     @discardableResult func beSendNotModified() -> Self
     @discardableResult func beSetTimeout(_ timeout: TimeInterval) -> Self
@@ -115,8 +114,8 @@ public class Connection: Actor, AnyConnection {
         _beSendData(HttpResponse.asData(userSession, .serviceUnavailable, .txt))
     }
 
-    private func _beSendSuccess() {
-        _beSendData(HttpResponse.asData(userSession, .ok, .txt, "success"))
+    private func _beSendSuccess(_ message: String = "success") {
+        _beSendData(HttpResponse.asData(userSession, .ok, .txt, message))
     }
 
     private func _beSendError(_ error: String) {
@@ -263,8 +262,8 @@ extension Connection {
         return self
     }
     @discardableResult
-    public func beSendSuccess() -> Self {
-        unsafeSend(_beSendSuccess)
+    public func beSendSuccess(_ message: String) -> Self {
+        unsafeSend { self._beSendSuccess(message) }
         return self
     }
     @discardableResult
