@@ -2,6 +2,8 @@ import Flynn
 import Foundation
 import Socket
 
+// swiftlint:disable line_length
+
 public struct HttpResponse {
 
     public static let sharedLastModifiedDate = Date()
@@ -18,80 +20,56 @@ public struct HttpResponse {
                               _ status: HttpStatus,
                               _ type: HttpContentType,
                               _ payload: Data,
-                              _ encoding: String = "identity",
-                              _ lastModified: Date = sharedLastModifiedDate) -> Data {
-        var combined = Data(capacity: payload.count + 500)
+                              encoding: String? = nil,
+                              lastModified: Date = sharedLastModifiedDate,
+                              cacheMaxAge: Int = 0) -> Data {
+        var combinedData = Data(capacity: payload.count + 500)
 
+        var combinedString = String()
+        combinedString.reserveCapacity(500)
+
+        combinedString.append(status.string)
+        combinedString.append("\r\n")
+
+        if cacheMaxAge > 0 {
+            combinedString.append("Cache-Control: public, max-age=\(cacheMaxAge)\r\n")
+        }
         if let session = session {
-            let header = """
-            \(status.string)\r
-            Content-Type: \(type.string)\r
-            Content-Length:\(payload.count)\r
-            Set-Cookie: \(Picaroon.userSessionCookie)=\(session.unsafeSessionUUID); HttpOnly\r
-            Content-Encoding: \(encoding)\r
-            Connection: keep-alive\r
-            Server: Picaroon\r
-            Last-Modified:\(lastModified)\r\n\r\n
-            """
-            combined.append(Data(header.utf8))
-            combined.append(payload)
-        } else {
-            let header = """
-            \(status.string)\r
-            Content-Type: \(type.string)\r
-            Content-Length:\(payload.count)\r
-            Content-Encoding: \(encoding)\r
-            Connection: keep-alive\r
-            Server: Picaroon\r
-            Last-Modified:\(lastModified)\r\n\r\n
-            """
-            combined.append(Data(header.utf8))
-            combined.append(payload)
+            combinedString.append("Set-Cookie: \(Picaroon.userSessionCookie)=\(session.unsafeSessionUUID); HttpOnly\r\n")
+        }
+        if let encoding = encoding {
+            combinedString.append("Content-Encoding: \(encoding)\r\n")
         }
 
-        return combined
+        combinedString.append("""
+        Content-Type: \(type.string)\r
+        Content-Length:\(payload.count)\r
+        Connection: keep-alive\r
+        Server: Picaroon\r
+        Last-Modified:\(lastModified)\r\n\r\n
+        """)
+
+        combinedData.append(Data(combinedString.utf8))
+        combinedData.append(payload)
+
+        return combinedData
     }
 
     public static func asData(_ session: UserSession?,
                               _ status: HttpStatus,
                               _ type: HttpContentType,
                               _ payload: String,
-                              _ encoding: String = "identity",
-                              _ lastModified: Date = sharedLastModifiedDate) -> Data {
-        let payloadUtf8 = payload.utf8
+                              encoding: String? = nil,
+                              lastModified: Date = sharedLastModifiedDate,
+                              cacheMaxAge: Int = 0) -> Data {
 
-        var combined = Data(capacity: payloadUtf8.count + 500)
-
-        if let session = session {
-            let header = """
-            \(status.string)\r
-            Content-Type: \(type.string)\r
-            Content-Length:\(payloadUtf8.count)\r
-            Set-Cookie: \(Picaroon.userSessionCookie)=\(session.unsafeSessionUUID); HttpOnly\r
-            Content-Encoding: \(encoding)\r
-            Connection: keep-alive\r
-            Server: Picaroon\r
-            Last-Modified:\(lastModified)\r
-            \r
-            \(payloadUtf8)
-            """
-            combined.append(Data(header.utf8))
-        } else {
-            let header = """
-            \(status.string)\r
-            Content-Type: \(type.string)\r
-            Content-Length:\(payloadUtf8.count)\r
-            Content-Encoding: \(encoding)\r
-            Connection: keep-alive\r
-            Server: Picaroon\r
-            Last-Modified:\(lastModified)\r
-            \r
-            \(payloadUtf8)
-            """
-            combined.append(Data(header.utf8))
-        }
-
-        return combined
+        return asData(session,
+                      status,
+                      type,
+                      payload.data(using: .utf8)!,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge)
     }
 
     public static func asData(_ session: UserSession?,
@@ -99,4 +77,5 @@ public struct HttpResponse {
                               _ type: HttpContentType) -> Data {
         return asData(session, status, type, status.string)
     }
+
 }
