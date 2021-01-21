@@ -34,7 +34,7 @@ public class Connection: Actor, AnyConnection {
 
     private var lastCommunicationTime: TimeInterval = ProcessInfo.processInfo.systemUptime
 
-    private let bufferSize = 16384
+    private let bufferSize = 1024 * 1024 * 2
     private var buffer: UnsafeMutablePointer<CChar>
     private let endPtr: UnsafeMutablePointer<CChar>
     private var currentPtr: UnsafeMutablePointer<CChar>
@@ -55,7 +55,7 @@ public class Connection: Actor, AnyConnection {
 
         try? socket.setReadTimeout(value: 5)
 
-        buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
+        buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize + 32)
         buffer.initialize(to: 0)
 
         currentPtr = buffer
