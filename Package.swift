@@ -1,4 +1,4 @@
-// swift-tools-version:5.2
+// swift-tools-version:5.1.0
 
 import PackageDescription
 
@@ -13,7 +13,7 @@ let package = Package(
     ],
     dependencies: [
 		.package(url: "https://github.com/KittyMac/Flynn.git", .branch("master")),
-		.package(name: "Socket", url: "https://github.com/IBM-Swift/BlueSocket.git", .upToNextMinor(from: "1.0.0")),
+		.package(url: "https://github.com/IBM-Swift/BlueSocket.git", .upToNextMinor(from: "1.0.0")),
 		.package(url: "https://github.com/KittyMac/Ipecac.git", .branch("master")),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "0.3.0"),
     ],
