@@ -180,9 +180,9 @@ public class Connection: Actor, AnyConnection {
                 return
             }
 
-            //if let requestString = String(bytesNoCopy: buffer, length: currentPtr - buffer + 1, encoding: .utf8, freeWhenDone: false) {
+            // if let requestString = String(bytesNoCopy: buffer, length: currentPtr - buffer + 1, encoding: .utf8, freeWhenDone: false) {
             //    print(requestString)
-            //}
+            // }
 
             // reset current pointer to be read for the next http request
             currentPtr = buffer
@@ -209,7 +209,7 @@ public class Connection: Actor, AnyConnection {
             }
 
             if shouldGenerateNewSession {
-                //print("retrieving user session for: \(sessionToken)")
+                // print("retrieving user session for: \(sessionToken)")
                 userSession = userSessionManager.get(sessionToken)
             }
 
