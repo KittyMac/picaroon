@@ -53,7 +53,7 @@ public extension CChar {
     static let parenClose: CChar = 41
     static let astericks: CChar = 42
     static let plus: CChar = 43
-    static let tick: CChar = 44
+    static let comma: CChar = 44
     static let minus: CChar = 45
     static let dot: CChar = 46
     static let forwardSlash: CChar = 47

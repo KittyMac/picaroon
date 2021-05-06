@@ -53,7 +53,7 @@ public extension UInt8 {
     static let parenClose: UInt8 = 41
     static let astericks: UInt8 = 42
     static let plus: UInt8 = 43
-    static let tick: UInt8 = 44
+    static let comma: UInt8 = 44
     static let minus: UInt8 = 45
     static let dot: UInt8 = 46
     static let forwardSlash: UInt8 = 47
