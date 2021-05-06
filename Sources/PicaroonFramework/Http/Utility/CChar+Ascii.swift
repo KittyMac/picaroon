@@ -143,5 +143,4 @@ public extension CChar {
     static let closeBracket: CChar = 125
     static let tilde: CChar = 126
     static let del: CChar = 127
-
-    }
+}
