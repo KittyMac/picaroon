@@ -20,6 +20,7 @@ public struct HttpResponse {
                               _ status: HttpStatus,
                               _ type: HttpContentType,
                               _ payload: Data,
+                              headers: [String]? = nil,
                               encoding: String? = nil,
                               lastModified: Date = sharedLastModifiedDate,
                               cacheMaxAge: Int = 0) -> Data {
@@ -41,13 +42,17 @@ public struct HttpResponse {
             combinedString.append("Content-Encoding: \(encoding)\r\n")
         }
 
-        combinedString.append("""
-        Content-Type: \(type.string)\r
-        Content-Length:\(payload.count)\r
-        Connection: keep-alive\r
-        Server: Picaroon\r
-        Last-Modified:\(lastModified)\r\n\r\n
-        """)
+        if let headers = headers {
+            for header in headers {
+                combinedString.append("\(header)\r\n")
+            }
+        }
+
+        combinedString.append("Content-Type: \(type.string)\r\n")
+        combinedString.append("Content-Length:\(payload.count)\r\n")
+        combinedString.append("Connection: keep-alive\r\n")
+        combinedString.append("Server: Picaroon\r\n")
+        combinedString.append("Last-Modified:\(lastModified)\r\n\r\n")
 
         combinedData.append(Data(combinedString.utf8))
         combinedData.append(payload)
@@ -59,6 +64,7 @@ public struct HttpResponse {
                               _ status: HttpStatus,
                               _ type: HttpContentType,
                               _ payload: String,
+                              headers: [String]? = nil,
                               encoding: String? = nil,
                               lastModified: Date = sharedLastModifiedDate,
                               cacheMaxAge: Int = 0) -> Data {
@@ -67,6 +73,7 @@ public struct HttpResponse {
                       status,
                       type,
                       payload.data(using: .utf8)!,
+                      headers: headers,
                       encoding: encoding,
                       lastModified: lastModified,
                       cacheMaxAge: cacheMaxAge)

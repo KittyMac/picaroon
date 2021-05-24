@@ -18,7 +18,9 @@ final class picaroonTests: XCTestCase {
     
     func testPerformance1() {
         
-        let server = Server<HelloWorld>("0.0.0.0", 8080, handleStaticRequest)
+        let port = Int.random(in: 8000..<65500)
+        
+        let server = Server<HelloWorld>("0.0.0.0", port, handleStaticRequest)
         server.listen()
         
         sleep(1)
@@ -28,7 +30,7 @@ final class picaroonTests: XCTestCase {
         task.arguments = [
             "-t", "4",
             "-c", "100",
-            "http://localhost:8080/hello/world"
+            "http://localhost:\(port)/hello/world"
         ]
         
         let outputPipe = Pipe()
