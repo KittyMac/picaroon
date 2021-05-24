@@ -16,6 +16,8 @@ open class UserSession: Actor, Equatable {
 
     public let unsafeSessionUUID: String = UUID().uuidString
 
+    public var unsafeSessionHeaders: [String] = []
+
     required public override init() {
         super.init()
     }
