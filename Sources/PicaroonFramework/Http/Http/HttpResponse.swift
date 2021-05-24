@@ -4,6 +4,12 @@ import Socket
 
 // swiftlint:disable line_length
 
+private let newlineData = "\r\n".data(using: .utf8)!
+
+private let boundaryHeader = "\(UUID().uuidString)"
+private let boundaryEndString = "--\(boundaryHeader)--\r\n"
+private let boundaryEndData = boundaryEndString.data(using: .utf8)!
+
 public struct HttpResponse {
 
     public static let sharedLastModifiedDate = Date()
@@ -23,10 +29,10 @@ public struct HttpResponse {
                               encoding: String? = nil,
                               lastModified: Date = sharedLastModifiedDate,
                               cacheMaxAge: Int = 0) -> Data {
-        var combinedData = Data(capacity: payload.count + 500)
+        var combinedData = Data(capacity: payload.count + 512)
 
         var combinedString = String()
-        combinedString.reserveCapacity(500)
+        combinedString.reserveCapacity(512)
 
         combinedString.append(status.string)
         combinedString.append("\r\n")
@@ -41,11 +47,16 @@ public struct HttpResponse {
             combinedString.append("Content-Encoding: \(encoding)\r\n")
         }
 
+        if type == .multipartFormData {
+            combinedString.append("Content-Type: multipart/form-data; boundary=\(boundaryHeader)\r\n")
+        } else {
+            combinedString.append("Content-Type: \(type.string)\r\n")
+        }
+
         combinedString.append("""
-        Content-Type: \(type.string)\r
-        Content-Length:\(payload.count)\r
-        Connection: keep-alive\r
-        Server: Picaroon\r
+        Content-Length:\(payload.count)\r\n
+        Connection: keep-alive\r\n
+        Server: Picaroon\r\n
         Last-Modified:\(lastModified)\r\n\r\n
         """)
 
@@ -76,6 +87,55 @@ public struct HttpResponse {
                               _ status: HttpStatus,
                               _ type: HttpContentType) -> Data {
         return asData(session, status, type, status.string)
+    }
+
+    public static func asMultipartData(_ session: UserSession?,
+                                       _ status: HttpStatus,
+                                       _ payloads: [Data]) -> Data {
+
+        var combined = Data()
+        combined.reserveCapacity(payloads.reduce(0) { $0 + $1.count } + 512)
+        for data in payloads {
+            combined.append(data)
+        }
+        combined.append(boundaryEndData)
+
+        return asData(session,
+                      status,
+                      .multipartFormData,
+                      combined)
+    }
+
+    public static func asPart(_ name: String,
+                              _ type: HttpContentType,
+                              _ payload: Data,
+                              encoding: String? = nil) -> Data {
+        var combinedData = Data(capacity: payload.count + 512)
+
+        var combinedString = String()
+        combinedString.reserveCapacity(512)
+
+        combinedString.append("--\(boundaryHeader)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n")
+        combinedString.append("Content-Type: \(type.string)\r\n")
+
+        if let encoding = encoding {
+            combinedString.append("Content-Encoding: \(encoding)\r\n")
+        }
+        combinedString.append("Content-Length:\(payload.count)\r\n")
+
+        combinedData.append(Data(combinedString.utf8))
+        combinedData.append(payload)
+        combinedData.append(newlineData)
+
+        return combinedData
+    }
+
+    public static func asPart(_ name: String,
+                              _ type: HttpContentType,
+                              _ payload: String,
+                              encoding: String? = nil) -> Data {
+        return asPart(name, type, payload.data(using: .utf8)!,
+                      encoding: encoding)
     }
 
 }

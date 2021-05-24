@@ -37,6 +37,8 @@ public enum HttpStatus: Int {
 }
 
 public enum HttpContentType: String {
+    case multipartFormData = "multipart/form-data"
+
     case arc = "arc"
     case avi = "avi"
     case azw = "azw"
@@ -120,6 +122,8 @@ public enum HttpContentType: String {
 
     public var string: String {
         switch self {
+        case .multipartFormData: return "multipart/form-data"
+
         case .arc: return "application/x-freearc"
         case .avi: return "video/x-msvideo"
         case .azw: return "application/vnd.amazon.ebook"
