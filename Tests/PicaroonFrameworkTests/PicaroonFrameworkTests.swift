@@ -15,15 +15,6 @@ final class picaroonTests: XCTestCase {
         return helloWorldResponse
     }
 
-    func testMultipartFormData() {
-        let data = HttpResponse.asMultipartData(nil, .ok, [
-            HttpResponse.asPart("part1", .txt, "part 1 data"),
-            HttpResponse.asPart("part2", .txt, "part 2 data".data(using: .utf8)!),
-            HttpResponse.asPart("part3", .txt, "part 3 data")
-        ])
-        
-        print(String(data: data, encoding: .utf8)!)
-    }
     
     func testPerformance1() {
         
