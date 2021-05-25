@@ -46,11 +46,11 @@ final class picaroonTests: XCTestCase {
             XCTAssertEqual(parts.count, 2)
             
             XCTAssertEqual(parts[0].contentDisposition, #"form-data; name="type""#)
-            XCTAssertEqual(parts[0].content?.count, 24)
+            XCTAssertEqual(String(data: parts[0].content!, encoding: .utf8), "UploadClassificationsFile")
             
             XCTAssertEqual(parts[1].contentDisposition, #"form-data; name="file"; filename="test1.txt""#)
             XCTAssertEqual(parts[1].contentType, #"text/plain"#)
-            XCTAssertEqual(parts[1].content?.count, 6)
+            XCTAssertEqual(String(data: parts[1].content!, encoding: .utf8), "test 1\n")
         }
     }
     

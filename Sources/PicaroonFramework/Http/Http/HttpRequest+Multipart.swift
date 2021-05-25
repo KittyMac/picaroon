@@ -68,13 +68,7 @@ public extension HttpRequest {
                         if ptr.pointee == boundaryStartPtr.pointee &&
                             endPtr - ptr >= boundaryEndPtr - boundaryStartPtr &&
                             memcmp(ptr, boundaryStartPtr, boundaryEndPtr - boundaryStartPtr) == 0 {
-                            multipartEndPtr = ptr - 1
-                            if multipartEndPtr.pointee == CChar.newLine {
-                               multipartEndPtr -= 1
-                            }
-                            if multipartEndPtr.pointee == CChar.carriageReturn {
-                               multipartEndPtr -= 1
-                            }
+                            multipartEndPtr = ptr - 2
                             break
                         }
                         ptr += 1
