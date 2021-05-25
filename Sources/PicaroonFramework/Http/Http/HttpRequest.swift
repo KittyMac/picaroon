@@ -6,6 +6,7 @@ import Socket
 // swiftlint:disable cyclomatic_complexity
 // swiftlint:disable identifier_name
 // swiftlint:disable type_body_length
+// swiftlint:disable file_length
 
 public struct HttpRequest {
     public var method: HttpMethod?
@@ -20,6 +21,7 @@ public struct HttpRequest {
     @InMemory public var connection: String?
     @InMemory public var upgradeInsecureRequests: String?
     @InMemory public var contentLength: String?
+    @InMemory public var contentType: String?
     @InMemory public var ifModifiedSince: String?
     @InMemory public var cookie: String?
     @InMemory public var expect: String?
@@ -308,6 +310,22 @@ public struct HttpRequest {
                     $contentLength = InMemory(initialValue: nil, valueStart, ptr)
                 }
 
+                if  $contentLength.isEmpty() &&
+                    (keyEnd-12).pointee == CChar.C &&
+                    (keyEnd-11).pointee == CChar.o &&
+                    (keyEnd-10).pointee == CChar.n &&
+                    (keyEnd-9).pointee == CChar.t &&
+                    (keyEnd-8).pointee == CChar.e &&
+                    (keyEnd-7).pointee == CChar.n &&
+                    (keyEnd-6).pointee == CChar.t &&
+                    (keyEnd-5).pointee == CChar.minus &&
+                    (keyEnd-4).pointee == CChar.T &&
+                    (keyEnd-3).pointee == CChar.y &&
+                    (keyEnd-2).pointee == CChar.p &&
+                    (keyEnd-1).pointee == CChar.e {
+                    $contentType = InMemory(initialValue: nil, valueStart, ptr)
+                }
+
                 if  $ifModifiedSince.isEmpty() &&
                     (keyEnd-17).pointee == CChar.I &&
                     (keyEnd-16).pointee == CChar.f &&
@@ -385,5 +403,4 @@ public struct HttpRequest {
             ptr += 1
         }
     }
-
 }
