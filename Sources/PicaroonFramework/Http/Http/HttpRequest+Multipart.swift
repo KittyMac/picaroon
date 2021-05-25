@@ -4,7 +4,8 @@ import Socket
 
 public extension HttpRequest {
     var multipartContent: [HttpRequest] {
-        guard contentType == "multipart/form-data" else { return [] }
+        guard let contentType = contentType else { return [] }
+        guard contentType.hasPrefix("multipart/form-data") else { return [] }
 
         if let content = content {
             return content.withUnsafeBytes { (buffer: UnsafePointer<CChar>) -> [HttpRequest] in
@@ -87,8 +88,8 @@ public extension HttpRequest {
         return []
     }
 
-    private func debug(start: UnsafePointer<CChar>,
-                       end: UnsafePointer<CChar>) {
+    func debug(start: UnsafePointer<CChar>,
+               end: UnsafePointer<CChar>) {
         #if DEBUG
         let string = String(data: Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: start), count: end - start, deallocator: .none), encoding: .utf8)!
         print("[\(string)]")
