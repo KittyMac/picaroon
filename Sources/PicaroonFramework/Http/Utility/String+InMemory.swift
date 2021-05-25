@@ -5,12 +5,12 @@ import Socket
 @propertyWrapper
 public struct InMemory: CustomStringConvertible {
     var value: String?
-    let startPtr: UnsafeMutablePointer<CChar>?
-    let endPtr: UnsafeMutablePointer<CChar>?
+    let startPtr: UnsafePointer<CChar>?
+    let endPtr: UnsafePointer<CChar>?
 
     public init(initialValue value: String?,
-                _ startPtr: UnsafeMutablePointer<CChar>,
-                _ endPtr: UnsafeMutablePointer<CChar>) {
+                _ startPtr: UnsafePointer<CChar>,
+                _ endPtr: UnsafePointer<CChar>) {
         self.value = value
         self.startPtr = startPtr
         self.endPtr = endPtr
@@ -38,7 +38,7 @@ public struct InMemory: CustomStringConvertible {
             }
             if  let startPtr = startPtr,
                 let endPtr = endPtr {
-                return String(bytesNoCopy: startPtr,
+                return String(bytesNoCopy: UnsafeMutableRawPointer(mutating: startPtr),
                               length: endPtr - startPtr,
                               encoding: .utf8,
                               freeWhenDone: false)

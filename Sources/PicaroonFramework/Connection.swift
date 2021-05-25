@@ -172,7 +172,8 @@ public class Connection: Actor, AnyConnection {
             }
 
             // See if it is complete http request; if it is incomplete, we wait until we get more data
-            let httpRequest = HttpRequest(buffer, currentPtr - buffer + 1)
+            let httpRequest = HttpRequest(request: buffer,
+                                          size: currentPtr - buffer + 1)
 
             // We have a complete http request, we need to process it
             if httpRequest.incomplete {
