@@ -24,13 +24,13 @@ final class picaroonTests: XCTestCase {
         ------WebKitFormBoundaryd9xBKq96rap8J36e\r
         Content-Disposition: form-data; name="type"\r
         \r
-        UploadClassificationsFile
+        UploadClassificationsFile\r
         ------WebKitFormBoundaryd9xBKq96rap8J36e\r
         Content-Disposition: form-data; name="file"; filename="test1.txt"\r
         Content-Type: text/plain\r
         \r
         test 1
-
+        \r
         ------WebKitFormBoundaryd9xBKq96rap8J36e--\r
         """.data(using: .utf8)!
         
@@ -46,11 +46,11 @@ final class picaroonTests: XCTestCase {
             XCTAssertEqual(parts.count, 2)
             
             XCTAssertEqual(parts[0].contentDisposition, #"form-data; name="type""#)
-            XCTAssertEqual(parts[0].content?.count, 25)
+            XCTAssertEqual(parts[0].content?.count, 24)
             
             XCTAssertEqual(parts[1].contentDisposition, #"form-data; name="file"; filename="test1.txt""#)
             XCTAssertEqual(parts[1].contentType, #"text/plain"#)
-            XCTAssertEqual(parts[1].content?.count, 7)
+            XCTAssertEqual(parts[1].content?.count, 6)
         }
     }
     
