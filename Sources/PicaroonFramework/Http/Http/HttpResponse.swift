@@ -99,7 +99,7 @@ public struct HttpResponse {
                       payload,
                       headers: [
             "Content-Transfer-Encoding: binary",
-            #"Content-Disposition: attachment; filename="\(filename)""#
+            "Content-Disposition: attachment; filename=\"\(filename)\""
         ])
     }
 
