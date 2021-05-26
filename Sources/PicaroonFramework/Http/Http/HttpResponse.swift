@@ -88,4 +88,19 @@ public struct HttpResponse {
         return asData(session, status, type, status.string)
     }
 
+    public static func asFile(_ session: UserSession?,
+                              _ status: HttpStatus,
+                              _ type: HttpContentType,
+                              _ filename: String,
+                              _ payload: Data) -> Data {
+        return asData(session,
+                      status,
+                      .zip,
+                      payload,
+                      headers: [
+            "Content-Transfer-Encoding: binary",
+            #"Content-Disposition: attachment; filename="\(filename)""#
+        ])
+    }
+
 }
