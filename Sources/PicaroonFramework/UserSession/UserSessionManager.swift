@@ -26,7 +26,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         }
 
         let userSession = T()
-        allUserSessions[userSession.unsafeSessionUUID.description] = userSession
+        allUserSessions[userSession.unsafeCombinedSessionUUID] = userSession
         return userSession
     }
 

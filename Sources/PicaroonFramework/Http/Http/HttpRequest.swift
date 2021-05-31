@@ -27,6 +27,7 @@ public struct HttpRequest {
     @InMemory public var cookie: String?
     @InMemory public var expect: String?
     @InMemory public var flynnTag: String?
+    @InMemory public var windowId: String?
 
     public var cookies: [String: String] {
         var _cookies: [String: String] = [:]
@@ -518,5 +519,19 @@ public struct HttpRequest {
             (keyEnd-1).pointee == CChar.g {
             $flynnTag = InMemory(initialValue: nil, valueStart, ptr)
         }
+
+        if  $windowId.isEmpty() &&
+            (keyEnd-9).pointee == CChar.W &&
+            (keyEnd-8).pointee == CChar.i &&
+            (keyEnd-7).pointee == CChar.n &&
+            (keyEnd-6).pointee == CChar.d &&
+            (keyEnd-5).pointee == CChar.o &&
+            (keyEnd-4).pointee == CChar.w &&
+            (keyEnd-3).pointee == CChar.minus &&
+            (keyEnd-2).pointee == CChar.I &&
+            (keyEnd-1).pointee == CChar.d {
+            $windowId = InMemory(initialValue: nil, valueStart, ptr)
+        }
+
     }
 }

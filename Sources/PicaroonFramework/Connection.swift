@@ -101,7 +101,7 @@ public class Connection: Actor, AnyConnection {
 
     private func _beEndUserSession() {
         if let userSession = userSession {
-            userSessionManager.end(userSession.unsafeSessionUUID)
+            userSessionManager.end(userSession.unsafeCombinedSessionUUID)
         }
         userSession = nil
     }
@@ -195,7 +195,6 @@ public class Connection: Actor, AnyConnection {
                 return
             }
 
-            // Handle requests for static resources
             // Before we give any resources to the client, we need to assign a user session to this connection
             let sessionToken = httpRequest.cookies[Picaroon.userSessionCookie]
             var shouldGenerateNewSession = false
@@ -205,7 +204,7 @@ public class Connection: Actor, AnyConnection {
             }
             if  let userSession = userSession,
                 let sessionToken = sessionToken,
-                userSession.unsafeSessionUUID != sessionToken {
+                userSession.unsafeCombinedSessionUUID != sessionToken {
                 shouldGenerateNewSession = true
             }
 

@@ -91,7 +91,9 @@ public extension HttpRequest {
     func debug(start: UnsafePointer<CChar>,
                end: UnsafePointer<CChar>) {
         #if DEBUG
-        let string = String(data: Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: start), count: end - start, deallocator: .none), encoding: .utf8)!
+        let string = String(data: Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: start),
+                                       count: end - start,
+                                       deallocator: .none), encoding: .utf8)!
         print("[\(string)]")
         #endif
     }
