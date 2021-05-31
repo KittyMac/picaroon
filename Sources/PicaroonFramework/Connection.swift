@@ -4,6 +4,7 @@ import Socket
 
 // swiftlint:disable function_body_length
 // swiftlint:disable line_length
+// swiftlint:disable cyclomatic_complexity
 
 public protocol AnyConnection {
     @discardableResult func beSendData(_ data: Data) -> Self
@@ -101,7 +102,7 @@ public class Connection: Actor, AnyConnection {
 
     private func _beEndUserSession() {
         if let userSession = userSession {
-            userSessionManager.end(userSession.unsafeCombinedSessionUUID)
+            userSessionManager.end(userSession.unsafeSessionUUID)
         }
         userSession = nil
     }
@@ -195,31 +196,35 @@ public class Connection: Actor, AnyConnection {
                 return
             }
 
-            // Before we give any resources to the client, we need to assign a user session to this connection
-            var sessionToken: String?
+            // Clients are required to have a user session to access more than just static resources
+            if httpRequest.sessionId == nil && httpRequest.url == "/session.js" {
 
-            if let sessionUUID = httpRequest.cookies[Picaroon.userSessionCookie],
-                let windowUUID = httpRequest.windowId {
-                sessionToken = sessionUUID + windowUUID
+                // Unregistered clients can ask for a user session; at which point we create it and
+                // send them back the session id associated with their user session actor
+                userSession = userSessionManager.get(nil)
+
+                if let userSession = userSession {
+                    _beSendData(
+                        HttpResponse.asData(nil, .ok, .js, """
+                        if (sessionStorage.getItem('Session-Id') == undefined) {
+                            sessionStorage.setItem('Session-Id', '\(userSession.unsafeSessionUUID)')
+                        }
+                        """)
+                    )
+                    return
+                }
+
+                return _beSendInternalError()
             }
 
-            var shouldGenerateNewSession = false
+            guard let sessionToken = httpRequest.sessionId else { return _beSendInternalError() }
+            guard sessionToken.count == 36 else { return _beSendInternalError() }
 
-            if userSession == nil {
-                shouldGenerateNewSession = true
-            }
-            if  let userSession = userSession,
-                let sessionToken = sessionToken,
-                userSession.unsafeCombinedSessionUUID != sessionToken {
-                shouldGenerateNewSession = true
-            }
-
-            if shouldGenerateNewSession {
-                // print("retrieving user session for: \(sessionToken)")
+            if userSession?.unsafeSessionUUID != sessionToken {
                 userSession = userSessionManager.get(sessionToken)
             }
 
-            if let userSession = userSession {
+            if let userSession = userSession, userSession.unsafeSessionUUID == sessionToken {
                 userSession.beHandleRequest(self, httpRequest)
             } else {
                 _beSendInternalError()

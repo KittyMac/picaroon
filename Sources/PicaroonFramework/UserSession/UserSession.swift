@@ -10,28 +10,24 @@ open class UserSession: Actor, Equatable {
 
     // UserSessions are intented to be subclassed by the application code
 
-    // unsafeSessionUUID is a UUID assigned to this session. It is in intended to be stored and
-    // retrieved using HttpOnly cookies
-
-    // unsafeWindowUUID is a UUID also assigned to this session. It is set as the cookie Window-Id
-    // and its purpose is to help identify the specific window this session is associated with.
-    // Javascript on the client side should store this value in HTML5 sessionStorage and then
-    // send it back an http header Window-Id.
+    // unsafeSessionUUID is a UUID assigned to this session. Client is expected to query this value
+    // and then send it back in future http headers to identify it (preferable in HTML5 session storage).
 
     public static func == (lhs: UserSession, rhs: UserSession) -> Bool {
-        return lhs.unsafeCombinedSessionUUID == rhs.unsafeCombinedSessionUUID
+        return lhs.unsafeSessionUUID == rhs.unsafeSessionUUID
     }
 
-    let unsafeSessionUUID: String
-    let unsafeWindowUUID: String
-    public let unsafeCombinedSessionUUID: String
+    public let unsafeSessionUUID: String
 
     public var unsafeSessionHeaders: [String] = []
 
     required public override init() {
         unsafeSessionUUID = UUID().uuidString
-        unsafeWindowUUID = UUID().uuidString
-        unsafeCombinedSessionUUID = unsafeSessionUUID + unsafeWindowUUID
+        super.init()
+    }
+
+    required public init(sessionUUID: String?) {
+        unsafeSessionUUID = sessionUUID ?? UUID().uuidString
         super.init()
     }
 
