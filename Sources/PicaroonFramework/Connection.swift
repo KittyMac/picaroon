@@ -196,7 +196,13 @@ public class Connection: Actor, AnyConnection {
             }
 
             // Before we give any resources to the client, we need to assign a user session to this connection
-            let sessionToken = httpRequest.cookies[Picaroon.userSessionCookie]
+            var sessionToken: String?
+
+            if let sessionUUID = httpRequest.cookies[Picaroon.userSessionCookie],
+                let windowUUID = httpRequest.windowId {
+                sessionToken = sessionUUID + windowUUID
+            }
+
             var shouldGenerateNewSession = false
 
             if userSession == nil {
