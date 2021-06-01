@@ -36,6 +36,7 @@ public struct HttpResponse {
             combinedString.append("Cache-Control: public, max-age=\(cacheMaxAge)\r\n")
         }
         if let session = session {
+            combinedString.append("Set-Cookie: \(Picaroon.userSessionCookie)=\(session.unsafeSessionUUID); HttpOnly\r\n")
             for header in session.unsafeSessionHeaders {
                 combinedString.append("\(header)\r\n")
             }

@@ -196,29 +196,13 @@ public class Connection: Actor, AnyConnection {
                 return
             }
 
-            // Clients are required to have a user session to access more than just static resources
-            if httpRequest.sessionId == nil && httpRequest.url == "/session.js" {
+            // Before we give any resources to the client, we need to assign a user session to this connection
+            var sessionToken: String = ""
 
-                // Unregistered clients can ask for a user session; at which point we create it and
-                // send them back the session id associated with their user session actor
-                userSession = userSessionManager.get(nil)
+            sessionToken += httpRequest.cookies[Picaroon.userSessionCookie] ?? ""
+            sessionToken += httpRequest.sessionId ?? ""
 
-                if let userSession = userSession {
-                    _beSendData(
-                        HttpResponse.asData(nil, .ok, .js, """
-                        if (sessionStorage.getItem('Session-Id') == undefined) {
-                            sessionStorage.setItem('Session-Id', '\(userSession.unsafeSessionUUID)')
-                        }
-                        """)
-                    )
-                    return
-                }
-
-                return _beSendInternalError()
-            }
-
-            guard let sessionToken = httpRequest.sessionId else { return _beSendInternalError() }
-            guard sessionToken.count == 36 else { return _beSendInternalError() }
+            guard sessionToken.count > 0 else { return _beSendInternalError() }
 
             if userSession?.unsafeSessionUUID != sessionToken {
                 userSession = userSessionManager.get(sessionToken)
