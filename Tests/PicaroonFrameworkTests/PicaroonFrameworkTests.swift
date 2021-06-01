@@ -14,6 +14,25 @@ final class picaroonTests: XCTestCase {
     func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
         return helloWorldResponse
     }
+    
+    func testSessionIdParameter() {
+        let content = """
+        GET /user?sid=F3901E70-DA28-44CE-939B-D43C1CFF75CF HTTP/1.1\r
+        Content-Type: text/plain\r
+        Content-Length: 11\r
+        \r
+        Hello World
+        """.data(using: .utf8)!
+        
+        content.withUnsafeBytes { (buffer: UnsafePointer<CChar>) -> () in
+            let request = HttpRequest(request: buffer, size: content.count)
+            
+            XCTAssertEqual(request.method, HttpMethod.GET)
+            XCTAssertEqual(request.contentType, "text/plain")
+            XCTAssertEqual(request.contentLength, "11")
+            XCTAssertEqual(request.sessionId, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
+        }
+    }
 
     func testMultipartRequest() {
         let content = """
