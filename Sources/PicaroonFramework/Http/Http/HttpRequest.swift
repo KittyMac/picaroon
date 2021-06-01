@@ -12,6 +12,7 @@ public struct HttpRequest {
     public var method: HttpMethod?
 
     @InMemory public var url: String?
+    @InMemory public var urlParameters: String?
     @InMemory public var host: String?
     @InMemory public var userAgent: String?
     @InMemory public var accept: String?
@@ -112,11 +113,23 @@ public struct HttpRequest {
 
                     // We identified the method, now parse the rest of the line
                     if method != nil {
-                        var sessionStartPtr = ptr + 1
-                        var sessionEndPtr = ptr + 1
-                        let urlStartPtr = ptr + 1
-                        var urlEndPtr = ptr + 1
+                        let defaultPtr = ptr + 1
+
+                        var urlParametersStartPtr = defaultPtr
+                        var urlParametersEndPtr = defaultPtr
+                        var sessionStartPtr = defaultPtr
+                        var sessionEndPtr = defaultPtr
+                        let urlStartPtr = defaultPtr
+                        var urlEndPtr = defaultPtr
+
+                        ptr += 1
+
                         while ptr < endPtr {
+
+                            if urlParametersStartPtr == defaultPtr &&
+                                (ptr-1).pointee == CChar.questionMark {
+                                urlParametersStartPtr = ptr
+                            }
 
                             if  (ptr-4).pointee == CChar.s &&
                                 (ptr-3).pointee == CChar.i &&
@@ -124,25 +137,32 @@ public struct HttpRequest {
                                 (ptr-1).pointee == CChar.equal {
                                 sessionStartPtr = ptr
                             }
-                            if sessionEndPtr < sessionStartPtr &&
-                                (ptr.pointee == CChar.carriageReturn ||
-                                ptr.pointee == CChar.newLine ||
-                                ptr.pointee == CChar.space) {
-                                sessionEndPtr = ptr
-                            }
 
-                            if ptr.pointee == CChar.carriageReturn || ptr.pointee == CChar.newLine {
+                            if ptr.pointee == CChar.carriageReturn ||
+                                ptr.pointee == CChar.newLine ||
+                                ptr.pointee == CChar.space {
+
+                                if sessionStartPtr != defaultPtr {
+                                    sessionEndPtr = ptr
+                                }
+                                if urlParametersStartPtr != defaultPtr {
+                                    urlParametersEndPtr = ptr
+                                    urlEndPtr = urlParametersStartPtr - 1
+                                } else {
+                                    urlEndPtr = ptr
+                                }
                                 break
                             }
-                            if ptr.pointee == CChar.space {
-                                urlEndPtr = ptr
-                            }
+
                             ptr += 1
                         }
                         $url = InMemory(initialValue: nil, urlStartPtr, urlEndPtr)
 
                         if sessionStartPtr < sessionEndPtr {
                             $sessionId = InMemory(initialValue: nil, sessionStartPtr, sessionEndPtr)
+                        }
+                        if urlParametersStartPtr < urlParametersEndPtr {
+                            $urlParameters = InMemory(initialValue: nil, urlParametersStartPtr, urlParametersEndPtr)
                         }
                     }
                 }

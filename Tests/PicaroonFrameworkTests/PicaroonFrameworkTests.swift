@@ -31,6 +31,8 @@ final class picaroonTests: XCTestCase {
             XCTAssertEqual(request.contentType, "text/plain")
             XCTAssertEqual(request.contentLength, "11")
             XCTAssertEqual(request.sessionId, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
+            XCTAssertEqual(request.urlParameters, "sid=F3901E70-DA28-44CE-939B-D43C1CFF75CF")
+            XCTAssertEqual(request.url, "/user")
         }
     }
 
