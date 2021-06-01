@@ -202,6 +202,11 @@ public class Connection: Actor, AnyConnection {
             sessionToken += httpRequest.cookies[Picaroon.userSessionCookie] ?? ""
             sessionToken += httpRequest.sessionId ?? ""
 
+            if sessionToken.count == 0 {
+                userSession = userSessionManager.get(nil)
+                sessionToken = userSession?.unsafeSessionUUID ?? ""
+            }
+
             guard sessionToken.count > 0 else { return _beSendInternalError() }
 
             if userSession?.unsafeSessionUUID != sessionToken {
