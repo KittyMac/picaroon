@@ -79,7 +79,10 @@ final class picaroonTests: XCTestCase {
         
         let port = Int.random(in: 8000..<65500)
         
-        let server = Server<HelloWorld>("0.0.0.0", port, handleStaticRequest)
+        let config = ServerConfig(address: "0.0.0.0", port: port)
+        
+        let server = Server<HelloWorld>(config: config,
+                                        staticStorageHandler: handleStaticRequest)
         server.listen()
         
         sleep(1)

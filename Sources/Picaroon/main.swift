@@ -62,4 +62,9 @@ func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
     return nil
 }
 
-Server<HelloWorld>("0.0.0.0", 8080, handleStaticRequest).run()
+let config = ServerConfig(address: "0.0.0.0",
+                          port: 8080,
+                          maxRequestInBytes: 1024 * 1024 * 8)
+
+Server<HelloWorld>(config: config,
+                   staticStorageHandler: handleStaticRequest).run()

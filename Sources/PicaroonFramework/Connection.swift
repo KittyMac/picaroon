@@ -35,7 +35,7 @@ public class Connection: Actor, AnyConnection {
 
     private var lastCommunicationTime: TimeInterval = ProcessInfo.processInfo.systemUptime
 
-    private let bufferSize = 1024 * 1024 * 2
+    private var bufferSize = 1024 * 1024 * 2
     private var buffer: UnsafeMutablePointer<CChar>
     private let endPtr: UnsafeMutablePointer<CChar>
     private var currentPtr: UnsafeMutablePointer<CChar>
@@ -47,14 +47,17 @@ public class Connection: Actor, AnyConnection {
 
     private var checkForMoreDataScheduled = false
 
-    init(_ socket: Socket,
-         _ staticStorageHandler: StaticStorageHandler?,
-         _ userSessionManager: AnyUserSessionManager) {
+    init(socket: Socket,
+         config: ServerConfig,
+         staticStorageHandler: StaticStorageHandler?,
+         userSessionManager: AnyUserSessionManager) {
         self.socket = socket
         self.userSessionManager = userSessionManager
         self.staticStorageHandler = staticStorageHandler
 
         try? socket.setReadTimeout(value: 5)
+
+        bufferSize = config.maxRequestInBytes
 
         buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize + 32)
         buffer.initialize(to: 0)

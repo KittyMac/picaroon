@@ -4,22 +4,33 @@ import Socket
 
 public typealias StaticStorageHandler = (HttpRequest) -> Data?
 
+public struct ServerConfig: Codable {
+    let address: String
+    let port: Int
+    let maxRequestInBytes: Int
+
+    public init(address: String,
+                port: Int,
+                maxRequestInBytes: Int = 1024 * 1024 * 8) {
+        self.address = address
+        self.port = port
+        self.maxRequestInBytes = maxRequestInBytes
+    }
+}
+
 public class Server<T: UserSession> {
     // A server which listens on an address and a port
 
-    public let address: String
-    public let port: Int
+    public let config: ServerConfig
 
     private var listening = false
 
     private var userSessionManager = UserSessionManager<T>()
     public var staticStorageHandler: StaticStorageHandler?
 
-    public init(_ address: String,
-                _ port: Int,
-                _ staticStorageHandler: StaticStorageHandler? = nil) {
-        self.address = address
-        self.port = port
+    public init(config: ServerConfig,
+                staticStorageHandler: StaticStorageHandler? = nil) {
+        self.config = config
         self.staticStorageHandler = staticStorageHandler
     }
 
@@ -27,17 +38,23 @@ public class Server<T: UserSession> {
     private func loop() -> Bool {
         do {
             let serverSocket = try Socket.create()
-            try serverSocket.listen(on: self.port, node: self.address)
+            try serverSocket.listen(on: config.port, node: config.address)
 
             repeat {
 #if os(Linux)
                 if let newSocket = try? serverSocket.acceptClientConnection() {
-                    _ = Connection(newSocket, staticStorageHandler, userSessionManager)
+                    _ = Connection(socket: newSocket,
+                                   config: config,
+                                   staticStorageHandler: staticStorageHandler,
+                                   userSessionManager: userSessionManager)
                 }
 #else
                 autoreleasepool {
                     if let newSocket = try? serverSocket.acceptClientConnection() {
-                        _ = Connection(newSocket, self.staticStorageHandler, self.userSessionManager)
+                        _ = Connection(socket: newSocket,
+                                       config: config,
+                                       staticStorageHandler: self.staticStorageHandler,
+                                       userSessionManager: self.userSessionManager)
                     }
                 }
 #endif
