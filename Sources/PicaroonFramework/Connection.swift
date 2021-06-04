@@ -4,7 +4,6 @@ import Socket
 
 // swiftlint:disable function_body_length
 // swiftlint:disable line_length
-// swiftlint:disable cyclomatic_complexity
 
 public protocol AnyConnection {
     @discardableResult func beSendData(_ data: Data) -> Self
@@ -20,18 +19,12 @@ public protocol AnyConnection {
 
 public class Connection: Actor, AnyConnection {
 
-#if DEBUG
-    public static var defaultTimeout: TimeInterval = 5
-#else
-    public static var defaultTimeout: TimeInterval = 30
-#endif
-
     // Handle a single TCP connection to a client. Multiple connections can link to the
     // same UserSession.
 
     private let socket: Socket
 
-    private var timeout: TimeInterval = defaultTimeout
+    private var timeout: TimeInterval = 30.0
 
     private var lastCommunicationTime: TimeInterval = ProcessInfo.processInfo.systemUptime
 
@@ -57,6 +50,7 @@ public class Connection: Actor, AnyConnection {
 
         try? socket.setReadTimeout(value: 5)
 
+        timeout = config.requestTimeout
         bufferSize = config.maxRequestInBytes
 
         buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize + 32)

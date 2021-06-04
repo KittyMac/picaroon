@@ -7,13 +7,17 @@ public typealias StaticStorageHandler = (HttpRequest) -> Data?
 public struct ServerConfig: Codable {
     let address: String
     let port: Int
+
+    let requestTimeout: TimeInterval
     let maxRequestInBytes: Int
 
     public init(address: String,
                 port: Int,
+                requestTimeout: TimeInterval = 30.0,
                 maxRequestInBytes: Int = 1024 * 1024 * 8) {
         self.address = address
         self.port = port
+        self.requestTimeout = requestTimeout
         self.maxRequestInBytes = maxRequestInBytes
     }
 }
