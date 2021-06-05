@@ -8,7 +8,7 @@ import Socket
 // swiftlint:disable type_body_length
 // swiftlint:disable file_length
 
-public struct HttpRequest {
+public class HttpRequest {
     public var method: HttpMethod?
 
     @InMemory public var url: String?
@@ -29,6 +29,43 @@ public struct HttpRequest {
     @InMemory public var expect: String?
     @InMemory public var flynnTag: String?
     @InMemory public var sessionId: String?
+
+    private var internalBuffer: UnsafeMutablePointer<CChar>?
+
+    private func bake(buffer: UnsafePointer<CChar>,
+                      size bufferSize: Int) {
+
+        internalBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
+
+        if let internalBuffer = internalBuffer {
+            internalBuffer.assign(from: buffer, count: bufferSize)
+
+            $url.bufferPtr = UnsafePointer(internalBuffer)
+            $urlParameters.bufferPtr = UnsafePointer(internalBuffer)
+            $host.bufferPtr = UnsafePointer(internalBuffer)
+            $userAgent.bufferPtr = UnsafePointer(internalBuffer)
+            $accept.bufferPtr = UnsafePointer(internalBuffer)
+            $acceptEncoding.bufferPtr = UnsafePointer(internalBuffer)
+            $acceptCharset.bufferPtr = UnsafePointer(internalBuffer)
+            $acceptLanguage.bufferPtr = UnsafePointer(internalBuffer)
+            $connection.bufferPtr = UnsafePointer(internalBuffer)
+            $upgradeInsecureRequests.bufferPtr = UnsafePointer(internalBuffer)
+            $contentLength.bufferPtr = UnsafePointer(internalBuffer)
+            $contentType.bufferPtr = UnsafePointer(internalBuffer)
+            $contentDisposition.bufferPtr = UnsafePointer(internalBuffer)
+            $ifModifiedSince.bufferPtr = UnsafePointer(internalBuffer)
+            $cookie.bufferPtr = UnsafePointer(internalBuffer)
+            $expect.bufferPtr = UnsafePointer(internalBuffer)
+            $flynnTag.bufferPtr = UnsafePointer(internalBuffer)
+            $sessionId.bufferPtr = UnsafePointer(internalBuffer)
+        }
+    }
+
+    deinit {
+        if let internalBuffer = internalBuffer {
+            internalBuffer.deallocate()
+        }
+    }
 
     public var cookies: [String: String] {
         var _cookies: [String: String] = [:]
@@ -54,7 +91,8 @@ public struct HttpRequest {
         incomplete = true
     }
 
-    public init(request buffer: UnsafePointer<CChar>, size bufferSize: Int) {
+    public init(request buffer: UnsafePointer<CChar>,
+                size bufferSize: Int) {
 
         let startPtr = buffer
         let endPtr = buffer + bufferSize
@@ -156,13 +194,22 @@ public struct HttpRequest {
 
                             ptr += 1
                         }
-                        $url = InMemory(initialValue: nil, urlStartPtr, urlEndPtr)
+                        $url = InMemory(initialValue: nil,
+                                        buffer,
+                                        urlStartPtr - buffer,
+                                        urlEndPtr - buffer)
 
                         if sessionStartPtr < sessionEndPtr {
-                            $sessionId = InMemory(initialValue: nil, sessionStartPtr, sessionEndPtr)
+                            $sessionId = InMemory(initialValue: nil,
+                                                  buffer,
+                                                  sessionStartPtr - buffer,
+                                                  sessionEndPtr - buffer)
                         }
                         if urlParametersStartPtr < urlParametersEndPtr {
-                            $urlParameters = InMemory(initialValue: nil, urlParametersStartPtr, urlParametersEndPtr)
+                            $urlParameters = InMemory(initialValue: nil,
+                                                      buffer,
+                                                      urlParametersStartPtr - buffer,
+                                                      urlParametersEndPtr - buffer)
                         }
                     }
                 }
@@ -182,10 +229,12 @@ public struct HttpRequest {
                                 if endPtr - ptr >= contentLengthBytes {
                                     content = Data(bytes: ptr, count: contentLengthBytes)
                                     incomplete = false
+                                    bake(buffer: buffer, size: ptr - buffer)
                                 }
                             }
                         } else {
                             incomplete = false
+                            bake(buffer: buffer, size: ptr - buffer)
                         }
                         return
                     }
@@ -210,7 +259,8 @@ public struct HttpRequest {
                 }
 
                 // 3. For speed, we only match against the keys we support (no generics)
-                parseKeyValue(ptr: ptr,
+                parseKeyValue(buffer: buffer,
+                              ptr: ptr,
                               valueStart: valueStart,
                               keyEnd: keyEnd)
 
@@ -287,7 +337,8 @@ public struct HttpRequest {
             }
 
             // 3. For speed, we only match against the keys we support (no generics)
-            parseKeyValue(ptr: ptr,
+            parseKeyValue(buffer: buffer,
+                          ptr: ptr,
                           valueStart: valueStart,
                           keyEnd: keyEnd)
 
@@ -315,15 +366,19 @@ public struct HttpRequest {
     }
 
     @inline(__always)
-    private mutating func parseKeyValue(ptr: UnsafePointer<CChar>,
-                                        valueStart: UnsafePointer<CChar>,
-                                        keyEnd: UnsafePointer<CChar>) {
+    private func parseKeyValue(buffer: UnsafePointer<CChar>,
+                               ptr: UnsafePointer<CChar>,
+                               valueStart: UnsafePointer<CChar>,
+                               keyEnd: UnsafePointer<CChar>) {
         if  $host.isEmpty() &&
             (keyEnd-4).pointee == CChar.H &&
             (keyEnd-3).pointee == CChar.o &&
             (keyEnd-2).pointee == CChar.s &&
             (keyEnd-1).pointee == CChar.t {
-            $host = InMemory(initialValue: nil, valueStart, ptr)
+            $host = InMemory(initialValue: nil,
+                             buffer,
+                             valueStart - buffer,
+                             ptr - buffer)
         }
 
         if  $userAgent.isEmpty() &&
@@ -337,7 +392,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.e &&
             (keyEnd-2).pointee == CChar.n &&
             (keyEnd-1).pointee == CChar.t {
-            $userAgent = InMemory(initialValue: nil, valueStart, ptr)
+            $userAgent = InMemory(initialValue: nil,
+                                  buffer,
+                                  valueStart - buffer,
+                                  ptr - buffer)
         }
 
         if  $accept.isEmpty() &&
@@ -347,7 +405,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.e &&
             (keyEnd-2).pointee == CChar.p &&
             (keyEnd-1).pointee == CChar.t {
-            $accept = InMemory(initialValue: nil, valueStart, ptr)
+            $accept = InMemory(initialValue: nil,
+                               buffer,
+                               valueStart - buffer,
+                               ptr - buffer)
         }
 
         if  $acceptEncoding.isEmpty() &&
@@ -366,7 +427,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.i &&
             (keyEnd-2).pointee == CChar.n &&
             (keyEnd-1).pointee == CChar.g {
-            $acceptEncoding = InMemory(initialValue: nil, valueStart, ptr)
+            $acceptEncoding = InMemory(initialValue: nil,
+                                       buffer,
+                                       valueStart - buffer,
+                                       ptr - buffer)
         }
 
         if  $acceptCharset.isEmpty() &&
@@ -384,7 +448,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.s &&
             (keyEnd-2).pointee == CChar.e &&
             (keyEnd-1).pointee == CChar.t {
-            $acceptCharset = InMemory(initialValue: nil, valueStart, ptr)
+            $acceptCharset = InMemory(initialValue: nil,
+                                      buffer,
+                                      valueStart - buffer,
+                                      ptr - buffer)
         }
 
         if  $acceptLanguage.isEmpty() &&
@@ -403,7 +470,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.a &&
             (keyEnd-2).pointee == CChar.g &&
             (keyEnd-1).pointee == CChar.e {
-            $acceptLanguage = InMemory(initialValue: nil, valueStart, ptr)
+            $acceptLanguage = InMemory(initialValue: nil,
+                                       buffer,
+                                       valueStart - buffer,
+                                       ptr - buffer)
         }
 
         if  $connection.isEmpty() &&
@@ -417,7 +487,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.i &&
             (keyEnd-2).pointee == CChar.o &&
             (keyEnd-1).pointee == CChar.n {
-            $connection = InMemory(initialValue: nil, valueStart, ptr)
+            $connection = InMemory(initialValue: nil,
+                                   buffer,
+                                   valueStart - buffer,
+                                   ptr - buffer)
         }
 
         if  $upgradeInsecureRequests.isEmpty() &&
@@ -446,7 +519,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.s &&
             (keyEnd-2).pointee == CChar.t &&
             (keyEnd-1).pointee == CChar.s {
-            $upgradeInsecureRequests = InMemory(initialValue: nil, valueStart, ptr)
+            $upgradeInsecureRequests = InMemory(initialValue: nil,
+                                                buffer,
+                                                valueStart - buffer,
+                                                ptr - buffer)
         }
 
         if  $contentLength.isEmpty() &&
@@ -464,7 +540,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.g &&
             (keyEnd-2).pointee == CChar.t &&
             (keyEnd-1).pointee == CChar.h {
-            $contentLength = InMemory(initialValue: nil, valueStart, ptr)
+            $contentLength = InMemory(initialValue: nil,
+                                      buffer,
+                                      valueStart - buffer,
+                                      ptr - buffer)
         }
 
         if  $contentType.isEmpty() &&
@@ -480,7 +559,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.y &&
             (keyEnd-2).pointee == CChar.p &&
             (keyEnd-1).pointee == CChar.e {
-            $contentType = InMemory(initialValue: nil, valueStart, ptr)
+            $contentType = InMemory(initialValue: nil,
+                                    buffer,
+                                    valueStart - buffer,
+                                    ptr - buffer)
         }
 
         if  $contentDisposition.isEmpty() &&
@@ -503,7 +585,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.i &&
             (keyEnd-2).pointee == CChar.o &&
             (keyEnd-1).pointee == CChar.n {
-            $contentDisposition = InMemory(initialValue: nil, valueStart, ptr)
+            $contentDisposition = InMemory(initialValue: nil,
+                                           buffer,
+                                           valueStart - buffer,
+                                           ptr - buffer)
         }
 
         if  $ifModifiedSince.isEmpty() &&
@@ -524,7 +609,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.n &&
             (keyEnd-2).pointee == CChar.c &&
             (keyEnd-1).pointee == CChar.e {
-            $ifModifiedSince = InMemory(initialValue: nil, valueStart, ptr)
+            $ifModifiedSince = InMemory(initialValue: nil,
+                                        buffer,
+                                        valueStart - buffer,
+                                        ptr - buffer)
         }
 
         if  $cookie.isEmpty() &&
@@ -534,7 +622,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.k &&
             (keyEnd-2).pointee == CChar.i &&
             (keyEnd-1).pointee == CChar.e {
-            $cookie = InMemory(initialValue: nil, valueStart, ptr)
+            $cookie = InMemory(initialValue: nil,
+                               buffer,
+                               valueStart - buffer,
+                               ptr - buffer)
         }
 
         if  $expect.isEmpty() &&
@@ -544,7 +635,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.e &&
             (keyEnd-2).pointee == CChar.c &&
             (keyEnd-1).pointee == CChar.t {
-            $expect = InMemory(initialValue: nil, valueStart, ptr)
+            $expect = InMemory(initialValue: nil,
+                               buffer,
+                               valueStart - buffer,
+                               ptr - buffer)
         }
 
         if  $flynnTag.isEmpty() &&
@@ -557,7 +651,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.T &&
             (keyEnd-2).pointee == CChar.a &&
             (keyEnd-1).pointee == CChar.g {
-            $flynnTag = InMemory(initialValue: nil, valueStart, ptr)
+            $flynnTag = InMemory(initialValue: nil,
+                                 buffer,
+                                 valueStart - buffer,
+                                 ptr - buffer)
         }
 
         if  $sessionId.isEmpty() &&
@@ -571,7 +668,10 @@ public struct HttpRequest {
             (keyEnd-3).pointee == CChar.minus &&
             (keyEnd-2).pointee == CChar.I &&
             (keyEnd-1).pointee == CChar.d {
-            $sessionId = InMemory(initialValue: nil, valueStart, ptr)
+            $sessionId = InMemory(initialValue: nil,
+                                  buffer,
+                                  valueStart - buffer,
+                                  ptr - buffer)
         }
 
     }

@@ -5,21 +5,25 @@ import Socket
 @propertyWrapper
 public struct InMemory: CustomStringConvertible {
     var value: String?
-    let startPtr: UnsafePointer<CChar>?
-    let endPtr: UnsafePointer<CChar>?
+    var bufferPtr: UnsafePointer<CChar>?
+    let startIdx: Int
+    let endIdx: Int
 
     public init(initialValue value: String?,
-                _ startPtr: UnsafePointer<CChar>,
-                _ endPtr: UnsafePointer<CChar>) {
+                _ bufferPtr: UnsafePointer<CChar>,
+                _ startIdx: Int,
+                _ endIdx: Int) {
         self.value = value
-        self.startPtr = startPtr
-        self.endPtr = endPtr
+        self.bufferPtr = bufferPtr
+        self.startIdx = startIdx
+        self.endIdx = endIdx
     }
 
     public init() {
         value = nil
-        startPtr = nil
-        endPtr = nil
+        bufferPtr = nil
+        startIdx = 0
+        endIdx = 0
     }
 
     @inline(__always)
@@ -30,16 +34,15 @@ public struct InMemory: CustomStringConvertible {
     @inline(__always)
     public var wrappedValue: String? {
         get {
-            if value == nil && (startPtr == nil || endPtr == nil) {
+            if value == nil && (startIdx >= endIdx) {
                 return nil
             }
             if let value = value {
                 return value
             }
-            if  let startPtr = startPtr,
-                let endPtr = endPtr {
-                return String(bytesNoCopy: UnsafeMutableRawPointer(mutating: startPtr),
-                              length: endPtr - startPtr,
+            if  let bufferPtr = bufferPtr {
+                return String(bytesNoCopy: UnsafeMutableRawPointer(mutating: (bufferPtr + startIdx)),
+                              length: (bufferPtr + endIdx) - (bufferPtr + startIdx),
                               encoding: .utf8,
                               freeWhenDone: false)
             }
