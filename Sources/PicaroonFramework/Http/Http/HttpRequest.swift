@@ -66,18 +66,18 @@ public struct HttpRequest {
         incomplete = true
 
         while ptr < endPtr {
-            let size = endPtr - ptr
+            let size = ptr - startPtr
 
             if lineNumber == 0 {
                 if method == nil {
-                    if  size >= 4 &&
+                    if  size >= 3 &&
                         (ptr-3).pointee == CChar.G &&
                         (ptr-2).pointee == CChar.E &&
                         (ptr-1).pointee == CChar.T &&
                         ptr.pointee == CChar.space {
                         method = .GET
                     } else if
-                        size >= 5 &&
+                        size >= 4 &&
                         (ptr-4).pointee == CChar.H &&
                         (ptr-3).pointee == CChar.E &&
                         (ptr-2).pointee == CChar.A &&
@@ -85,14 +85,14 @@ public struct HttpRequest {
                         ptr.pointee == CChar.space {
                         method = .HEAD
                     } else if
-                        size >= 4 &&
+                        size >= 3 &&
                         (ptr-3).pointee == CChar.P &&
                         (ptr-2).pointee == CChar.U &&
                         (ptr-1).pointee == CChar.T &&
                         ptr.pointee == CChar.space {
                         method = .PUT
                     } else if
-                        size >= 5 &&
+                        size >= 4 &&
                         (ptr-4).pointee == CChar.P &&
                         (ptr-3).pointee == CChar.O &&
                         (ptr-2).pointee == CChar.S &&
@@ -100,7 +100,7 @@ public struct HttpRequest {
                         ptr.pointee == CChar.space {
                         method = .POST
                     } else if
-                        size >= 7 &&
+                        size >= 6 &&
                         (ptr-6).pointee == CChar.D &&
                         (ptr-5).pointee == CChar.E &&
                         (ptr-4).pointee == CChar.L &&

@@ -21,9 +21,9 @@ public extension HttpRequest {
                 // Find the boundary marker
                 ptr = startPtr
                 while ptr < endPtr {
-                    let size = endPtr - ptr
+                    let size = ptr - startPtr
 
-                    if size >= 2 &&
+                    if size >= 1 &&
                         ptr[-1] == CChar.minus &&
                         ptr[0] == CChar.minus {
 
