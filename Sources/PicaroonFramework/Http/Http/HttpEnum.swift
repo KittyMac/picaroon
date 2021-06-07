@@ -109,6 +109,7 @@ public enum HttpContentType: String {
     case _3gp = "3gp"
     case _3g2 = "3g2"
     case _7z = "7z"
+    case force = "force"
 
     public static func fromPath(_ path: String) -> HttpContentType {
         let fileExt = (path as NSString).pathExtension
@@ -192,6 +193,7 @@ public enum HttpContentType: String {
         case ._3gp: return "video/3gpp"
         case ._3g2: return "video/3gpp2"
         case ._7z: return "application/x-7z-compressed"
+        case .force: return "application/force-download"
         }
     }
 }

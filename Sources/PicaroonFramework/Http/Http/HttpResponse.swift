@@ -95,7 +95,7 @@ public struct HttpResponse {
                               _ payload: Data) -> Data {
         return asData(session,
                       status,
-                      .zip,
+                      type,
                       payload,
                       headers: [
             "Content-Transfer-Encoding: binary",
