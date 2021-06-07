@@ -370,7 +370,10 @@ public class HttpRequest {
                                ptr: UnsafePointer<CChar>,
                                valueStart: UnsafePointer<CChar>,
                                keyEnd: UnsafePointer<CChar>) {
+        let size = keyEnd - buffer
+
         if  $host.isEmpty() &&
+            size >= 5 &&
             (keyEnd-4).pointee == CChar.H &&
             (keyEnd-3).pointee == CChar.o &&
             (keyEnd-2).pointee == CChar.s &&
@@ -382,6 +385,7 @@ public class HttpRequest {
         }
 
         if  $userAgent.isEmpty() &&
+            size >= 10 &&
             (keyEnd-10).pointee == CChar.U &&
             (keyEnd-9).pointee == CChar.s &&
             (keyEnd-8).pointee == CChar.e &&
@@ -399,6 +403,7 @@ public class HttpRequest {
         }
 
         if  $accept.isEmpty() &&
+            size >= 6 &&
             (keyEnd-6).pointee == CChar.A &&
             (keyEnd-5).pointee == CChar.c &&
             (keyEnd-4).pointee == CChar.c &&
@@ -412,6 +417,7 @@ public class HttpRequest {
         }
 
         if  $acceptEncoding.isEmpty() &&
+            size >= 15 &&
             (keyEnd-15).pointee == CChar.A &&
             (keyEnd-14).pointee == CChar.c &&
             (keyEnd-13).pointee == CChar.c &&
@@ -434,6 +440,7 @@ public class HttpRequest {
         }
 
         if  $acceptCharset.isEmpty() &&
+            size >= 14 &&
             (keyEnd-14).pointee == CChar.A &&
             (keyEnd-13).pointee == CChar.c &&
             (keyEnd-12).pointee == CChar.c &&
@@ -455,6 +462,7 @@ public class HttpRequest {
         }
 
         if  $acceptLanguage.isEmpty() &&
+            size >= 15 &&
             (keyEnd-15).pointee == CChar.A &&
             (keyEnd-14).pointee == CChar.c &&
             (keyEnd-13).pointee == CChar.c &&
@@ -477,6 +485,7 @@ public class HttpRequest {
         }
 
         if  $connection.isEmpty() &&
+            size >= 10 &&
             (keyEnd-10).pointee == CChar.C &&
             (keyEnd-9).pointee == CChar.o &&
             (keyEnd-8).pointee == CChar.n &&
@@ -494,6 +503,7 @@ public class HttpRequest {
         }
 
         if  $upgradeInsecureRequests.isEmpty() &&
+            size >= 25 &&
             (keyEnd-25).pointee == CChar.U &&
             (keyEnd-24).pointee == CChar.p &&
             (keyEnd-23).pointee == CChar.g &&
@@ -526,6 +536,7 @@ public class HttpRequest {
         }
 
         if  $contentLength.isEmpty() &&
+            size >= 14 &&
             (keyEnd-14).pointee == CChar.C &&
             (keyEnd-13).pointee == CChar.o &&
             (keyEnd-12).pointee == CChar.n &&
@@ -547,6 +558,7 @@ public class HttpRequest {
         }
 
         if  $contentType.isEmpty() &&
+            size >= 12 &&
             (keyEnd-12).pointee == CChar.C &&
             (keyEnd-11).pointee == CChar.o &&
             (keyEnd-10).pointee == CChar.n &&
@@ -566,6 +578,7 @@ public class HttpRequest {
         }
 
         if  $contentDisposition.isEmpty() &&
+            size >= 19 &&
             (keyEnd-19).pointee == CChar.C &&
             (keyEnd-18).pointee == CChar.o &&
             (keyEnd-17).pointee == CChar.n &&
@@ -592,6 +605,7 @@ public class HttpRequest {
         }
 
         if  $ifModifiedSince.isEmpty() &&
+            size >= 17 &&
             (keyEnd-17).pointee == CChar.I &&
             (keyEnd-16).pointee == CChar.f &&
             (keyEnd-15).pointee == CChar.minus &&
@@ -616,6 +630,7 @@ public class HttpRequest {
         }
 
         if  $cookie.isEmpty() &&
+            size >= 6 &&
             (keyEnd-6).pointee == CChar.C &&
             (keyEnd-5).pointee == CChar.o &&
             (keyEnd-4).pointee == CChar.o &&
@@ -629,6 +644,7 @@ public class HttpRequest {
         }
 
         if  $expect.isEmpty() &&
+            size >= 6 &&
             (keyEnd-6).pointee == CChar.E &&
             (keyEnd-5).pointee == CChar.x &&
             (keyEnd-4).pointee == CChar.p &&
@@ -642,6 +658,7 @@ public class HttpRequest {
         }
 
         if  $flynnTag.isEmpty() &&
+            size >= 9 &&
             (keyEnd-9).pointee == CChar.F &&
             (keyEnd-8).pointee == CChar.l &&
             (keyEnd-7).pointee == CChar.y &&
@@ -658,6 +675,7 @@ public class HttpRequest {
         }
 
         if  $sessionId.isEmpty() &&
+            size >= 10 &&
             (keyEnd-10).pointee == CChar.S &&
             (keyEnd-9).pointee == CChar.e &&
             (keyEnd-8).pointee == CChar.s &&
