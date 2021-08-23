@@ -17,6 +17,8 @@ open class UserSession: Actor, Equatable {
         return lhs.unsafeSessionUUID == rhs.unsafeSessionUUID
     }
 
+    public var unsafeSessionClosed: Bool = false
+
     public let unsafeSessionUUID: String
 
     public var unsafeSessionHeaders: [String] = []

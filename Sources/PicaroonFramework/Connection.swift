@@ -206,7 +206,7 @@ public class Connection: Actor, AnyConnection {
 
             guard sessionToken.count > 0 else { return _beSendInternalError() }
 
-            if userSession?.unsafeSessionUUID != sessionToken {
+            if userSession?.unsafeSessionUUID != sessionToken || userSession?.unsafeSessionClosed == true {
                 userSession = userSessionManager.get(sessionToken)
             }
 

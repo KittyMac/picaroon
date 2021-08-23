@@ -19,6 +19,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         defer {
             lock.unlock()
         }
+
         if let sessionUUID = sessionUUID, sessionUUID.count > 0 {
             if let userSession = allUserSessions[sessionUUID] {
                 return userSession
@@ -32,6 +33,9 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
 
     func end(_ sessionUUID: String) {
         lock.lock()
+        if let userSession = allUserSessions[sessionUUID] {
+            userSession.unsafeSessionClosed = true
+        }
         allUserSessions.removeValue(forKey: sessionUUID)
         lock.unlock()
     }
