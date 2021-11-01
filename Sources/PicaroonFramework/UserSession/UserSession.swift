@@ -44,6 +44,7 @@ open class UserSession: Actor, Equatable {
     private func _beUrlRequest(url: String,
                                httpMethod: String,
                                params: [String: String],
+                               headers: [String: String],
                                body: Data?,
                                _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
 
@@ -64,6 +65,10 @@ open class UserSession: Actor, Equatable {
 
         request.httpMethod = httpMethod
         request.httpBody = body
+
+        for (header, value) in headers {
+            request.addValue(value, forHTTPHeaderField: header)
+        }
 
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             guard let response = response as? HTTPURLResponse else {
@@ -98,11 +103,12 @@ extension UserSession {
     public func beUrlRequest(url: String,
                              httpMethod: String,
                              params: [String: String],
+                             headers: [String: String],
                              body: Data?,
                              _ sender: Actor,
                              _ callback: @escaping ((Data?, HTTPURLResponse?, String?) -> Void)) -> Self {
         unsafeSend {
-            self._beUrlRequest(url: url, httpMethod: httpMethod, params: params, body: body) { arg0, arg1, arg2 in
+            self._beUrlRequest(url: url, httpMethod: httpMethod, params: params, headers: headers, body: body) { arg0, arg1, arg2 in
                 sender.unsafeSend {
                     callback(arg0, arg1, arg2)
                 }
