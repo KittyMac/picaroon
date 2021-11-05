@@ -2,7 +2,7 @@ import Flynn
 import Foundation
 import Socket
 
-#if os(Linux)
+#if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
 
