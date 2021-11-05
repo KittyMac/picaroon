@@ -2,6 +2,10 @@ import Flynn
 import Foundation
 import Socket
 
+#if os(Linux)
+import FoundationNetworking
+#endif
+
 open class UserSession: Actor, Equatable {
     // In Picaroon, a user sessions encapsulates on browser's "session" with the server. So when
     // the clinet connects for the very first time, a unique user session is created and assigned
