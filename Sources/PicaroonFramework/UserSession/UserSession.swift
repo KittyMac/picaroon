@@ -56,8 +56,12 @@ open class UserSession: Actor, Equatable {
             return returnCallback(nil, nil, "failed to create url components")
         }
 
-        components.queryItems = params.map { (key, value) in
-            URLQueryItem(name: key, value: value)
+        if components.queryItems == nil {
+            components.queryItems = []
+        }
+
+        params.forEach { (key, value) in
+            components.queryItems?.append(URLQueryItem(name: key, value: value))
         }
         components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
 

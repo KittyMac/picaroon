@@ -30,6 +30,28 @@ public class HttpRequest {
     @InMemory public var flynnTag: String?
     @InMemory public var sessionId: String?
 
+    private var parameters: [String: String]?
+    public func parameter(name: String) -> String? {
+        if let parameters = parameters {
+            return parameters[name]
+        }
+
+        guard let urlParameters = urlParameters else { return nil }
+        guard let url = URL(string: "https://www.a.com/b?\(urlParameters)") else { return nil }
+
+        parameters = [:]
+
+        if let components = URLComponents(url: url,
+                                          resolvingAgainstBaseURL: false),
+           let items = components.queryItems {
+            for item in items {
+                parameters?[item.name] = item.value
+            }
+            return parameters?[name]
+        }
+        return nil
+    }
+
     private var internalBuffer: UnsafeMutablePointer<CChar>?
 
     private func bake(buffer: UnsafePointer<CChar>,
