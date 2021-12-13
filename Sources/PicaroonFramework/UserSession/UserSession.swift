@@ -20,22 +20,32 @@ open class UserSession: Actor, Equatable {
     // and then send it back in future http headers to identify it (preferable in HTML5 session storage).
 
     public static func == (lhs: UserSession, rhs: UserSession) -> Bool {
-        return lhs.unsafeSessionUUID == rhs.unsafeSessionUUID
+        if lhs.unsafeSessionUUID == rhs.unsafeSessionUUID {
+            return true
+        }
+        return false
     }
 
     public var unsafeSessionClosed: Bool = false
 
     public let unsafeSessionUUID: String
+    public let unsafeCookieSessionUUID: String
+    public let unsafeWindowSessionUUID: String
 
     public var unsafeSessionHeaders: [String] = []
 
     required public override init() {
-        unsafeSessionUUID = UUID().uuidString
+        unsafeCookieSessionUUID = UUID().uuidString
+        unsafeWindowSessionUUID = UUID().uuidString
+        unsafeSessionUUID = unsafeCookieSessionUUID + unsafeWindowSessionUUID
         super.init()
     }
 
-    required public init(sessionUUID: String?) {
-        unsafeSessionUUID = sessionUUID ?? UUID().uuidString
+    required public init(cookieSessionUUID: String?, windowSessionUUID: String?) {
+        unsafeCookieSessionUUID = cookieSessionUUID ?? UUID().uuidString
+        unsafeWindowSessionUUID = windowSessionUUID ?? UUID().uuidString
+
+        unsafeSessionUUID = unsafeCookieSessionUUID + unsafeWindowSessionUUID
         super.init()
     }
 

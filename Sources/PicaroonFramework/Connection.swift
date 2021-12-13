@@ -99,7 +99,7 @@ public class Connection: Actor, AnyConnection {
 
     private func _beEndUserSession() {
         if let userSession = userSession {
-            userSessionManager.end(userSession.unsafeSessionUUID)
+            userSessionManager.end(userSession)
         }
         userSession = nil
     }
@@ -194,15 +194,15 @@ public class Connection: Actor, AnyConnection {
             }
 
             // Before we give any resources to the client, we need to assign a user session to this connection
-            var sessionToken: String = ""
+            let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]
+            let windowSessionUUID = httpRequest.sessionId
 
-            sessionToken += httpRequest.cookies[Picaroon.userSessionCookie] ?? ""
-            sessionToken += httpRequest.sessionId ?? ""
+            let userSession = userSessionManager.get(cookieSessionUUID, windowSessionUUID)
 
-            if sessionToken.count == 0 {
-                userSession = userSessionManager.get(nil)
-                sessionToken = userSession?.unsafeSessionUUID ?? ""
-            }
+            userSession.beHandleRequest(self, httpRequest)
+
+            /*
+            sessionToken = userSession?.unsafeSessionUUID ?? ""
 
             guard sessionToken.count > 0 else { return _beSendInternalError() }
 
@@ -215,7 +215,7 @@ public class Connection: Actor, AnyConnection {
             } else {
                 _beSendInternalError()
             }
-
+*/
         } catch {
             socket.close()
         }
