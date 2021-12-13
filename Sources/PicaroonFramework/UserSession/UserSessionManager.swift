@@ -5,49 +5,38 @@ import Socket
 public typealias GetUserSessionCallback = (UserSession?) -> Void
 
 protocol AnyUserSessionManager {
-    func get(_ cookieSessionUUID: String?, _ windowSessionUUID: String?) -> UserSession
-    func end(_ userSession: UserSession)
+    func get(_ sessionUUID: String?) -> UserSession
+    func end(_ sessionUUID: String)
 }
 
 public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
 
-    private var windowUserSessions: [String: UserSession] = [:]
     private var allUserSessions: [String: UserSession] = [:]
     private var lock = NSLock()
 
-    func get(_ cookieSessionUUID: String?, _ windowSessionUUID: String?) -> UserSession {
+    func get(_ sessionUUID: String?) -> UserSession {
         lock.lock()
         defer {
             lock.unlock()
         }
 
-        if let cookieSessionUUID = cookieSessionUUID,
-           let windowSessionUUID = windowSessionUUID,
-           let userSession = allUserSessions[cookieSessionUUID + windowSessionUUID] {
-            return userSession
-        }
-        if let windowSessionUUID = windowSessionUUID,
-           let userSession = windowUserSessions[windowSessionUUID] {
-            return userSession
+        if let sessionUUID = sessionUUID, sessionUUID.count > 0 {
+            if let userSession = allUserSessions[sessionUUID] {
+                return userSession
+            }
         }
 
-        let userSession = T(cookieSessionUUID: cookieSessionUUID,
-                            windowSessionUUID: windowSessionUUID)
+        let userSession = T(sessionUUID: sessionUUID)
         allUserSessions[userSession.unsafeSessionUUID] = userSession
-        windowUserSessions[userSession.unsafeWindowSessionUUID] = userSession
         return userSession
     }
 
-    func end(_ userSession: UserSession) {
+    func end(_ sessionUUID: String) {
         lock.lock()
-
-        if let userSession = allUserSessions[userSession.unsafeSessionUUID] {
+        if let userSession = allUserSessions[sessionUUID] {
             userSession.unsafeSessionClosed = true
         }
-
-        allUserSessions.removeValue(forKey: userSession.unsafeSessionUUID)
-        windowUserSessions.removeValue(forKey: userSession.unsafeWindowSessionUUID)
-
+        allUserSessions.removeValue(forKey: sessionUUID)
         lock.unlock()
     }
 }
