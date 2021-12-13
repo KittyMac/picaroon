@@ -2,6 +2,8 @@ import Flynn
 import Foundation
 import Socket
 
+// swiftlint:disable function_parameter_count
+
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif

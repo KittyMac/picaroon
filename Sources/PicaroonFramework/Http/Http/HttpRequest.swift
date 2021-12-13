@@ -198,11 +198,26 @@ public class HttpRequest {
                                 sessionStartPtr = ptr
                             }
 
+                            if  (ptr-6).pointee == CChar.s &&
+                                (ptr-5).pointee == CChar.i &&
+                                (ptr-4).pointee == CChar.d &&
+                                (ptr-3).pointee == CChar.percentSign &&
+                                (ptr-2).pointee == CChar.three &&
+                                ((ptr-1).pointee == CChar.D || (ptr-1).pointee == CChar.d) {
+                                sessionStartPtr = ptr
+                            }
+
+                            if ptr.pointee == CChar.ampersand &&
+                                sessionStartPtr != defaultPtr {
+                                sessionEndPtr = ptr
+                            }
+
                             if ptr.pointee == CChar.carriageReturn ||
                                 ptr.pointee == CChar.newLine ||
                                 ptr.pointee == CChar.space {
 
-                                if sessionStartPtr != defaultPtr {
+                                if sessionStartPtr != defaultPtr &&
+                                    sessionEndPtr == defaultPtr {
                                     sessionEndPtr = ptr
                                 }
                                 if urlParametersStartPtr != defaultPtr {

@@ -15,9 +15,9 @@ final class picaroonTests: XCTestCase {
         return helloWorldResponse
     }
     
-    func testSessionIdParameter() {
+    func testSessionIdParameter1() {
         let content = """
-        GET /user?sid=F3901E70-DA28-44CE-939B-D43C1CFF75CF HTTP/1.1\r
+        GET /user?state=sid%3DF3901E70-DA28-44CE-939B-D43C1CFF75CF&code=Gf0I76pKptuRrNkJfDf5QrryqQJR4B HTTP/1.1\r
         Content-Type: text/plain\r
         Content-Length: 11\r
         \r
@@ -32,7 +32,29 @@ final class picaroonTests: XCTestCase {
             XCTAssertEqual(request.contentLength, "11")
             XCTAssertEqual(request.content!.count, 11)
             XCTAssertEqual(request.sessionId, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
-            XCTAssertEqual(request.urlParameters, "sid=F3901E70-DA28-44CE-939B-D43C1CFF75CF")
+            XCTAssertEqual(request.urlParameters, "state=sid%3DF3901E70-DA28-44CE-939B-D43C1CFF75CF&code=Gf0I76pKptuRrNkJfDf5QrryqQJR4B")
+            XCTAssertEqual(request.url, "/user")
+        }
+    }
+    
+    func testSessionIdParameter2() {
+        let content = """
+        GET /user?sid=F3901E70-DA28-44CE-939B-D43C1CFF75CF&code=Gf0I76pKptuRrNkJfDf5QrryqQJR4B HTTP/1.1\r
+        Content-Type: text/plain\r
+        Content-Length: 11\r
+        \r
+        Hello World
+        """.data(using: .utf8)!
+        
+        content.withUnsafeBytes { (buffer: UnsafePointer<CChar>) -> () in
+            let request = HttpRequest(request: buffer, size: content.count)
+            
+            XCTAssertEqual(request.method, HttpMethod.GET)
+            XCTAssertEqual(request.contentType, "text/plain")
+            XCTAssertEqual(request.contentLength, "11")
+            XCTAssertEqual(request.content!.count, 11)
+            XCTAssertEqual(request.sessionId, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
+            XCTAssertEqual(request.urlParameters, "sid=F3901E70-DA28-44CE-939B-D43C1CFF75CF&code=Gf0I76pKptuRrNkJfDf5QrryqQJR4B")
             XCTAssertEqual(request.url, "/user")
         }
     }
