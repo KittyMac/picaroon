@@ -126,7 +126,7 @@ public class HttpRequest {
         incomplete = true
 
         while ptr < endPtr {
-            let size = ptr - startPtr
+            var size = ptr - startPtr
 
             if lineNumber == 0 {
                 if method == nil {
@@ -185,6 +185,7 @@ public class HttpRequest {
                         ptr += 1
 
                         while ptr < endPtr {
+                            size = ptr - startPtr
 
                             if urlParametersStartPtr == defaultPtr &&
                                 (ptr-1).pointee == CChar.questionMark {
