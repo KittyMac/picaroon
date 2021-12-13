@@ -191,14 +191,16 @@ public class HttpRequest {
                                 urlParametersStartPtr = ptr
                             }
 
-                            if  (ptr-4).pointee == CChar.s &&
+                            if  size >= 4 &&
+                                (ptr-4).pointee == CChar.s &&
                                 (ptr-3).pointee == CChar.i &&
                                 (ptr-2).pointee == CChar.d &&
                                 (ptr-1).pointee == CChar.equal {
                                 sessionStartPtr = ptr
                             }
 
-                            if  (ptr-6).pointee == CChar.s &&
+                            if  size >= 6 &&
+                                (ptr-6).pointee == CChar.s &&
                                 (ptr-5).pointee == CChar.i &&
                                 (ptr-4).pointee == CChar.d &&
                                 (ptr-3).pointee == CChar.percentSign &&
