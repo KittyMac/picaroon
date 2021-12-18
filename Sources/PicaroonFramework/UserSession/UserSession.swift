@@ -20,22 +20,58 @@ open class UserSession: Actor, Equatable {
     // and then send it back in future http headers to identify it (preferable in HTML5 session storage).
 
     public static func == (lhs: UserSession, rhs: UserSession) -> Bool {
-        return lhs.unsafeSessionUUID == rhs.unsafeSessionUUID
+        if lhs.unsafeSessionUUID == rhs.unsafeSessionUUID {
+            return true
+        }
+        return false
     }
 
-    public var unsafeSessionClosed: Bool = false
+    public var unsafeSessionUUID: String {
+        return sessionUUID
+    }
+    var unsafeCookieSessionUUID: String {
+        return cookieSessionUUID
+    }
+    var unsafeJavascriptSessionUUID: String {
+        return javascriptSessionUUID
+    }
 
-    public let unsafeSessionUUID: String
+    private var sessionUUID: String
+    private var cookieSessionUUID: String
+    private var javascriptSessionUUID: String
 
-    public var unsafeSessionHeaders: [String] = []
+    var unsafeSessionClosed: Bool = false
+    private var unsafeAllowReassociationFromDate: Date?
+
+    var unsafeSessionHeaders: [String] = []
+
+    func unsafeReassociationIsAllowed() -> Bool {
+        guard let date = unsafeAllowReassociationFromDate else { return false }
+        unsafeAllowReassociationFromDate = nil
+        return abs(date.timeIntervalSinceNow) < 5 * 60
+    }
+
+    func unsafeAllowReassociation() {
+        unsafeAllowReassociationFromDate = Date()
+    }
+
+    func unsafeUpdateSessionUUIDs(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String?) {
+        self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidString
+        self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString
+        sessionUUID = UserSessionManager.combined(unsafeCookieSessionUUID, unsafeJavascriptSessionUUID)
+    }
 
     required public override init() {
-        unsafeSessionUUID = UUID().uuidString
+        cookieSessionUUID = UUID().uuidString
+        javascriptSessionUUID = UUID().uuidString
+        sessionUUID = UserSessionManager.combined(cookieSessionUUID, javascriptSessionUUID)
         super.init()
     }
 
-    required public init(sessionUUID: String?) {
-        unsafeSessionUUID = sessionUUID ?? UUID().uuidString
+    required public init(cookieSessionUUID: String?, javascriptSessionUUID: String?) {
+        self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidString
+        self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString
+        sessionUUID = UserSessionManager.combined(self.cookieSessionUUID, self.javascriptSessionUUID)
         super.init()
     }
 
@@ -45,6 +81,10 @@ open class UserSession: Actor, Equatable {
 
     private func _beHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
         safeHandleRequest(connection, httpRequest)
+    }
+
+    private func _beAllowReassociation() {
+        unsafeAllowReassociation()
     }
 
     private func _beUrlRequest(url: String,
@@ -75,6 +115,7 @@ open class UserSession: Actor, Equatable {
 
         request.httpMethod = httpMethod
         request.httpBody = body
+        request.httpShouldHandleCookies = false
 
         for (header, value) in headers {
             request.addValue(value, forHTTPHeaderField: header)
@@ -107,6 +148,11 @@ extension UserSession {
     public func beHandleRequest(_ connection: AnyConnection,
                                 _ httpRequest: HttpRequest) -> Self {
         unsafeSend { self._beHandleRequest(connection, httpRequest) }
+        return self
+    }
+    @discardableResult
+    public func beAllowReassociation() -> Self {
+        unsafeSend(_beAllowReassociation)
         return self
     }
     @discardableResult

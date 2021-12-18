@@ -99,7 +99,7 @@ public class Connection: Actor, AnyConnection {
 
     private func _beEndUserSession() {
         if let userSession = userSession {
-            userSessionManager.end(userSession.unsafeSessionUUID)
+            userSessionManager.end(userSession)
         }
         userSession = nil
     }
@@ -193,36 +193,39 @@ public class Connection: Actor, AnyConnection {
                 return
             }
 
-            // Before we give any resources to the client, we need to assign a user session to this connection
-            var sessionToken: String = ""
+            // Here's how we attempt to link sessions to web clients:
+            // 1. Picaroon assigns a HTTP only cookieSessionUUID. These cookies are not accessible from javascript and
+            //    provide the main linking of UserSession actor to the web session
+            // 2. The client javascript can choose to send a "Session-Id" in Ajax request JSON.
+            //    This value is used to help transition a user session from one web session to another (because page reloads
+            //    will result in the cookieSessionUUID potentially changing.
+            // 3. The url may have a sessionId embedded as "sid" in the url parameters. This sessionId may or may not
+            //    be the "Session-Id" the javascript is passing in. An "sid" passed in basically means "find the user
+            //    session whose jsavascript session id matches it and set it to session id
+            // 3. Reassociation is only allowed when the client flags the session to expect a reassociation (say, we're
+            //    about to log in using a 3rd party service and that process will lose our http session cookie). This prevents
+            //    malicious individuals from stealing a live session just by knowing the client-side session UUID
 
-            if let sessionId = httpRequest.sessionId,
-               sessionId.count == 36 * 2 {
-                // we allow urls to provide the session id as a parameter (sid=). In some cases that might
-                // just be the window session id, but in some cases it might be the combined session Id.
-                // We need to handle both cases here.
-                sessionToken = sessionId
-            } else {
-                sessionToken += httpRequest.cookies[Picaroon.userSessionCookie] ?? ""
-                sessionToken += httpRequest.sessionId ?? ""
+            let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]
+            let javascriptSessionUUID = httpRequest.sessionId ?? httpRequest.sid
+
+            if let newJavascriptSessionUUID = javascriptSessionUUID,
+               let oldJavascriptSessionUUID = httpRequest.sid,
+               oldJavascriptSessionUUID != newJavascriptSessionUUID {
+                if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
+                                                                    oldJavascriptSessionUUID, newJavascriptSessionUUID) {
+                    userSession.beHandleRequest(self, httpRequest)
+                    return
+                }
+                return _beSendInternalError()
             }
 
-            if sessionToken.count == 0 {
-                userSession = userSessionManager.get(nil)
-                sessionToken = userSession?.unsafeSessionUUID ?? ""
-            }
-
-            guard sessionToken.count > 0 else { return _beSendInternalError() }
-
-            if userSession?.unsafeSessionUUID != sessionToken || userSession?.unsafeSessionClosed == true {
-                userSession = userSessionManager.get(sessionToken)
-            }
-
-            if let userSession = userSession, userSession.unsafeSessionUUID == sessionToken {
+            if let userSession = userSessionManager.get(cookieSessionUUID, javascriptSessionUUID) {
                 userSession.beHandleRequest(self, httpRequest)
-            } else {
-                _beSendInternalError()
+                return
             }
+
+            return _beSendInternalError()
 
         } catch {
             socket.close()

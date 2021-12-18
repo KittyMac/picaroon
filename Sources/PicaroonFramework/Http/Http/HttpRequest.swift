@@ -29,6 +29,7 @@ public class HttpRequest {
     @InMemory public var expect: String?
     @InMemory public var flynnTag: String?
     @InMemory public var sessionId: String?
+    @InMemory public var sid: String?
 
     private var parameters: [String: String]?
     public func parameter(name: String) -> String? {
@@ -240,10 +241,10 @@ public class HttpRequest {
                                         urlEndPtr - buffer)
 
                         if sessionStartPtr < sessionEndPtr {
-                            $sessionId = InMemory(initialValue: nil,
-                                                  buffer,
-                                                  sessionStartPtr - buffer,
-                                                  sessionEndPtr - buffer)
+                            $sid = InMemory(initialValue: nil,
+                                            buffer,
+                                            sessionStartPtr - buffer,
+                                            sessionEndPtr - buffer)
                         }
                         if urlParametersStartPtr < urlParametersEndPtr {
                             $urlParameters = InMemory(initialValue: nil,

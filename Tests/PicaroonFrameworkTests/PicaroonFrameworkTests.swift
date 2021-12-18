@@ -1,19 +1,21 @@
 import XCTest
 @testable import PicaroonFramework
 
+let helloWorldResponse = HttpResponse.asData(nil, .ok, .txt, "Hello World")
+
+class HelloWorld: UserSession {
+    override func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
+        connection.beSendInternalError()
+    }
+}
+
+func handleHelloWorldStaticRequest(_ httpRequest: HttpRequest) -> Data? {
+    return helloWorldResponse
+}
+
+
+
 final class picaroonTests: XCTestCase {
-    
-    let helloWorldResponse = HttpResponse.asData(nil, .ok, .txt, "Hello World")
-
-    class HelloWorld: UserSession {
-        override func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
-            connection.beSendInternalError()
-        }
-    }
-
-    func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
-        return helloWorldResponse
-    }
     
     func testSessionIdParameter1() {
         let content = """
@@ -31,7 +33,7 @@ final class picaroonTests: XCTestCase {
             XCTAssertEqual(request.contentType, "text/plain")
             XCTAssertEqual(request.contentLength, "11")
             XCTAssertEqual(request.content!.count, 11)
-            XCTAssertEqual(request.sessionId, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
+            XCTAssertEqual(request.sid, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
             XCTAssertEqual(request.urlParameters, "state=sid%3DF3901E70-DA28-44CE-939B-D43C1CFF75CF")
             XCTAssertEqual(request.url, "/user")
         }
@@ -53,7 +55,7 @@ final class picaroonTests: XCTestCase {
             XCTAssertEqual(request.contentType, "text/plain")
             XCTAssertEqual(request.contentLength, "11")
             XCTAssertEqual(request.content!.count, 11)
-            XCTAssertEqual(request.sessionId, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
+            XCTAssertEqual(request.sid, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
             XCTAssertEqual(request.urlParameters, "sid=F3901E70-DA28-44CE-939B-D43C1CFF75CF&code=Gf0I76pKptuRrNkJfDf5QrryqQJR4B")
             XCTAssertEqual(request.url, "/user")
         }
@@ -105,7 +107,7 @@ final class picaroonTests: XCTestCase {
         let config = ServerConfig(address: "0.0.0.0", port: port)
         
         let server = Server<HelloWorld>(config: config,
-                                        staticStorageHandler: handleStaticRequest)
+                                        staticStorageHandler: handleHelloWorldStaticRequest)
         server.listen()
         
         sleep(1)
@@ -142,6 +144,162 @@ final class picaroonTests: XCTestCase {
         
         XCTAssertTrue(requestsPerSecond > 90000)
     }
+    
+    func testSimpleConnectionPersistance() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        
+        let webserver = WebServer(port: port)
+        
+        let webview = WebView()
+        let baseUrl = "http://127.0.0.1:\(port)/"
+        
+        // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
+        webview.load(url: baseUrl) { data, response, error in
+            webview.ajax(payload: #"{"className":"Server_GetPedia","language":"en"}"#, nil)
+            webview.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 2)
+    }
+    
+    func testMultipleConnectionPersistance() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        
+        let webserver = WebServer(port: port)
+        
+        let testConnection: () -> () = {
+            let webview = WebView()
+            let baseUrl = "http://127.0.0.1:\(port)/"
+            
+            // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
+            webview.load(url: baseUrl) { data, response, error in
+                webview.ajax(payload: #"{"className":"Server_GetPedia","language":"en"}"#, nil)
+                webview.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                    XCTAssertEqual(webserver.numberOfUserSessions(), 3)
+                    expectation.fulfill()
+                }
+            }
+        }
+        
+        testConnection()
+        testConnection()
+        testConnection()
+        
+        wait(for: [expectation], timeout: 2)
+    }
+    
+    func testConnectionReassociation() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        
+        let webserver = WebServer(port: port)
+        
+        let webview1 = WebView()
+        let baseUrl = "http://127.0.0.1:\(port)/"
+        
+        // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
+        webview1.load(url: baseUrl) { data, response, error in
+            webview1.ajax(payload: #"{"className":"Server_AllowReassociation"}"#) { data, response, error in
+                let webview2 = WebView(javascriptSessionUUID: webview1.javascriptSessionUUID)
+                webview2.load(url: baseUrl) { data, response, error in
+                    webview2.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                        XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                        XCTAssertNil(error)
+                        expectation.fulfill()
+                    }
+                }
+            }
+        }
+        
+        wait(for: [expectation], timeout: 30)
+    }
+    
+    func testConnectionReassociationFailIfNotAuthorized() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        
+        let webserver = WebServer(port: port)
+        
+        let webview1 = WebView()
+        let baseUrl = "http://127.0.0.1:\(port)/"
+        
+        // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
+        webview1.load(url: baseUrl) { data, response, error in
+            webview1.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                let webview2 = WebView()
+                webview2.load(url: "\(baseUrl)?sid=\(webview1.javascriptSessionUUID)") { data, response, error in
+                    XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                    XCTAssertNotNil(error)
+                    expectation.fulfill()
+                }
+            }
+        }
+        
+        wait(for: [expectation], timeout: 2)
+    }
+    
+    func testConnectionReassociationBySidInUrl() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        
+        let webserver = WebServer(port: port)
+        
+        let webview1 = WebView()
+        let baseUrl = "http://127.0.0.1:\(port)/"
+        
+        // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
+        webview1.load(url: baseUrl) { data, response, error in
+            webview1.ajax(payload: #"{"className":"Server_AllowReassociation"}"#) { data, response, error in
+                let webview2 = WebView()
+                webview2.load(url: "\(baseUrl)?sid=\(webview1.javascriptSessionUUID)") { data, response, error in
+                    webview2.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                        XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                        XCTAssertNil(error)
+                        expectation.fulfill()
+                    }
+                }
+            }
+        }
+        
+        wait(for: [expectation], timeout: 2)
+    }
+    
+    func testConnectionReassociationBySidInUrlFailIfNotAuthorized() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        
+        let webserver = WebServer(port: port)
+        
+        let webview1 = WebView()
+        let baseUrl = "http://127.0.0.1:\(port)/"
+        
+        // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
+        webview1.load(url: baseUrl) { data, response, error in
+            webview1.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                let webview2 = WebView()
+                webview2.load(url: "\(baseUrl)?sid=\(webview1.javascriptSessionUUID)") { data, response, error in
+                    XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                    XCTAssertNotNil(error)
+                    expectation.fulfill()
+                }
+            }
+        }
+        
+        wait(for: [expectation], timeout: 2)
+    }
+    
+    
 
     static var allTests = [
         ("testPerformance1", testPerformance1),

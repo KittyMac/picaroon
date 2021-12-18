@@ -92,4 +92,8 @@ public class Server<T: UserSession> {
     public func stop() {
         listening = false
     }
+
+    public func numberOfUserSessions() -> Int {
+        return userSessionManager.numberOfUserSessions()
+    }
 }
