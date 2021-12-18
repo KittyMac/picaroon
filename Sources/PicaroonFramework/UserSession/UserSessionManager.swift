@@ -8,11 +8,13 @@ protocol AnyUserSessionManager {
     func reassociate(cookieSessionUUID: String?,
                      _ oldJavascriptSessionUUID: String,
                      _ newJavascriptSessionUUID: String) -> UserSession?
-    func get(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String?) -> UserSession?
+    func get(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String) -> UserSession?
     func end(_ userSession: UserSession)
 }
 
 public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
+
+    private let config: ServerConfig
 
     private var sessionsByJavascriptSessionUUID: [String: UserSession] = [:]
     private var sessionsByCookieSessionUUID: [String: UserSession] = [:]
@@ -21,6 +23,10 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
 
     class func combined(_ cookieSessionUUID: String, _ javascriptSessionUUID: String) -> String {
         return "\(cookieSessionUUID)|\(javascriptSessionUUID)"
+    }
+
+    init(config: ServerConfig) {
+        self.config = config
     }
 
     public func numberOfUserSessions() -> Int {
@@ -59,8 +65,8 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         if let userSession = sessionsByJavascriptSessionUUID[oldJavascriptSessionUUID],
            userSession.unsafeReassociationIsAllowed() {
             let newCookieSessionUUID = cookieSessionUUID ?? userSession.unsafeCookieSessionUUID
-            let newSessionUUID = Self.combined(newCookieSessionUUID, newJavascriptSessionUUID)
 
+            // let newSessionUUID = Self.combined(newCookieSessionUUID, newJavascriptSessionUUID)
             // print("REASSOCIATING SESSION: \(userSession.unsafeSessionUUID) -> \(newSessionUUID)")
 
             sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
@@ -79,32 +85,33 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         return nil
     }
 
-    func get(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String?) -> UserSession? {
+    func get(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String) -> UserSession? {
         lock.lock()
         defer {
             lock.unlock()
         }
 
         let localCookieSessionUUID = cookieSessionUUID ?? UUID().uuidString
+        let combinedSessionUUID = Self.combined(localCookieSessionUUID, javascriptSessionUUID)
 
         // happy path: we have both cookies, and we have a user session which matches that unique session UUID
-        if let javascriptSessionUUID = javascriptSessionUUID,
-           let userSession = sessionsByCombinedSessionUUID[Self.combined(localCookieSessionUUID, javascriptSessionUUID)] {
+        if let userSession = sessionsByCombinedSessionUUID[combinedSessionUUID] {
             // print("HAPPY PATH 1: \(userSession.unsafeSessionUUID)")
             return userSession
         }
 
         // Second happy path: we have a cookie session UUID match
-        if let userSession = sessionsByCookieSessionUUID[localCookieSessionUUID] {
-            // print("HAPPY PATH 2: \(userSession.unsafeSessionUUID)")
-            return userSession
+        if config.sessionPer == .browser {
+            if let userSession = sessionsByCookieSessionUUID[localCookieSessionUUID] {
+                // print("HAPPY PATH 2: \(userSession.unsafeSessionUUID)")
+                return userSession
+            }
         }
 
         // Potential reassociation path: we have a javascript sessionUUID but no matching cookie sessionUUID.
         // We allow a user's session to be reassociated to a new cookie sessionUUID under specific
         // circumstances which have not yet been firmly defined.
-        if let javascriptSessionUUID = javascriptSessionUUID,
-           let userSession = reassociate(cookieSessionUUID: localCookieSessionUUID,
+        if let userSession = reassociate(cookieSessionUUID: localCookieSessionUUID,
                                          old: javascriptSessionUUID,
                                          new: javascriptSessionUUID) {
             return userSession

@@ -220,7 +220,11 @@ public class Connection: Actor, AnyConnection {
                 return _beSendInternalError()
             }
 
-            if let userSession = userSessionManager.get(cookieSessionUUID, javascriptSessionUUID) {
+            // If no session uuid of any kind was supplied by the client, then this is technically an
+            // error  (it should be served by the static handler if we don't have a client which is
+            // running enough to provide us a session id).
+            if let javascriptSessionUUID = javascriptSessionUUID,
+               let userSession = userSessionManager.get(cookieSessionUUID, javascriptSessionUUID) {
                 userSession.beHandleRequest(self, httpRequest)
                 return
             }

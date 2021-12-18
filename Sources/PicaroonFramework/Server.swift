@@ -4,6 +4,11 @@ import Socket
 
 public typealias StaticStorageHandler = (HttpRequest) -> Data?
 
+public enum UserSessionPer: Int, Codable {
+    case window = 0
+    case browser = 1
+}
+
 public struct ServerConfig: Codable {
     let address: String
     let port: Int
@@ -11,12 +16,16 @@ public struct ServerConfig: Codable {
     let requestTimeout: TimeInterval
     let maxRequestInBytes: Int
 
+    let sessionPer: UserSessionPer
+
     public init(address: String,
                 port: Int,
+                sessionPer: UserSessionPer = .window,
                 requestTimeout: TimeInterval = 30.0,
                 maxRequestInBytes: Int = 1024 * 1024 * 8) {
         self.address = address
         self.port = port
+        self.sessionPer = sessionPer
         self.requestTimeout = requestTimeout
         self.maxRequestInBytes = maxRequestInBytes
     }
@@ -29,13 +38,14 @@ public class Server<T: UserSession> {
 
     private var listening = false
 
-    private var userSessionManager = UserSessionManager<T>()
+    private var userSessionManager: UserSessionManager<T>
     public var staticStorageHandler: StaticStorageHandler?
 
     public init(config: ServerConfig,
                 staticStorageHandler: StaticStorageHandler? = nil) {
         self.config = config
         self.staticStorageHandler = staticStorageHandler
+        self.userSessionManager = UserSessionManager<T>(config: config)
     }
 
     @discardableResult
