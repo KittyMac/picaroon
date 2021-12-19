@@ -9,7 +9,8 @@ class HelloWorld: UserSession {
     }
 }
 
-func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
+func handleStaticRequest(_ userSession: UserSession?,
+                         _ httpRequest: HttpRequest) -> Data? {
     return helloWorldResponse
 }
 

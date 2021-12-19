@@ -8,7 +8,7 @@ protocol AnyUserSessionManager {
     func reassociate(cookieSessionUUID: String?,
                      _ oldJavascriptSessionUUID: String,
                      _ newJavascriptSessionUUID: String) -> UserSession?
-    func get(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String) -> UserSession?
+    func get(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String?) -> UserSession?
     func end(_ userSession: UserSession)
 }
 
@@ -54,10 +54,6 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
                              old oldJavascriptSessionUUID: String,
                              new newJavascriptSessionUUID: String) -> UserSession? {
 
-        let type: ReassociationType = oldJavascriptSessionUUID == newJavascriptSessionUUID ?
-            .javascriptSessionUUIDOnly :
-            .oldToNew
-
         // protect callers from trying to reassociation a session which already exists verbatim
         if let cookieSessionUUID = cookieSessionUUID {
             let newSessionUUID = Self.combined(cookieSessionUUID, newJavascriptSessionUUID)
@@ -67,7 +63,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         }
 
         if let userSession = sessionsByJavascriptSessionUUID[oldJavascriptSessionUUID],
-           userSession.unsafeReassociationIsAllowed(type: type) {
+           userSession.unsafeReassociationIsAllowed() {
             let newCookieSessionUUID = cookieSessionUUID ?? userSession.unsafeCookieSessionUUID
 
             // let newSessionUUID = Self.combined(newCookieSessionUUID, newJavascriptSessionUUID)
@@ -89,14 +85,16 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         return nil
     }
 
-    func get(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String) -> UserSession? {
+    func get(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String?) -> UserSession? {
         lock.lock()
         defer {
             lock.unlock()
         }
 
+        let localJavascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString
+
         let localCookieSessionUUID = cookieSessionUUID ?? UUID().uuidString
-        let combinedSessionUUID = Self.combined(localCookieSessionUUID, javascriptSessionUUID)
+        let combinedSessionUUID = Self.combined(localCookieSessionUUID, localJavascriptSessionUUID)
 
         // happy path: we have both cookies, and we have a user session which matches that unique session UUID
         if let userSession = sessionsByCombinedSessionUUID[combinedSessionUUID] {
@@ -105,27 +103,27 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         }
 
         // Second happy path: we have a cookie session UUID match
-
-        if let userSession = sessionsByCookieSessionUUID[localCookieSessionUUID] {
-            if config.sessionPer == .browser ||
-                userSession.unsafeReassociationIsAllowed(type: .javascriptSessionUUIDOnly) {
+        if config.sessionPer == .browser {
+            if let userSession = sessionsByCookieSessionUUID[localCookieSessionUUID] {
                 // print("HAPPY PATH 2: \(userSession.unsafeSessionUUID)")
                 return userSession
             }
         }
 
         // Potential reassociation path: we have a javascript sessionUUID but no matching cookie sessionUUID.
-        // We allow a user's session to be reassociated to a new cookie sessionUUID under specific
-        // circumstances which have not yet been firmly defined.
-        if let userSession = reassociate(cookieSessionUUID: localCookieSessionUUID,
-                                         old: javascriptSessionUUID,
-                                         new: javascriptSessionUUID) {
-            return userSession
+        // We allow a user's session to be reassociated to a new cookie sessionUUID under limited circumstances
+        if javascriptSessionUUID != nil {
+            if let userSession = reassociate(cookieSessionUUID: localCookieSessionUUID,
+                                             old: localJavascriptSessionUUID,
+                                             new: localJavascriptSessionUUID) {
+                return userSession
+            }
+            return nil
         }
 
         // Otherwise, this must be a new incoming session
         let userSession = T(cookieSessionUUID: localCookieSessionUUID,
-                            javascriptSessionUUID: javascriptSessionUUID)
+                            javascriptSessionUUID: localJavascriptSessionUUID)
         // print("CREATING NEW USER SESSION: \(userSession.unsafeSessionUUID)")
         sessionsByCombinedSessionUUID[userSession.unsafeSessionUUID] = userSession
         sessionsByCookieSessionUUID[userSession.unsafeCookieSessionUUID] = userSession

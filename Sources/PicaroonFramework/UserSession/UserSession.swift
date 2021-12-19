@@ -3,16 +3,10 @@ import Foundation
 import Socket
 
 // swiftlint:disable function_parameter_count
-// swiftlint:disable line_length
 
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
-
-enum ReassociationType {
-    case oldToNew
-    case javascriptSessionUUIDOnly
-}
 
 open class UserSession: Actor, Equatable {
     // In Picaroon, a user sessions encapsulates on browser's "session" with the server. So when
@@ -48,34 +42,21 @@ open class UserSession: Actor, Equatable {
 
     var unsafeSessionClosed: Bool = false
     private var unsafeAllowReassociationFromDate: Date?
-    private var reassociationCount: Int = 0
+    private var unsafeAllowReassociationCounter: Int = 0
 
     var unsafeSessionHeaders: [String] = []
 
-    func unsafeReassociationIsAllowed(type: ReassociationType) -> Bool {
+    func unsafeReassociationIsAllowed() -> Bool {
         guard let date = unsafeAllowReassociationFromDate else { return false }
-        guard abs(date.timeIntervalSinceNow) < 5 * 60 else { return false }
-
-        reassociationCount += 1
-
-        // If we reassociated and we have both the old JS sessionUUID and the new JS sessionUUID,
-        // then there is nothing further we need and this reassociation can end
-        if type == .oldToNew && reassociationCount >= 1 {
+        unsafeAllowReassociationCounter += 1
+        if unsafeAllowReassociationCounter >= 2 {
             unsafeAllowReassociationFromDate = nil
         }
-
-        // We are attempting reassociation when we only have the old JS sessionUUID. We need to allow
-        // reassociation over two calls, the first one to return the server session cookie to the
-        // client and the second one to link the new JS sessionUUID to the user session
-        if type == .javascriptSessionUUIDOnly && reassociationCount >= 2 {
-            unsafeAllowReassociationFromDate = nil
-        }
-
-        return true
+        return abs(date.timeIntervalSinceNow) < 5 * 60
     }
 
     func unsafeAllowReassociation() {
-        reassociationCount = 0
+        unsafeAllowReassociationCounter = 0
         unsafeAllowReassociationFromDate = Date()
     }
 

@@ -17,11 +17,7 @@ class WebView {
     init() {
         
     }
-    
-    init(javascriptSessionUUID: String?) {
-        self.javascriptSessionUUID = javascriptSessionUUID
-    }
-    
+        
     private func handleResponse(data: Data?, httpResponse: HTTPURLResponse?, error: String?) {
         guard let data = data else { return XCTFail() }
         guard let actorSessionUUID = String(data: data, encoding: .utf8) else { return XCTFail() }
@@ -29,7 +25,7 @@ class WebView {
         serverActorSessionUUID = actorSessionUUID
         
         guard let httpResponse = httpResponse else { return XCTFail() }
-                        
+                                
         for (key, value) in httpResponse.allHeaderFields {
             guard let key = key as? String else { continue }
             guard let value = value as? String else { continue }
@@ -58,6 +54,7 @@ class WebView {
     }
     
     func load(url: String, _ callback: kWebViewResponse?) {
+        print("load: \(url)")
         
         client.beUrlRequest(url: url,
                             httpMethod: "GET",
@@ -65,8 +62,13 @@ class WebView {
                             headers: handleHeaders(),
                             body: nil, client) { data, httpResponse, error in
             
-            if self.javascriptSessionUUID == nil {
-                self.javascriptSessionUUID = UUID().uuidString
+            if let data = data,
+               let content = String(data: data, encoding: .utf8) {
+                print(content)
+                if content.contains("Session-Id")  {
+                    let sessionUUID = content.suffix(39).prefix(36)
+                    self.javascriptSessionUUID = String(sessionUUID)
+                }
             }
             
             self.handleResponse(data: data, httpResponse: httpResponse, error: error)
@@ -80,6 +82,8 @@ class WebView {
     
     func ajax(payload: String, _ callback: kWebViewResponse?) {
         guard let lastUrl = lastUrl else { return XCTFail() }
+        
+        print("ajax: \(payload)")
         client.beUrlRequest(url: lastUrl,
                             httpMethod: "POST",
                             params: [:],
@@ -94,6 +98,10 @@ class WebView {
     
     func reload() {
         
+    }
+    
+    func clearCookies() {
+        cookies.removeAll()
     }
     
 }

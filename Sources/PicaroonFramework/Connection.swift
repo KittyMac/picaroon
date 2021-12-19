@@ -187,6 +187,15 @@ public class Connection: Actor, AnyConnection {
             // reset current pointer to be read for the next http request
             currentPtr = buffer
 
+            // First allow the static storage handler to handle it
+            if httpRequest.url != "/picaroon.js" && httpRequest.sid == nil {
+                if  let staticStorageHandler = self.staticStorageHandler,
+                    let data = staticStorageHandler(nil, httpRequest) {
+                    self._beSendDataIfChanged(httpRequest, data)
+                    return
+                }
+            }
+
             // Here's how we attempt to link sessions to web clients:
             // 1. Picaroon assigns a HTTP only cookieSessionUUID. These cookies are not accessible from javascript and
             //    provide the main linking of UserSession actor to the web session
@@ -203,12 +212,31 @@ public class Connection: Actor, AnyConnection {
             let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]
             let javascriptSessionUUID = httpRequest.sessionId ?? httpRequest.sid
 
+            // print(">>> \(cookieSessionUUID), \(javascriptSessionUUID), \(httpRequest.method), \(httpRequest.url), \(httpRequest.urlParameters)")
+
+            let handleRequest: (UserSession) -> Void = { userSession in
+                // is this the special "picaroon.js"
+                if httpRequest.method == .GET &&
+                    httpRequest.url == "/picaroon.js" {
+                    self._beSendData(HttpResponse.asData(userSession, .ok, .js, "sessionStorage.setItem('Session-Id', '\(userSession.unsafeJavascriptSessionUUID)');"))
+                    return
+                }
+
+                if  let staticStorageHandler = self.staticStorageHandler,
+                    let data = staticStorageHandler(userSession, httpRequest) {
+                    self._beSendDataIfChanged(httpRequest, data)
+                    return
+                }
+
+                userSession.beHandleRequest(self, httpRequest)
+            }
+
             if let newJavascriptSessionUUID = javascriptSessionUUID,
                let oldJavascriptSessionUUID = httpRequest.sid,
                oldJavascriptSessionUUID != newJavascriptSessionUUID {
                 if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                     oldJavascriptSessionUUID, newJavascriptSessionUUID) {
-                    userSession.beHandleRequest(self, httpRequest)
+                    handleRequest(userSession)
                     return
                 }
                 return _beSendInternalError()
@@ -217,25 +245,17 @@ public class Connection: Actor, AnyConnection {
             if let oldJavascriptSessionUUID = httpRequest.sid {
                 if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                     oldJavascriptSessionUUID, oldJavascriptSessionUUID) {
-                    userSession.beHandleRequest(self, httpRequest)
+                    handleRequest(userSession)
                     return
                 }
                 return _beSendInternalError()
             }
 
-            // check to see if this is handled by the static storage handler
-            if  let staticStorageHandler = staticStorageHandler,
-                let data = staticStorageHandler(httpRequest) {
-                _beSendDataIfChanged(httpRequest, data)
-                return
-            }
-
             // If no session uuid of any kind was supplied by the client, then this is technically an
             // error  (it should be served by the static handler if we don't have a client which is
             // running enough to provide us a session id).
-            if let javascriptSessionUUID = javascriptSessionUUID,
-               let userSession = userSessionManager.get(cookieSessionUUID, javascriptSessionUUID) {
-                userSession.beHandleRequest(self, httpRequest)
+            if let userSession = userSessionManager.get(cookieSessionUUID, javascriptSessionUUID) {
+                handleRequest(userSession)
                 return
             }
 
