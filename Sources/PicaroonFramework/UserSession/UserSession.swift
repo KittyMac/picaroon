@@ -29,11 +29,12 @@ open class UserSession: Actor, Equatable {
     public var unsafeSessionUUID: String {
         return sessionUUID
     }
+    public var unsafeJavascriptSessionUUID: String {
+        return javascriptSessionUUID
+    }
+
     var unsafeCookieSessionUUID: String {
         return cookieSessionUUID
-    }
-    var unsafeJavascriptSessionUUID: String {
-        return javascriptSessionUUID
     }
 
     private var sessionUUID: String
