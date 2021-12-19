@@ -6,7 +6,7 @@ typealias kWebViewResponse = (Data?, HTTPURLResponse?, String?) -> Void
 class WebView {
     // Simple web browser simulator. Used for testing connection persistance with the UserSession manager
     let client = UserSession()
-    let javascriptSessionUUID: String
+    var javascriptSessionUUID: String? = nil
     
     var serverActorSessionUUID: String?
     
@@ -15,10 +15,10 @@ class WebView {
     var lastUrl: String?
     
     init() {
-        javascriptSessionUUID = UUID().uuidString
+        
     }
     
-    init(javascriptSessionUUID: String) {
+    init(javascriptSessionUUID: String?) {
         self.javascriptSessionUUID = javascriptSessionUUID
     }
     
@@ -26,14 +26,10 @@ class WebView {
         guard let data = data else { return XCTFail() }
         guard let actorSessionUUID = String(data: data, encoding: .utf8) else { return XCTFail() }
         
-        if let serverActorSessionUUID = serverActorSessionUUID {
-            XCTAssertEqual(serverActorSessionUUID, actorSessionUUID)
-        } else {
-            serverActorSessionUUID = actorSessionUUID
-        }
+        serverActorSessionUUID = actorSessionUUID
         
         guard let httpResponse = httpResponse else { return XCTFail() }
-                
+                        
         for (key, value) in httpResponse.allHeaderFields {
             guard let key = key as? String else { continue }
             guard let value = value as? String else { continue }
@@ -51,9 +47,10 @@ class WebView {
     }
     
     private func handleHeaders() -> [String: String] {
-        var headers = [
-            "Session-Id": javascriptSessionUUID
-        ]
+        var headers: [String: String] = [:]
+        if let javascriptSessionUUID = javascriptSessionUUID {
+            headers["Session-Id"] = javascriptSessionUUID
+        }
         if cookies.count > 0 {
             headers["Cookie"] = cookies.map { "\($0.key)=\($0.value)" }.joined(separator: "; ")
         }
@@ -67,6 +64,11 @@ class WebView {
                             params: [:],
                             headers: handleHeaders(),
                             body: nil, client) { data, httpResponse, error in
+            
+            if self.javascriptSessionUUID == nil {
+                self.javascriptSessionUUID = UUID().uuidString
+            }
+            
             self.handleResponse(data: data, httpResponse: httpResponse, error: error)
             if let callback = callback {
                 callback(data, httpResponse, error)

@@ -54,6 +54,10 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
                              old oldJavascriptSessionUUID: String,
                              new newJavascriptSessionUUID: String) -> UserSession? {
 
+        let type: ReassociationType = oldJavascriptSessionUUID == newJavascriptSessionUUID ?
+            .javascriptSessionUUIDOnly :
+            .oldToNew
+
         // protect callers from trying to reassociation a session which already exists verbatim
         if let cookieSessionUUID = cookieSessionUUID {
             let newSessionUUID = Self.combined(cookieSessionUUID, newJavascriptSessionUUID)
@@ -63,7 +67,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         }
 
         if let userSession = sessionsByJavascriptSessionUUID[oldJavascriptSessionUUID],
-           userSession.unsafeReassociationIsAllowed() {
+           userSession.unsafeReassociationIsAllowed(type: type) {
             let newCookieSessionUUID = cookieSessionUUID ?? userSession.unsafeCookieSessionUUID
 
             // let newSessionUUID = Self.combined(newCookieSessionUUID, newJavascriptSessionUUID)
@@ -101,8 +105,10 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         }
 
         // Second happy path: we have a cookie session UUID match
-        if config.sessionPer == .browser {
-            if let userSession = sessionsByCookieSessionUUID[localCookieSessionUUID] {
+
+        if let userSession = sessionsByCookieSessionUUID[localCookieSessionUUID] {
+            if config.sessionPer == .browser ||
+                userSession.unsafeReassociationIsAllowed(type: .javascriptSessionUUIDOnly) {
                 // print("HAPPY PATH 2: \(userSession.unsafeSessionUUID)")
                 return userSession
             }

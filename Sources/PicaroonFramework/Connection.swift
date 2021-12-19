@@ -4,6 +4,7 @@ import Socket
 
 // swiftlint:disable function_body_length
 // swiftlint:disable line_length
+// swiftlint:disable cyclomatic_complexity
 
 public protocol AnyConnection {
     @discardableResult func beSendData(_ data: Data) -> Self
@@ -186,13 +187,6 @@ public class Connection: Actor, AnyConnection {
             // reset current pointer to be read for the next http request
             currentPtr = buffer
 
-            // check to see if this is handled by the static storage handler
-            if  let staticStorageHandler = staticStorageHandler,
-                let data = staticStorageHandler(httpRequest) {
-                _beSendDataIfChanged(httpRequest, data)
-                return
-            }
-
             // Here's how we attempt to link sessions to web clients:
             // 1. Picaroon assigns a HTTP only cookieSessionUUID. These cookies are not accessible from javascript and
             //    provide the main linking of UserSession actor to the web session
@@ -218,6 +212,22 @@ public class Connection: Actor, AnyConnection {
                     return
                 }
                 return _beSendInternalError()
+            }
+
+            if let oldJavascriptSessionUUID = httpRequest.sid {
+                if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
+                                                                    oldJavascriptSessionUUID, oldJavascriptSessionUUID) {
+                    userSession.beHandleRequest(self, httpRequest)
+                    return
+                }
+                return _beSendInternalError()
+            }
+
+            // check to see if this is handled by the static storage handler
+            if  let staticStorageHandler = staticStorageHandler,
+                let data = staticStorageHandler(httpRequest) {
+                _beSendDataIfChanged(httpRequest, data)
+                return
             }
 
             // If no session uuid of any kind was supplied by the client, then this is technically an

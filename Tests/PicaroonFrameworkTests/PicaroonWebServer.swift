@@ -2,6 +2,9 @@ import XCTest
 @testable import PicaroonFramework
 
 private func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
+    if httpRequest.method == .GET {
+        return HttpResponse.asData(nil, .ok, .txt, "static resource")
+    }
     return nil
 }
 
