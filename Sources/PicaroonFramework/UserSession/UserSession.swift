@@ -42,21 +42,16 @@ open class UserSession: Actor, Equatable {
 
     var unsafeSessionClosed: Bool = false
     private var unsafeAllowReassociationFromDate: Date?
-    private var unsafeAllowReassociationCounter: Int = 0
 
     var unsafeSessionHeaders: [String] = []
 
     func unsafeReassociationIsAllowed() -> Bool {
         guard let date = unsafeAllowReassociationFromDate else { return false }
-        unsafeAllowReassociationCounter += 1
-        if unsafeAllowReassociationCounter >= 2 {
-            unsafeAllowReassociationFromDate = nil
-        }
+        unsafeAllowReassociationFromDate = nil
         return abs(date.timeIntervalSinceNow) < 5 * 60
     }
 
     func unsafeAllowReassociation() {
-        unsafeAllowReassociationCounter = 0
         unsafeAllowReassociationFromDate = Date()
     }
 

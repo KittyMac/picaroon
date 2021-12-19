@@ -9,8 +9,7 @@ class HelloWorld: UserSession {
     }
 }
 
-func handleHelloWorldStaticRequest(_ userSession: UserSession?,
-                                   _ httpRequest: HttpRequest) -> Data? {
+func handleHelloWorldStaticRequest(_ httpRequest: HttpRequest) -> Data? {
     return helloWorldResponse
 }
 
@@ -158,12 +157,10 @@ final class picaroonTests: XCTestCase {
         
         // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
         webview.load(url: baseUrl) { data, response, error in
-            webview.load(url: baseUrl + "picaroon.js") { data, response, error in
-                webview.ajax(payload: #"{"className":"Server_GetPedia","language":"en"}"#, nil)
-                webview.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
-                    XCTAssertEqual(webserver.numberOfUserSessions(), 1)
-                    expectation.fulfill()
-                }
+            webview.ajax(payload: #"{"className":"Server_GetPedia","language":"en"}"#, nil)
+            webview.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                expectation.fulfill()
             }
         }
         
@@ -183,12 +180,10 @@ final class picaroonTests: XCTestCase {
             
             // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
             webview.load(url: baseUrl) { data, response, error in
-                webview.load(url: baseUrl + "picaroon.js") { data, response, error in
-                    webview.ajax(payload: #"{"className":"Server_GetPedia","language":"en"}"#, nil)
-                    webview.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
-                        XCTAssertEqual(webserver.numberOfUserSessions(), 3)
-                        expectation.fulfill()
-                    }
+                webview.ajax(payload: #"{"className":"Server_GetPedia","language":"en"}"#, nil)
+                webview.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                    XCTAssertEqual(webserver.numberOfUserSessions(), 3)
+                    expectation.fulfill()
                 }
             }
         }
@@ -214,27 +209,22 @@ final class picaroonTests: XCTestCase {
         webview1.load(url: baseUrl) { data, response, error in
             XCTAssertNotNil(data)
             XCTAssertNil(error)
-            
-            webview1.load(url: baseUrl + "picaroon.js") { data, response, error in
-            XCTAssertNotNil(data)
-            XCTAssertNil(error)
+                            
+            webview1.ajax(payload: #"{"className":"Server_AllowReassociation"}"#) { data, response, error in
+                XCTAssertNotNil(data)
+                XCTAssertNil(error)
                 
-                webview1.ajax(payload: #"{"className":"Server_AllowReassociation"}"#) { data, response, error in
+                let firstActorSessionUUID = webview1.serverActorSessionUUID
+                webview1.clearCookies()
+                
+                webview1.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
                     XCTAssertNotNil(data)
                     XCTAssertNil(error)
                     
-                    let firstActorSessionUUID = webview1.serverActorSessionUUID
-                    webview1.clearCookies()
-                    
-                    webview1.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
-                        XCTAssertNotNil(data)
-                        XCTAssertNil(error)
-                        
-                        XCTAssertEqual(webserver.numberOfUserSessions(), 1)
-                        XCTAssertEqual(firstActorSessionUUID, webview1.serverActorSessionUUID)
+                    XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                    XCTAssertEqual(firstActorSessionUUID, webview1.serverActorSessionUUID)
 
-                        expectation.fulfill()
-                    }
+                    expectation.fulfill()
                 }
             }
         }
@@ -257,24 +247,19 @@ final class picaroonTests: XCTestCase {
             XCTAssertNotNil(data)
             XCTAssertNil(error)
             
-            webview1.load(url: baseUrl + "picaroon.js") { data, response, error in
-            XCTAssertNotNil(data)
-            XCTAssertNil(error)
-
+            webview1.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                XCTAssertNotNil(data)
+                XCTAssertNil(error)
+                
+                webview1.clearCookies()
+                
                 webview1.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
                     XCTAssertNotNil(data)
-                    XCTAssertNil(error)
-                    
-                    webview1.clearCookies()
-                    
-                    webview1.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
-                        XCTAssertNotNil(data)
-                        XCTAssertNotNil(error)
+                    XCTAssertNotNil(error)
 
-                        XCTAssertEqual(webserver.numberOfUserSessions(), 1)
-                        
-                        expectation.fulfill()
-                    }
+                    XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                    
+                    expectation.fulfill()
                 }
             }
         }
@@ -296,38 +281,27 @@ final class picaroonTests: XCTestCase {
         webview1.load(url: baseUrl) { data, response, error in
             XCTAssertNotNil(data)
             XCTAssertNil(error)
-            
-            webview1.load(url: baseUrl + "picaroon.js") { data, response, error in
-            XCTAssertNotNil(data)
-            XCTAssertNil(error)
-            
-                webview1.ajax(payload: #"{"className":"Server_AllowReassociation"}"#) { data, response, error in
+                        
+            webview1.ajax(payload: #"{"className":"Server_AllowReassociation"}"#) { data, response, error in
+                XCTAssertNotNil(data)
+                XCTAssertNil(error)
+                
+                let webview2 = WebView()
+                let sid = webview1.javascriptSessionUUID ?? "unknown"
+                webview2.load(url: baseUrl + "?sid=\(sid)") { data, response, error in
+                    print("1: " + (webview2.javascriptSessionUUID ?? "unknown"))
                     XCTAssertNotNil(data)
                     XCTAssertNil(error)
-                    
-                    let webview2 = WebView()
-                    let sid = webview1.javascriptSessionUUID ?? "unknown"
-                    webview2.load(url: baseUrl + "?sid=\(sid)") { data, response, error in
-                        print("1: " + (webview2.javascriptSessionUUID ?? "unknown"))
+                                        
+                    webview2.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                        print("3: " + (webview2.javascriptSessionUUID ?? "unknown"))
                         XCTAssertNotNil(data)
                         XCTAssertNil(error)
                         
-                        webview2.load(url: baseUrl + "picaroon.js" + "?sid=\(sid)") { data, response, error in
-                            print("2: " + (webview2.javascriptSessionUUID ?? "unknown"))
-                            XCTAssertNotNil(data)
-                            XCTAssertNil(error)
+                        XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                        XCTAssertEqual(webview1.serverActorSessionUUID, webview2.serverActorSessionUUID)
                         
-                            webview2.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
-                                print("3: " + (webview2.javascriptSessionUUID ?? "unknown"))
-                                XCTAssertNotNil(data)
-                                XCTAssertNil(error)
-                                
-                                XCTAssertEqual(webserver.numberOfUserSessions(), 1)
-                                XCTAssertEqual(webview1.serverActorSessionUUID, webview2.serverActorSessionUUID)
-                                
-                                expectation.fulfill()
-                            }
-                        }
+                        expectation.fulfill()
                     }
                 }
             }
@@ -350,28 +324,23 @@ final class picaroonTests: XCTestCase {
         webview1.load(url: baseUrl) { data, response, error in
             XCTAssertNotNil(data)
             XCTAssertNil(error)
-            
-            webview1.load(url: baseUrl + "picaroon.js") { data, response, error in
+        
+            webview1.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
                 XCTAssertNotNil(data)
                 XCTAssertNil(error)
                 
-                webview1.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                let webview2 = WebView()
+                webview2.load(url: "\(baseUrl)?sid=\(webview1.javascriptSessionUUID ?? "unknown" )") { data, response, error in
                     XCTAssertNotNil(data)
-                    XCTAssertNil(error)
+                    XCTAssertNotNil(error)
                     
-                    let webview2 = WebView()
-                    webview2.load(url: "\(baseUrl)?sid=\(webview1.javascriptSessionUUID ?? "unknown" )") { data, response, error in
+                    webview2.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
                         XCTAssertNotNil(data)
                         XCTAssertNotNil(error)
                         
-                        webview2.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
-                            XCTAssertNotNil(data)
-                            XCTAssertNotNil(error)
-                            
-                            XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                        XCTAssertEqual(webserver.numberOfUserSessions(), 1)
 
-                            expectation.fulfill()
-                        }
+                        expectation.fulfill()
                     }
                 }
             }

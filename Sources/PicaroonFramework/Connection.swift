@@ -187,13 +187,14 @@ public class Connection: Actor, AnyConnection {
             // reset current pointer to be read for the next http request
             currentPtr = buffer
 
-            // First allow the static storage handler to handle it
-            if httpRequest.url != "/picaroon.js" && httpRequest.sid == nil {
-                if  let staticStorageHandler = self.staticStorageHandler,
-                    let data = staticStorageHandler(nil, httpRequest) {
-                    self._beSendDataIfChanged(httpRequest, data)
-                    return
-                }
+            // First allow the static storage handler to handle it. It is the responsibility of the host site to
+            // let reassociations (ie url param sid) to fall through and be handled by a user session. This is
+            // critical because only the one call will have the sid reassociation parameter, and that one call
+            // will need to ensure the return passes back the correct session UUIDs
+            if  let staticStorageHandler = self.staticStorageHandler,
+                let data = staticStorageHandler(httpRequest) {
+                self._beSendDataIfChanged(httpRequest, data)
+                return
             }
 
             // Here's how we attempt to link sessions to web clients:
@@ -212,31 +213,12 @@ public class Connection: Actor, AnyConnection {
             let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]
             let javascriptSessionUUID = httpRequest.sessionId ?? httpRequest.sid
 
-            // print(">>> \(cookieSessionUUID), \(javascriptSessionUUID), \(httpRequest.method), \(httpRequest.url), \(httpRequest.urlParameters)")
-
-            let handleRequest: (UserSession) -> Void = { userSession in
-                // is this the special "picaroon.js"
-                if httpRequest.method == .GET &&
-                    httpRequest.url == "/picaroon.js" {
-                    self._beSendData(HttpResponse.asData(userSession, .ok, .js, "sessionStorage.setItem('Session-Id', '\(userSession.unsafeJavascriptSessionUUID)');"))
-                    return
-                }
-
-                if  let staticStorageHandler = self.staticStorageHandler,
-                    let data = staticStorageHandler(userSession, httpRequest) {
-                    self._beSendDataIfChanged(httpRequest, data)
-                    return
-                }
-
-                userSession.beHandleRequest(self, httpRequest)
-            }
-
             if let newJavascriptSessionUUID = javascriptSessionUUID,
                let oldJavascriptSessionUUID = httpRequest.sid,
                oldJavascriptSessionUUID != newJavascriptSessionUUID {
                 if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                     oldJavascriptSessionUUID, newJavascriptSessionUUID) {
-                    handleRequest(userSession)
+                    userSession.beHandleRequest(self, httpRequest)
                     return
                 }
                 return _beSendInternalError()
@@ -245,7 +227,7 @@ public class Connection: Actor, AnyConnection {
             if let oldJavascriptSessionUUID = httpRequest.sid {
                 if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                     oldJavascriptSessionUUID, oldJavascriptSessionUUID) {
-                    handleRequest(userSession)
+                    userSession.beHandleRequest(self, httpRequest)
                     return
                 }
                 return _beSendInternalError()
@@ -255,7 +237,7 @@ public class Connection: Actor, AnyConnection {
             // error  (it should be served by the static handler if we don't have a client which is
             // running enough to provide us a session id).
             if let userSession = userSessionManager.get(cookieSessionUUID, javascriptSessionUUID) {
-                handleRequest(userSession)
+                userSession.beHandleRequest(self, httpRequest)
                 return
             }
 

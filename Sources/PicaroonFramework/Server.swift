@@ -2,7 +2,7 @@ import Foundation
 import Flynn
 import Socket
 
-public typealias StaticStorageHandler = (UserSession?, HttpRequest) -> Data?
+public typealias StaticStorageHandler = (HttpRequest) -> Data?
 
 public enum UserSessionPer: Int, Codable {
     case window = 0

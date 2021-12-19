@@ -1,10 +1,12 @@
 import XCTest
 @testable import PicaroonFramework
 
-private func handleStaticRequest(_ userSession: UserSession?,
-                                 _ httpRequest: HttpRequest) -> Data? {
+private func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
+    if httpRequest.url == "/" {
+        return nil
+    }
     if httpRequest.method == .GET {
-        return HttpResponse.asData(userSession, .ok, .txt, "static resource")
+        return HttpResponse.asData(nil, .ok, .txt, "static resource")
     }
     return nil
 }
@@ -16,6 +18,13 @@ class WebUserSession: UserSession {
            contentString.contains("Server_AllowReassociation") {
             beAllowReassociation()
         }
+        
+        if httpRequest.url == "/" || httpRequest.urlParameters?.contains("sid=") == true {
+            let data = HttpResponse.asData(self, .ok, .js, "sessionStorage.setItem('Session-Id', '\(unsafeJavascriptSessionUUID)');")
+            connection.beSendData(data)
+            return
+        }
+        
         let data = HttpResponse.asData(self, .ok, .txt, unsafeUUID)
         connection.beSendData(data)
     }
