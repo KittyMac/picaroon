@@ -58,7 +58,7 @@ class WebView {
         
         client.beUrlRequest(url: url,
                             httpMethod: "GET",
-                            params: [],
+                            params: [:],
                             headers: handleHeaders(),
                             body: nil, client) { data, httpResponse, error in
             
@@ -86,10 +86,7 @@ class WebView {
         print("ajax: \(payload)")
         client.beUrlRequest(url: lastUrl,
                             httpMethod: "POST",
-                            params: [
-                                ["key1":"value1"],
-                                ["key2":"value2"]
-                            ],
+                            params: [:],
                             headers: handleHeaders(),
                             body: payload.data(using: .utf8), client) { data, httpResponse, error in
             self.handleResponse(data: data, httpResponse: httpResponse, error: error)
