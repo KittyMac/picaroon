@@ -90,7 +90,7 @@ open class UserSession: Actor, Equatable {
 
     private func _beUrlRequest(url: String,
                                httpMethod: String,
-                               params: [String: String],
+                               params: [[String: String]],
                                headers: [String: String],
                                body: Data?,
                                _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
@@ -103,8 +103,10 @@ open class UserSession: Actor, Equatable {
             components.queryItems = []
         }
 
-        params.forEach { (key, value) in
-            components.queryItems?.append(URLQueryItem(name: key, value: value))
+        for param in params {
+            param.forEach { (key, value) in
+                components.queryItems?.append(URLQueryItem(name: key, value: value))
+            }
         }
         components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
 
@@ -159,7 +161,7 @@ extension UserSession {
     @discardableResult
     public func beUrlRequest(url: String,
                              httpMethod: String,
-                             params: [String: String],
+                             params: [[String: String]],
                              headers: [String: String],
                              body: Data?,
                              _ sender: Actor,
