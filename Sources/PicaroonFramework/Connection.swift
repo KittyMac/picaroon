@@ -211,7 +211,7 @@ public class Connection: Actor, AnyConnection {
             //    malicious individuals from stealing a live session just by knowing the client-side session UUID
 
             let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]
-            let javascriptSessionUUID = httpRequest.sessionId ?? httpRequest.sid
+            var javascriptSessionUUID = httpRequest.sessionId ?? httpRequest.sid
 
             if let newJavascriptSessionUUID = javascriptSessionUUID,
                let oldJavascriptSessionUUID = httpRequest.sid,
@@ -230,7 +230,8 @@ public class Connection: Actor, AnyConnection {
                     userSession.beHandleRequest(self, httpRequest)
                     return
                 }
-                return _beSendInternalError()
+
+                javascriptSessionUUID = nil
             }
 
             // If no session uuid of any kind was supplied by the client, then this is technically an

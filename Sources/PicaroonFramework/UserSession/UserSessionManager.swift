@@ -118,7 +118,6 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
                                              new: localJavascriptSessionUUID) {
                 return userSession
             }
-            return nil
         }
 
         // Otherwise, this must be a new incoming session
