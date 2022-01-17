@@ -15,17 +15,17 @@
         "repositoryURL": "https://github.com/KittyMac/Flynn.git",
         "state": {
           "branch": "master",
-          "revision": "b53c9815b2b9dfcea434fb531c8d2c24eb5f882b",
+          "revision": "c1079d65959b672ec5dba29c24a3c749079d9f74",
           "version": null
         }
       },
       {
-        "package": "Ipecac",
-        "repositoryURL": "https://github.com/KittyMac/Ipecac.git",
+        "package": "Hitch",
+        "repositoryURL": "https://github.com/KittyMac/Hitch.git",
         "state": {
-          "branch": "master",
-          "revision": "89fb6d88957b18963fe4a4aa49773a51cd8fc25f",
-          "version": null
+          "branch": null,
+          "revision": "5169e3bb351921474d263c8d76baa8d8baa620ac",
+          "version": "0.2.4"
         }
       },
       {

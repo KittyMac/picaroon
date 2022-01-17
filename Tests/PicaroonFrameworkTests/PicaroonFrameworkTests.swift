@@ -26,7 +26,7 @@ final class picaroonTests: XCTestCase {
         Hello World
         """.data(using: .utf8)!
         
-        content.withUnsafeBytes { (buffer: UnsafePointer<CChar>) -> () in
+        content.withUnsafeBytes { buffer in
             let request = HttpRequest(request: buffer, size: content.count)
             
             XCTAssertEqual(request.method, HttpMethod.GET)
@@ -48,7 +48,7 @@ final class picaroonTests: XCTestCase {
         Hello World
         """.data(using: .utf8)!
         
-        content.withUnsafeBytes { (buffer: UnsafePointer<CChar>) -> () in
+        content.withUnsafeBytes { buffer in
             let request = HttpRequest(request: buffer, size: content.count)
             
             XCTAssertEqual(request.method, HttpMethod.GET)
@@ -80,7 +80,7 @@ final class picaroonTests: XCTestCase {
         ------WebKitFormBoundaryd9xBKq96rap8J36e--\r
         """.data(using: .utf8)!
         
-        content.withUnsafeBytes { (buffer: UnsafePointer<CChar>) -> () in
+        content.withUnsafeBytes { buffer in
             let request = HttpRequest(request: buffer, size: content.count)
             
             XCTAssertEqual(request.method, HttpMethod.GET)

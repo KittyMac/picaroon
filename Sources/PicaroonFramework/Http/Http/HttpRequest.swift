@@ -114,6 +114,16 @@ public class HttpRequest {
         incomplete = true
     }
 
+    public convenience init(request unsafeRawBufferPointer: UnsafeRawBufferPointer,
+                            size bufferSize: Int) {
+        let unsafeBufferPointer = unsafeRawBufferPointer.bindMemory(to: CChar.self)
+        guard let buffer = unsafeBufferPointer.baseAddress else {
+            self.init()
+            return
+        }
+        self.init(request: buffer, size: bufferSize)
+    }
+
     public init(request buffer: UnsafePointer<CChar>,
                 size bufferSize: Int) {
 

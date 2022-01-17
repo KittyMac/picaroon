@@ -3,6 +3,7 @@ import Foundation
 import Socket
 
 // swiftlint:disable function_parameter_count
+// swiftlint:disable line_length
 
 #if canImport(FoundationNetworking)
 import FoundationNetworking

@@ -8,7 +8,9 @@ public extension HttpRequest {
         guard contentType.hasPrefix("multipart/form-data") else { return [] }
 
         if let content = content {
-            return content.withUnsafeBytes { (buffer: UnsafePointer<CChar>) -> [HttpRequest] in
+            return content.withUnsafeBytes { unsafeRawBufferPointer in
+                let unsafeBufferPointer = unsafeRawBufferPointer.bindMemory(to: CChar.self)
+                guard let buffer = unsafeBufferPointer.baseAddress else { return [] }
                 let startPtr = buffer
                 let endPtr = buffer + content.count
                 var ptr = startPtr

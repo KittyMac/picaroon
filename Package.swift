@@ -13,8 +13,8 @@ let package = Package(
     ],
     dependencies: [
 		.package(url: "https://github.com/KittyMac/Flynn.git", .branch("master")),
+        .package(url: "https://github.com/KittyMac/Hitch.git", .upToNextMinor(from: "0.2.0")),
 		.package(url: "https://github.com/IBM-Swift/BlueSocket.git", .upToNextMinor(from: "1.0.0")),
-		.package(url: "https://github.com/KittyMac/Ipecac.git", .branch("master")),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "0.3.0"),
     ],
     targets: [
@@ -25,8 +25,8 @@ let package = Package(
         .target(
             name: "PicaroonFramework",
             dependencies: [
-                "Ipecac",
                 "Flynn",
+                "Hitch",
 				"Socket",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
 				
