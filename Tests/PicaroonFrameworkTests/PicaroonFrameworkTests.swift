@@ -120,6 +120,9 @@ final class picaroonTests: XCTestCase {
             "http://localhost:\(port)/hello/world"
         ]
         
+        //     /usr/local/bin/wrk -t 4 -c 100 http://192.168.1.200:8080/bench
+        // /usr/local/bin/wrk -t 4 -c 100 http://localhost:8080/
+        
         let outputPipe = Pipe()
         task.standardOutput = outputPipe
 

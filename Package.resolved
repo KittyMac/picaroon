@@ -15,7 +15,7 @@
         "repositoryURL": "https://github.com/KittyMac/Flynn.git",
         "state": {
           "branch": "master",
-          "revision": "c1079d65959b672ec5dba29c24a3c749079d9f74",
+          "revision": "bef6eb1bc963eb3b55a8e0a7c98ddc8a44a8a90c",
           "version": null
         }
       },
@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/KittyMac/Hitch.git",
         "state": {
           "branch": null,
-          "revision": "5169e3bb351921474d263c8d76baa8d8baa620ac",
-          "version": "0.2.4"
+          "revision": "8a958689c995485a8bf63329195a062974efc5e5",
+          "version": "0.3.1"
         }
       },
       {
