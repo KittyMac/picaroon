@@ -1,6 +1,7 @@
 import Flynn
 import Foundation
 import Socket
+import Hitch
 
 public extension HttpRequest {
     var multipartContent: [HttpRequest] {
