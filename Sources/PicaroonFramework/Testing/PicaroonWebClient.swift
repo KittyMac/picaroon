@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 public typealias kWebViewResponse = (Data?, HTTPURLResponse?, String?) -> Void
 
 public enum PicaroonTesting { }

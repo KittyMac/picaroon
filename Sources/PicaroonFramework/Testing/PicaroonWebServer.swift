@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 private func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
     if httpRequest.url == "/" {
         return nil

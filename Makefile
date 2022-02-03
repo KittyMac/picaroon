@@ -30,3 +30,11 @@ xcode:
 
 benchmark:
 	/usr/local/bin/wrk -t 4 -c 100 http://localhost:8080/hello/world
+
+docker:
+	-DOCKER_HOST=tcp://192.168.1.209:2376 docker buildx create --name cluster --platform linux/arm64/v8 --append
+	-DOCKER_HOST=tcp://192.168.1.198:2376 docker buildx create --name cluster --platform linux/amd64 --append
+	-docker buildx use cluster
+	-docker buildx inspect --bootstrap
+	-docker login
+	docker buildx build --platform linux/amd64,linux/arm64/v8 --push -t kittymac/sextant .
