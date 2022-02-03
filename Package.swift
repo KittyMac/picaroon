@@ -12,7 +12,7 @@ let package = Package(
         .library( name: "PicaroonFramework", targets: ["PicaroonFramework"] ),
     ],
     dependencies: [
-		.package(url: "https://github.com/KittyMac/Flynn.git", .branch("master")),
+		.package(url: "https://github.com/KittyMac/Flynn.git", .upToNextMinor(from: "0.2.0")),
         .package(url: "https://github.com/KittyMac/Hitch.git", .upToNextMinor(from: "0.3.0")),
 		.package(url: "https://github.com/IBM-Swift/BlueSocket.git", .upToNextMinor(from: "1.0.0")),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "0.3.0"),
