@@ -5,9 +5,9 @@ public typealias kWebViewResponse = (Data?, HTTPURLResponse?, String?) -> Void
 public enum PicaroonTesting { }
 
 public extension PicaroonTesting {
-    class WebView {
+    class WebView<T:UserSession> {
         // Simple web browser simulator. Used for testing connection persistance with the UserSession manager
-        let client = UserSession()
+        let client = T()
         var javascriptSessionUUID: String? = nil
         
         var serverActorSessionUUID: String?
@@ -16,7 +16,7 @@ public extension PicaroonTesting {
         
         var lastUrl: String?
         
-        init() {
+        public init() {
             
         }
             
@@ -55,7 +55,7 @@ public extension PicaroonTesting {
             return headers
         }
         
-        func load(url: String, _ callback: kWebViewResponse?) {
+        public func load(url: String, _ callback: kWebViewResponse?) {
             print("load: \(url)")
             
             client.beUrlRequest(url: url,
@@ -82,7 +82,7 @@ public extension PicaroonTesting {
             lastUrl = url
         }
         
-        func ajax(payload: String, _ callback: kWebViewResponse?) {
+        public func ajax(payload: String, _ callback: kWebViewResponse?) {
             guard let lastUrl = lastUrl else { fatalError() }
             
             print("ajax: \(payload)")
@@ -98,11 +98,11 @@ public extension PicaroonTesting {
             }
         }
         
-        func reload() {
+        public func reload() {
             
         }
         
-        func clearCookies() {
+        public func clearCookies() {
             cookies.removeAll()
         }
         

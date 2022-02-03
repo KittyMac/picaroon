@@ -153,7 +153,7 @@ final class picaroonTests: XCTestCase {
         
         let port = Int.random(in: 8000..<65500)
         
-        let webserver = PicaroonTesting.WebServer(port: port)
+        let webserver = PicaroonTesting.WebServer<PicaroonTesting.WebUserSession>(port: port)
         
         let webview = PicaroonTesting.WebView()
         let baseUrl = "http://127.0.0.1:\(port)/"
@@ -175,7 +175,7 @@ final class picaroonTests: XCTestCase {
         
         let port = Int.random(in: 8000..<65500)
         
-        let webserver = PicaroonTesting.WebServer(port: port)
+        let webserver = PicaroonTesting.WebServer<PicaroonTesting.WebUserSession>(port: port)
         
         let testConnection: () -> () = {
             let webview = PicaroonTesting.WebView()
@@ -203,7 +203,7 @@ final class picaroonTests: XCTestCase {
         
         let port = Int.random(in: 8000..<65500)
         
-        let webserver = PicaroonTesting.WebServer(port: port)
+        let webserver = PicaroonTesting.WebServer<PicaroonTesting.WebUserSession>(port: port)
         
         let webview1 = PicaroonTesting.WebView()
         let baseUrl = "http://127.0.0.1:\(port)/"
@@ -240,7 +240,7 @@ final class picaroonTests: XCTestCase {
         
         let port = Int.random(in: 8000..<65500)
         
-        let webserver = PicaroonTesting.WebServer(port: port)
+        let webserver = PicaroonTesting.WebServer<PicaroonTesting.WebUserSession>(port: port)
         
         let webview1 = PicaroonTesting.WebView()
         let baseUrl = "http://127.0.0.1:\(port)/"

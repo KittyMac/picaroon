@@ -11,7 +11,7 @@ private func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
 }
 
 public extension PicaroonTesting {
-    class WebUserSession: UserSession {
+    open class WebUserSession: UserSession {
         public override func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
             if let content = httpRequest.content,
                let contentString = String(data: content, encoding: .utf8),
@@ -30,14 +30,14 @@ public extension PicaroonTesting {
         }
     }
 
-    class WebServer {
+    class WebServer<T:UserSession> {
         let config: ServerConfig
-        let server: Server<WebUserSession>
-        init(port: Int) {
+        let server: Server<T>
+        public init(port: Int) {
             config = ServerConfig(address: "0.0.0.0", port: port)
 
-            server = Server<WebUserSession>(config: config,
-                                            staticStorageHandler: handleStaticRequest)
+            server = Server<T>(config: config,
+                               staticStorageHandler: handleStaticRequest)
             server.listen()
 
             sleep(1)
