@@ -133,10 +133,6 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
     func end(_ userSession: UserSession) {
         lock.lock()
 
-        if let userSession = sessionsByCombinedSessionUUID[userSession.unsafeSessionUUID] {
-            userSession.unsafeSessionClosed = true
-        }
-
         sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
         sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
         sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)

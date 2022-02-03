@@ -42,19 +42,14 @@ open class UserSession: Actor, Equatable {
     private var cookieSessionUUID: String
     private var javascriptSessionUUID: String
 
-    var unsafeSessionClosed: Bool = false
-    private var unsafeAllowReassociationFromDate: Date?
+    private var allowReassociationFromDate: Date?
 
     var unsafeSessionHeaders: [String] = []
 
     func unsafeReassociationIsAllowed() -> Bool {
-        guard let date = unsafeAllowReassociationFromDate else { return false }
-        unsafeAllowReassociationFromDate = nil
+        guard let date = allowReassociationFromDate else { return false }
+        allowReassociationFromDate = nil
         return abs(date.timeIntervalSinceNow) < 5 * 60
-    }
-
-    func unsafeAllowReassociation() {
-        unsafeAllowReassociationFromDate = Date()
     }
 
     func unsafeUpdateSessionUUIDs(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String?) {
@@ -86,7 +81,7 @@ open class UserSession: Actor, Equatable {
     }
 
     private func _beAllowReassociation() {
-        unsafeAllowReassociation()
+        allowReassociationFromDate = Date()
     }
 
     private func _beUrlRequest(url: String,
