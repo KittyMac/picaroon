@@ -11,6 +11,15 @@
         }
       },
       {
+        "package": "Chronometer",
+        "repositoryURL": "https://github.com/KittyMac/Chronometer.git",
+        "state": {
+          "branch": null,
+          "revision": "35289a90ee0bb4a76f8acd647b773aeacf4d8856",
+          "version": "0.1.2"
+        }
+      },
+      {
         "package": "Flynn",
         "repositoryURL": "https://github.com/KittyMac/Flynn.git",
         "state": {
@@ -26,6 +35,24 @@
           "branch": null,
           "revision": "8a958689c995485a8bf63329195a062974efc5e5",
           "version": "0.3.1"
+        }
+      },
+      {
+        "package": "Sextant",
+        "repositoryURL": "https://github.com/KittyMac/Sextant.git",
+        "state": {
+          "branch": null,
+          "revision": "040d3c48435fd87f6dfae4c3a5f08c3f7aa1abeb",
+          "version": "0.4.3"
+        }
+      },
+      {
+        "package": "Spanker",
+        "repositoryURL": "https://github.com/KittyMac/Spanker.git",
+        "state": {
+          "branch": null,
+          "revision": "98d203e9e6188b8e817f02ba5c7f24d425ae1450",
+          "version": "0.1.21"
         }
       },
       {

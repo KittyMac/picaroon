@@ -4,7 +4,8 @@ import XCTest
 let helloWorldResponse = HttpResponse.asData(nil, .ok, .txt, "Hello World")
 
 class HelloWorld: UserSession {
-    override func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
+    override func safeHandleRequest(connection: AnyConnection,
+                                    httpRequest: HttpRequest) {
         connection.beSendInternalError()
     }
 }
@@ -15,7 +16,7 @@ func handleHelloWorldStaticRequest(_ httpRequest: HttpRequest) -> Data? {
 
 
 
-final class picaroonTests: XCTestCase {
+final class picaroonConnectionTests: XCTestCase {
     
     func testSessionIdParameter1() {
         let content = """

@@ -4,7 +4,8 @@ import PicaroonFramework
 let helloWorldResponse = HttpResponse.asData(nil, .ok, .txt, "Hello World")
 
 class HelloWorld: UserSession {
-    override func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
+    override func safeHandleRequest(connection: AnyConnection,
+                                    httpRequest: HttpRequest) {
         connection.beSendInternalError()
     }
 }

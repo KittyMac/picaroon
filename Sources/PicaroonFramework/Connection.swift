@@ -218,7 +218,8 @@ public class Connection: Actor, AnyConnection {
                oldJavascriptSessionUUID != newJavascriptSessionUUID {
                 if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                     oldJavascriptSessionUUID, newJavascriptSessionUUID) {
-                    userSession.beHandleRequest(self, httpRequest)
+                    userSession.beHandleRequest(connection: self,
+                                                httpRequest: httpRequest)
                     return
                 }
                 return _beSendInternalError()
@@ -227,7 +228,8 @@ public class Connection: Actor, AnyConnection {
             if let oldJavascriptSessionUUID = httpRequest.sid {
                 if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                     oldJavascriptSessionUUID, oldJavascriptSessionUUID) {
-                    userSession.beHandleRequest(self, httpRequest)
+                    userSession.beHandleRequest(connection: self,
+                                                httpRequest: httpRequest)
                     return
                 }
 
@@ -238,7 +240,8 @@ public class Connection: Actor, AnyConnection {
             // error  (it should be served by the static handler if we don't have a client which is
             // running enough to provide us a session id).
             if let userSession = userSessionManager.get(cookieSessionUUID, javascriptSessionUUID) {
-                userSession.beHandleRequest(self, httpRequest)
+                userSession.beHandleRequest(connection: self,
+                                            httpRequest: httpRequest)
                 return
             }
 

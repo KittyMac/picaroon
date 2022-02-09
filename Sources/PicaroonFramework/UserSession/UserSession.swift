@@ -9,16 +9,14 @@ import Socket
 import FoundationNetworking
 #endif
 
+/// In Picaroon, a user sessions encapsulates on browser's "session" with the server. So when
+/// the clinet connects for the very first time, a unique user session is created and assigned
+/// to the connection. A cookie is used to store the user session uuid, so it is for multiple
+/// connections to utilize the same user session.
+///
+/// UserSessions are intented to be subclassed by the application code
+/// 
 open class UserSession: Actor, Equatable {
-    // In Picaroon, a user sessions encapsulates on browser's "session" with the server. So when
-    // the clinet connects for the very first time, a unique user session is created and assigned
-    // to the connection. A cookie is used to store the user session uuid, so it is for multiple
-    // connections to utilize the same user session.
-
-    // UserSessions are intented to be subclassed by the application code
-
-    // unsafeSessionUUID is a UUID assigned to this session. Client is expected to query this value
-    // and then send it back in future http headers to identify it (preferable in HTML5 session storage).
 
     public static func == (lhs: UserSession, rhs: UserSession) -> Bool {
         if lhs.unsafeSessionUUID == rhs.unsafeSessionUUID {
@@ -72,12 +70,15 @@ open class UserSession: Actor, Equatable {
         super.init()
     }
 
-    open func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
+    open func safeHandleRequest(connection: AnyConnection,
+                                httpRequest: HttpRequest) {
         connection.beSendInternalError()
     }
 
-    private func _beHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
-        safeHandleRequest(connection, httpRequest)
+    private func _beHandleRequest(connection: AnyConnection,
+                                  httpRequest: HttpRequest) {
+        safeHandleRequest(connection: connection,
+                          httpRequest: httpRequest)
     }
 
     private func _beAllowReassociation() {
@@ -142,9 +143,9 @@ open class UserSession: Actor, Equatable {
 extension UserSession {
 
     @discardableResult
-    public func beHandleRequest(_ connection: AnyConnection,
-                                _ httpRequest: HttpRequest) -> Self {
-        unsafeSend { self._beHandleRequest(connection, httpRequest) }
+    public func beHandleRequest(connection: AnyConnection,
+                                httpRequest: HttpRequest) -> Self {
+        unsafeSend { self._beHandleRequest(connection: connection, httpRequest: httpRequest) }
         return self
     }
     @discardableResult

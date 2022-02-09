@@ -16,7 +16,8 @@ private func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
 
 extension PicaroonTesting {
     open class WebUserSession: UserSession {
-        open override func safeHandleRequest(_ connection: AnyConnection, _ httpRequest: HttpRequest) {
+        open override func safeHandleRequest(connection: AnyConnection,
+                                             httpRequest: HttpRequest) {
             if let content = httpRequest.content,
                let contentString = String(data: content, encoding: .utf8),
                contentString.contains("Server_AllowReassociation") {
