@@ -1,16 +1,15 @@
 import Flynn
 import Foundation
-import Socket
 
 @propertyWrapper
 public struct InMemory: CustomStringConvertible {
     var value: String?
-    var bufferPtr: UnsafePointer<CChar>?
+    var bufferPtr: UnsafePointer<UInt8>?
     let startIdx: Int
     let endIdx: Int
 
     public init(initialValue value: String?,
-                _ bufferPtr: UnsafePointer<CChar>,
+                _ bufferPtr: UnsafePointer<UInt8>,
                 _ startIdx: Int,
                 _ endIdx: Int) {
         self.value = value

@@ -1,6 +1,5 @@
 import Foundation
 import Flynn
-import Socket
 
 public typealias StaticStorageHandler = (HttpRequest) -> Data?
 
@@ -50,34 +49,30 @@ public class Server<T: UserSession> {
 
     @discardableResult
     private func loop() -> Bool {
-        do {
-            let serverSocket = try Socket.create()
-            try serverSocket.listen(on: config.port, node: config.address)
+        guard let serverSocket = Socket(blocking: true) else { return false }
+        
+        serverSocket.listen(address: config.address,
+                            port: config.port)
 
-            repeat {
+        repeat {
 #if os(Linux)
-                if let newSocket = try? serverSocket.acceptClientConnection() {
+            if let newSocket = serverSocket.accept(blocking: true) {
+                _ = Connection(socket: newSocket,
+                               config: config,
+                               staticStorageHandler: staticStorageHandler,
+                               userSessionManager: userSessionManager)
+            }
+#else
+            autoreleasepool {
+                if let newSocket = serverSocket.accept(blocking: true) {
                     _ = Connection(socket: newSocket,
                                    config: config,
-                                   staticStorageHandler: staticStorageHandler,
-                                   userSessionManager: userSessionManager)
+                                   staticStorageHandler: self.staticStorageHandler,
+                                   userSessionManager: self.userSessionManager)
                 }
-#else
-                autoreleasepool {
-                    if let newSocket = try? serverSocket.acceptClientConnection() {
-                        _ = Connection(socket: newSocket,
-                                       config: config,
-                                       staticStorageHandler: self.staticStorageHandler,
-                                       userSessionManager: self.userSessionManager)
-                    }
-                }
+            }
 #endif
-            } while self.listening
-
-        } catch {
-            print("socket error: \(error)")
-            return false
-        }
+        } while self.listening
         return true
     }
 

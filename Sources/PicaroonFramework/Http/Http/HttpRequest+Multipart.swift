@@ -1,6 +1,5 @@
 import Flynn
 import Foundation
-import Socket
 import Hitch
 
 public extension HttpRequest {
@@ -10,7 +9,7 @@ public extension HttpRequest {
 
         if let content = content {
             return content.withUnsafeBytes { unsafeRawBufferPointer in
-                let unsafeBufferPointer = unsafeRawBufferPointer.bindMemory(to: CChar.self)
+                let unsafeBufferPointer = unsafeRawBufferPointer.bindMemory(to: UInt8.self)
                 guard let buffer = unsafeBufferPointer.baseAddress else { return [] }
                 let startPtr = buffer
                 let endPtr = buffer + content.count
@@ -27,12 +26,12 @@ public extension HttpRequest {
                     let size = ptr - startPtr
 
                     if size >= 1 &&
-                        ptr[-1] == CChar.minus &&
-                        ptr[0] == CChar.minus {
+                        ptr[-1] == UInt8.minus &&
+                        ptr[0] == UInt8.minus {
 
                         boundaryStartPtr = ptr - 1
                         while ptr < endPtr {
-                            if ptr.pointee == CChar.carriageReturn || ptr.pointee == CChar.newLine {
+                            if ptr.pointee == UInt8.carriageReturn || ptr.pointee == UInt8.newLine {
                                 boundaryEndPtr = ptr
                                 break
                             }
@@ -91,8 +90,8 @@ public extension HttpRequest {
         return []
     }
 
-    func debug(start: UnsafePointer<CChar>,
-               end: UnsafePointer<CChar>) {
+    func debug(start: UnsafePointer<UInt8>,
+               end: UnsafePointer<UInt8>) {
         #if DEBUG
         let string = String(data: Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: start),
                                        count: end - start,

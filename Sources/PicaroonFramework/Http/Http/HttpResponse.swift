@@ -1,6 +1,5 @@
 import Flynn
 import Foundation
-import Socket
 
 // swiftlint:disable line_length
 

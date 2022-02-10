@@ -1,6 +1,5 @@
 import Flynn
 import Foundation
-import Socket
 
 public typealias GetUserSessionCallback = (UserSession?) -> Void
 

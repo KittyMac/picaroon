@@ -1,6 +1,5 @@
 import Flynn
 import Foundation
-import Socket
 
 // swiftlint:disable function_body_length
 // swiftlint:disable cyclomatic_complexity
@@ -53,12 +52,12 @@ public class HttpRequest {
         return nil
     }
 
-    private var internalBuffer: UnsafeMutablePointer<CChar>?
+    private var internalBuffer: UnsafeMutablePointer<UInt8>?
 
-    private func bake(buffer: UnsafePointer<CChar>,
+    private func bake(buffer: UnsafePointer<UInt8>,
                       size bufferSize: Int) {
 
-        internalBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
+        internalBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
 
         if let internalBuffer = internalBuffer {
             internalBuffer.assign(from: buffer, count: bufferSize)
@@ -116,7 +115,7 @@ public class HttpRequest {
 
     public convenience init(request unsafeRawBufferPointer: UnsafeRawBufferPointer,
                             size bufferSize: Int) {
-        let unsafeBufferPointer = unsafeRawBufferPointer.bindMemory(to: CChar.self)
+        let unsafeBufferPointer = unsafeRawBufferPointer.bindMemory(to: UInt8.self)
         guard let buffer = unsafeBufferPointer.baseAddress else {
             self.init()
             return
@@ -124,7 +123,7 @@ public class HttpRequest {
         self.init(request: buffer, size: bufferSize)
     }
 
-    public init(request buffer: UnsafePointer<CChar>,
+    public init(request buffer: UnsafePointer<UInt8>,
                 size bufferSize: Int) {
 
         let startPtr = buffer
@@ -142,43 +141,43 @@ public class HttpRequest {
             if lineNumber == 0 {
                 if method == nil {
                     if  size >= 3 &&
-                        (ptr-3).pointee == CChar.G &&
-                        (ptr-2).pointee == CChar.E &&
-                        (ptr-1).pointee == CChar.T &&
-                        ptr.pointee == CChar.space {
+                        (ptr-3).pointee == UInt8.G &&
+                        (ptr-2).pointee == UInt8.E &&
+                        (ptr-1).pointee == UInt8.T &&
+                        ptr.pointee == UInt8.space {
                         method = .GET
                     } else if
                         size >= 4 &&
-                        (ptr-4).pointee == CChar.H &&
-                        (ptr-3).pointee == CChar.E &&
-                        (ptr-2).pointee == CChar.A &&
-                        (ptr-1).pointee == CChar.D &&
-                        ptr.pointee == CChar.space {
+                        (ptr-4).pointee == UInt8.H &&
+                        (ptr-3).pointee == UInt8.E &&
+                        (ptr-2).pointee == UInt8.A &&
+                        (ptr-1).pointee == UInt8.D &&
+                        ptr.pointee == UInt8.space {
                         method = .HEAD
                     } else if
                         size >= 3 &&
-                        (ptr-3).pointee == CChar.P &&
-                        (ptr-2).pointee == CChar.U &&
-                        (ptr-1).pointee == CChar.T &&
-                        ptr.pointee == CChar.space {
+                        (ptr-3).pointee == UInt8.P &&
+                        (ptr-2).pointee == UInt8.U &&
+                        (ptr-1).pointee == UInt8.T &&
+                        ptr.pointee == UInt8.space {
                         method = .PUT
                     } else if
                         size >= 4 &&
-                        (ptr-4).pointee == CChar.P &&
-                        (ptr-3).pointee == CChar.O &&
-                        (ptr-2).pointee == CChar.S &&
-                        (ptr-1).pointee == CChar.T &&
-                        ptr.pointee == CChar.space {
+                        (ptr-4).pointee == UInt8.P &&
+                        (ptr-3).pointee == UInt8.O &&
+                        (ptr-2).pointee == UInt8.S &&
+                        (ptr-1).pointee == UInt8.T &&
+                        ptr.pointee == UInt8.space {
                         method = .POST
                     } else if
                         size >= 6 &&
-                        (ptr-6).pointee == CChar.D &&
-                        (ptr-5).pointee == CChar.E &&
-                        (ptr-4).pointee == CChar.L &&
-                        (ptr-3).pointee == CChar.E &&
-                        (ptr-2).pointee == CChar.T &&
-                        (ptr-1).pointee == CChar.E &&
-                        ptr.pointee == CChar.space {
+                        (ptr-6).pointee == UInt8.D &&
+                        (ptr-5).pointee == UInt8.E &&
+                        (ptr-4).pointee == UInt8.L &&
+                        (ptr-3).pointee == UInt8.E &&
+                        (ptr-2).pointee == UInt8.T &&
+                        (ptr-1).pointee == UInt8.E &&
+                        ptr.pointee == UInt8.space {
                         method = .DELETE
                     }
 
@@ -199,36 +198,36 @@ public class HttpRequest {
                             size = ptr - startPtr
 
                             if urlParametersStartPtr == defaultPtr &&
-                                (ptr-1).pointee == CChar.questionMark {
+                                (ptr-1).pointee == UInt8.questionMark {
                                 urlParametersStartPtr = ptr
                             }
 
                             if  size >= 4 &&
-                                (ptr-4).pointee == CChar.s &&
-                                (ptr-3).pointee == CChar.i &&
-                                (ptr-2).pointee == CChar.d &&
-                                (ptr-1).pointee == CChar.equal {
+                                (ptr-4).pointee == UInt8.s &&
+                                (ptr-3).pointee == UInt8.i &&
+                                (ptr-2).pointee == UInt8.d &&
+                                (ptr-1).pointee == UInt8.equal {
                                 sessionStartPtr = ptr
                             }
 
                             if  size >= 6 &&
-                                (ptr-6).pointee == CChar.s &&
-                                (ptr-5).pointee == CChar.i &&
-                                (ptr-4).pointee == CChar.d &&
-                                (ptr-3).pointee == CChar.percentSign &&
-                                (ptr-2).pointee == CChar.three &&
-                                ((ptr-1).pointee == CChar.D || (ptr-1).pointee == CChar.d) {
+                                (ptr-6).pointee == UInt8.s &&
+                                (ptr-5).pointee == UInt8.i &&
+                                (ptr-4).pointee == UInt8.d &&
+                                (ptr-3).pointee == UInt8.percentSign &&
+                                (ptr-2).pointee == UInt8.three &&
+                                ((ptr-1).pointee == UInt8.D || (ptr-1).pointee == UInt8.d) {
                                 sessionStartPtr = ptr
                             }
 
-                            if ptr.pointee == CChar.ampersand &&
+                            if ptr.pointee == UInt8.ampersand &&
                                 sessionStartPtr != defaultPtr {
                                 sessionEndPtr = ptr
                             }
 
-                            if ptr.pointee == CChar.carriageReturn ||
-                                ptr.pointee == CChar.newLine ||
-                                ptr.pointee == CChar.space {
+                            if ptr.pointee == UInt8.carriageReturn ||
+                                ptr.pointee == UInt8.newLine ||
+                                ptr.pointee == UInt8.space {
 
                                 if sessionStartPtr != defaultPtr &&
                                     sessionEndPtr == defaultPtr {
@@ -269,9 +268,9 @@ public class HttpRequest {
                 // 1. advance until we find the ":", or a whitespace
                 var keyEnd = ptr + 1
                 while ptr < endPtr {
-                    if ptr.pointee == CChar.carriageReturn || ptr.pointee == CChar.newLine {
-                        while ptr < endPtr && ( ptr.pointee == CChar.carriageReturn ||
-                                                ptr.pointee == CChar.newLine) {
+                    if ptr.pointee == UInt8.carriageReturn || ptr.pointee == UInt8.newLine {
+                        while ptr < endPtr && ( ptr.pointee == UInt8.carriageReturn ||
+                                                ptr.pointee == UInt8.newLine) {
                             ptr += 1
                         }
                         // If we reach here, we're at the point we're looking for payload data
@@ -289,7 +288,7 @@ public class HttpRequest {
                         }
                         return
                     }
-                    if ptr.pointee == CChar.colon {
+                    if ptr.pointee == UInt8.colon {
                         keyEnd = ptr
                         ptr += 1
                         break
@@ -298,14 +297,14 @@ public class HttpRequest {
                 }
 
                 // 2. Skip whitespace
-                while ptr < endPtr && (ptr.pointee == CChar.space || ptr.pointee == CChar.tab) {
+                while ptr < endPtr && (ptr.pointee == UInt8.space || ptr.pointee == UInt8.tab) {
                     ptr += 1
                 }
 
                 let valueStart = ptr
 
                 // 3. Advance to the end of the line
-                while ptr < endPtr && ptr.pointee != CChar.carriageReturn && ptr.pointee != CChar.newLine {
+                while ptr < endPtr && ptr.pointee != UInt8.carriageReturn && ptr.pointee != UInt8.newLine {
                     ptr += 1
                 }
 
@@ -316,17 +315,17 @@ public class HttpRequest {
                               keyEnd: keyEnd)
 
                 // Advance to the next line
-                if ptr.pointee == CChar.carriageReturn {
+                if ptr.pointee == UInt8.carriageReturn {
                     ptr += 1
-                    if ptr.pointee == CChar.newLine {
+                    if ptr.pointee == UInt8.newLine {
                         ptr += 1
                     }
-                } else if ptr.pointee == CChar.newLine {
+                } else if ptr.pointee == UInt8.newLine {
                     ptr += 1
                 }
             }
 
-            if ptr.pointee == CChar.newLine {
+            if ptr.pointee == UInt8.newLine {
                 lineNumber += 1
                 if method == nil {
                     // we should have parsed the HTTP method on the first line, so
@@ -339,7 +338,7 @@ public class HttpRequest {
         }
     }
 
-    public init(multipart buffer: UnsafePointer<CChar>, size bufferSize: Int) {
+    public init(multipart buffer: UnsafePointer<UInt8>, size bufferSize: Int) {
 
         let startPtr = buffer
         let endPtr = buffer + bufferSize
@@ -355,9 +354,9 @@ public class HttpRequest {
             // 1. advance until we find the ":", or a whitespace
             var keyEnd = ptr + 1
             while ptr < endPtr {
-                if ptr.pointee == CChar.carriageReturn || ptr.pointee == CChar.newLine {
-                    while ptr < endPtr && ( ptr.pointee == CChar.carriageReturn ||
-                                            ptr.pointee == CChar.newLine) {
+                if ptr.pointee == UInt8.carriageReturn || ptr.pointee == UInt8.newLine {
+                    while ptr < endPtr && ( ptr.pointee == UInt8.carriageReturn ||
+                                            ptr.pointee == UInt8.newLine) {
                         ptr += 1
                     }
 
@@ -367,7 +366,7 @@ public class HttpRequest {
                     }
                     return
                 }
-                if ptr.pointee == CChar.colon {
+                if ptr.pointee == UInt8.colon {
                     keyEnd = ptr
                     ptr += 1
                     break
@@ -376,14 +375,14 @@ public class HttpRequest {
             }
 
             // 2. Skip whitespace
-            while ptr < endPtr && (ptr.pointee == CChar.space || ptr.pointee == CChar.tab) {
+            while ptr < endPtr && (ptr.pointee == UInt8.space || ptr.pointee == UInt8.tab) {
                 ptr += 1
             }
 
             let valueStart = ptr
 
             // 3. Advance to the end of the line
-            while ptr < endPtr && ptr.pointee != CChar.carriageReturn && ptr.pointee != CChar.newLine {
+            while ptr < endPtr && ptr.pointee != UInt8.carriageReturn && ptr.pointee != UInt8.newLine {
                 ptr += 1
             }
 
@@ -394,16 +393,16 @@ public class HttpRequest {
                           keyEnd: keyEnd)
 
             // Advance to the next line
-            if ptr.pointee == CChar.carriageReturn {
+            if ptr.pointee == UInt8.carriageReturn {
                 ptr += 1
-                if ptr.pointee == CChar.newLine {
+                if ptr.pointee == UInt8.newLine {
                     ptr += 1
                 }
-            } else if ptr.pointee == CChar.newLine {
+            } else if ptr.pointee == UInt8.newLine {
                 ptr += 1
             }
 
-            if ptr.pointee == CChar.newLine {
+            if ptr.pointee == UInt8.newLine {
                 lineNumber += 1
                 if method == nil {
                     // we should have parsed the HTTP method on the first line, so
@@ -417,18 +416,18 @@ public class HttpRequest {
     }
 
     @inline(__always)
-    private func parseKeyValue(buffer: UnsafePointer<CChar>,
-                               ptr: UnsafePointer<CChar>,
-                               valueStart: UnsafePointer<CChar>,
-                               keyEnd: UnsafePointer<CChar>) {
+    private func parseKeyValue(buffer: UnsafePointer<UInt8>,
+                               ptr: UnsafePointer<UInt8>,
+                               valueStart: UnsafePointer<UInt8>,
+                               keyEnd: UnsafePointer<UInt8>) {
         let size = keyEnd - buffer
 
         if  $host.isEmpty() &&
             size >= 5 &&
-            (keyEnd-4).pointee == CChar.H &&
-            (keyEnd-3).pointee == CChar.o &&
-            (keyEnd-2).pointee == CChar.s &&
-            (keyEnd-1).pointee == CChar.t {
+            (keyEnd-4).pointee == UInt8.H &&
+            (keyEnd-3).pointee == UInt8.o &&
+            (keyEnd-2).pointee == UInt8.s &&
+            (keyEnd-1).pointee == UInt8.t {
             $host = InMemory(initialValue: nil,
                              buffer,
                              valueStart - buffer,
@@ -437,16 +436,16 @@ public class HttpRequest {
 
         if  $userAgent.isEmpty() &&
             size >= 10 &&
-            (keyEnd-10).pointee == CChar.U &&
-            (keyEnd-9).pointee == CChar.s &&
-            (keyEnd-8).pointee == CChar.e &&
-            (keyEnd-7).pointee == CChar.r &&
-            (keyEnd-6).pointee == CChar.minus &&
-            (keyEnd-5).pointee == CChar.A &&
-            (keyEnd-4).pointee == CChar.g &&
-            (keyEnd-3).pointee == CChar.e &&
-            (keyEnd-2).pointee == CChar.n &&
-            (keyEnd-1).pointee == CChar.t {
+            (keyEnd-10).pointee == UInt8.U &&
+            (keyEnd-9).pointee == UInt8.s &&
+            (keyEnd-8).pointee == UInt8.e &&
+            (keyEnd-7).pointee == UInt8.r &&
+            (keyEnd-6).pointee == UInt8.minus &&
+            (keyEnd-5).pointee == UInt8.A &&
+            (keyEnd-4).pointee == UInt8.g &&
+            (keyEnd-3).pointee == UInt8.e &&
+            (keyEnd-2).pointee == UInt8.n &&
+            (keyEnd-1).pointee == UInt8.t {
             $userAgent = InMemory(initialValue: nil,
                                   buffer,
                                   valueStart - buffer,
@@ -455,12 +454,12 @@ public class HttpRequest {
 
         if  $accept.isEmpty() &&
             size >= 6 &&
-            (keyEnd-6).pointee == CChar.A &&
-            (keyEnd-5).pointee == CChar.c &&
-            (keyEnd-4).pointee == CChar.c &&
-            (keyEnd-3).pointee == CChar.e &&
-            (keyEnd-2).pointee == CChar.p &&
-            (keyEnd-1).pointee == CChar.t {
+            (keyEnd-6).pointee == UInt8.A &&
+            (keyEnd-5).pointee == UInt8.c &&
+            (keyEnd-4).pointee == UInt8.c &&
+            (keyEnd-3).pointee == UInt8.e &&
+            (keyEnd-2).pointee == UInt8.p &&
+            (keyEnd-1).pointee == UInt8.t {
             $accept = InMemory(initialValue: nil,
                                buffer,
                                valueStart - buffer,
@@ -469,21 +468,21 @@ public class HttpRequest {
 
         if  $acceptEncoding.isEmpty() &&
             size >= 15 &&
-            (keyEnd-15).pointee == CChar.A &&
-            (keyEnd-14).pointee == CChar.c &&
-            (keyEnd-13).pointee == CChar.c &&
-            (keyEnd-12).pointee == CChar.e &&
-            (keyEnd-11).pointee == CChar.p &&
-            (keyEnd-10).pointee == CChar.t &&
-            (keyEnd-9).pointee == CChar.minus &&
-            (keyEnd-8).pointee == CChar.E &&
-            (keyEnd-7).pointee == CChar.n &&
-            (keyEnd-6).pointee == CChar.c &&
-            (keyEnd-5).pointee == CChar.o &&
-            (keyEnd-4).pointee == CChar.d &&
-            (keyEnd-3).pointee == CChar.i &&
-            (keyEnd-2).pointee == CChar.n &&
-            (keyEnd-1).pointee == CChar.g {
+            (keyEnd-15).pointee == UInt8.A &&
+            (keyEnd-14).pointee == UInt8.c &&
+            (keyEnd-13).pointee == UInt8.c &&
+            (keyEnd-12).pointee == UInt8.e &&
+            (keyEnd-11).pointee == UInt8.p &&
+            (keyEnd-10).pointee == UInt8.t &&
+            (keyEnd-9).pointee == UInt8.minus &&
+            (keyEnd-8).pointee == UInt8.E &&
+            (keyEnd-7).pointee == UInt8.n &&
+            (keyEnd-6).pointee == UInt8.c &&
+            (keyEnd-5).pointee == UInt8.o &&
+            (keyEnd-4).pointee == UInt8.d &&
+            (keyEnd-3).pointee == UInt8.i &&
+            (keyEnd-2).pointee == UInt8.n &&
+            (keyEnd-1).pointee == UInt8.g {
             $acceptEncoding = InMemory(initialValue: nil,
                                        buffer,
                                        valueStart - buffer,
@@ -492,20 +491,20 @@ public class HttpRequest {
 
         if  $acceptCharset.isEmpty() &&
             size >= 14 &&
-            (keyEnd-14).pointee == CChar.A &&
-            (keyEnd-13).pointee == CChar.c &&
-            (keyEnd-12).pointee == CChar.c &&
-            (keyEnd-11).pointee == CChar.e &&
-            (keyEnd-10).pointee == CChar.p &&
-            (keyEnd-9).pointee == CChar.t &&
-            (keyEnd-8).pointee == CChar.minus &&
-            (keyEnd-7).pointee == CChar.C &&
-            (keyEnd-6).pointee == CChar.h &&
-            (keyEnd-5).pointee == CChar.a &&
-            (keyEnd-4).pointee == CChar.r &&
-            (keyEnd-3).pointee == CChar.s &&
-            (keyEnd-2).pointee == CChar.e &&
-            (keyEnd-1).pointee == CChar.t {
+            (keyEnd-14).pointee == UInt8.A &&
+            (keyEnd-13).pointee == UInt8.c &&
+            (keyEnd-12).pointee == UInt8.c &&
+            (keyEnd-11).pointee == UInt8.e &&
+            (keyEnd-10).pointee == UInt8.p &&
+            (keyEnd-9).pointee == UInt8.t &&
+            (keyEnd-8).pointee == UInt8.minus &&
+            (keyEnd-7).pointee == UInt8.C &&
+            (keyEnd-6).pointee == UInt8.h &&
+            (keyEnd-5).pointee == UInt8.a &&
+            (keyEnd-4).pointee == UInt8.r &&
+            (keyEnd-3).pointee == UInt8.s &&
+            (keyEnd-2).pointee == UInt8.e &&
+            (keyEnd-1).pointee == UInt8.t {
             $acceptCharset = InMemory(initialValue: nil,
                                       buffer,
                                       valueStart - buffer,
@@ -514,21 +513,21 @@ public class HttpRequest {
 
         if  $acceptLanguage.isEmpty() &&
             size >= 15 &&
-            (keyEnd-15).pointee == CChar.A &&
-            (keyEnd-14).pointee == CChar.c &&
-            (keyEnd-13).pointee == CChar.c &&
-            (keyEnd-12).pointee == CChar.e &&
-            (keyEnd-11).pointee == CChar.p &&
-            (keyEnd-10).pointee == CChar.t &&
-            (keyEnd-9).pointee == CChar.minus &&
-            (keyEnd-8).pointee == CChar.L &&
-            (keyEnd-7).pointee == CChar.a &&
-            (keyEnd-6).pointee == CChar.n &&
-            (keyEnd-5).pointee == CChar.g &&
-            (keyEnd-4).pointee == CChar.u &&
-            (keyEnd-3).pointee == CChar.a &&
-            (keyEnd-2).pointee == CChar.g &&
-            (keyEnd-1).pointee == CChar.e {
+            (keyEnd-15).pointee == UInt8.A &&
+            (keyEnd-14).pointee == UInt8.c &&
+            (keyEnd-13).pointee == UInt8.c &&
+            (keyEnd-12).pointee == UInt8.e &&
+            (keyEnd-11).pointee == UInt8.p &&
+            (keyEnd-10).pointee == UInt8.t &&
+            (keyEnd-9).pointee == UInt8.minus &&
+            (keyEnd-8).pointee == UInt8.L &&
+            (keyEnd-7).pointee == UInt8.a &&
+            (keyEnd-6).pointee == UInt8.n &&
+            (keyEnd-5).pointee == UInt8.g &&
+            (keyEnd-4).pointee == UInt8.u &&
+            (keyEnd-3).pointee == UInt8.a &&
+            (keyEnd-2).pointee == UInt8.g &&
+            (keyEnd-1).pointee == UInt8.e {
             $acceptLanguage = InMemory(initialValue: nil,
                                        buffer,
                                        valueStart - buffer,
@@ -537,16 +536,16 @@ public class HttpRequest {
 
         if  $connection.isEmpty() &&
             size >= 10 &&
-            (keyEnd-10).pointee == CChar.C &&
-            (keyEnd-9).pointee == CChar.o &&
-            (keyEnd-8).pointee == CChar.n &&
-            (keyEnd-7).pointee == CChar.n &&
-            (keyEnd-6).pointee == CChar.e &&
-            (keyEnd-5).pointee == CChar.c &&
-            (keyEnd-4).pointee == CChar.t &&
-            (keyEnd-3).pointee == CChar.i &&
-            (keyEnd-2).pointee == CChar.o &&
-            (keyEnd-1).pointee == CChar.n {
+            (keyEnd-10).pointee == UInt8.C &&
+            (keyEnd-9).pointee == UInt8.o &&
+            (keyEnd-8).pointee == UInt8.n &&
+            (keyEnd-7).pointee == UInt8.n &&
+            (keyEnd-6).pointee == UInt8.e &&
+            (keyEnd-5).pointee == UInt8.c &&
+            (keyEnd-4).pointee == UInt8.t &&
+            (keyEnd-3).pointee == UInt8.i &&
+            (keyEnd-2).pointee == UInt8.o &&
+            (keyEnd-1).pointee == UInt8.n {
             $connection = InMemory(initialValue: nil,
                                    buffer,
                                    valueStart - buffer,
@@ -555,31 +554,31 @@ public class HttpRequest {
 
         if  $upgradeInsecureRequests.isEmpty() &&
             size >= 25 &&
-            (keyEnd-25).pointee == CChar.U &&
-            (keyEnd-24).pointee == CChar.p &&
-            (keyEnd-23).pointee == CChar.g &&
-            (keyEnd-22).pointee == CChar.r &&
-            (keyEnd-21).pointee == CChar.a &&
-            (keyEnd-20).pointee == CChar.d &&
-            (keyEnd-19).pointee == CChar.e &&
-            (keyEnd-18).pointee == CChar.minus &&
-            (keyEnd-17).pointee == CChar.I &&
-            (keyEnd-16).pointee == CChar.n &&
-            (keyEnd-15).pointee == CChar.s &&
-            (keyEnd-14).pointee == CChar.e &&
-            (keyEnd-13).pointee == CChar.c &&
-            (keyEnd-12).pointee == CChar.u &&
-            (keyEnd-11).pointee == CChar.r &&
-            (keyEnd-10).pointee == CChar.e &&
-            (keyEnd-9).pointee == CChar.minus &&
-            (keyEnd-8).pointee == CChar.R &&
-            (keyEnd-7).pointee == CChar.e &&
-            (keyEnd-6).pointee == CChar.q &&
-            (keyEnd-5).pointee == CChar.u &&
-            (keyEnd-4).pointee == CChar.e &&
-            (keyEnd-3).pointee == CChar.s &&
-            (keyEnd-2).pointee == CChar.t &&
-            (keyEnd-1).pointee == CChar.s {
+            (keyEnd-25).pointee == UInt8.U &&
+            (keyEnd-24).pointee == UInt8.p &&
+            (keyEnd-23).pointee == UInt8.g &&
+            (keyEnd-22).pointee == UInt8.r &&
+            (keyEnd-21).pointee == UInt8.a &&
+            (keyEnd-20).pointee == UInt8.d &&
+            (keyEnd-19).pointee == UInt8.e &&
+            (keyEnd-18).pointee == UInt8.minus &&
+            (keyEnd-17).pointee == UInt8.I &&
+            (keyEnd-16).pointee == UInt8.n &&
+            (keyEnd-15).pointee == UInt8.s &&
+            (keyEnd-14).pointee == UInt8.e &&
+            (keyEnd-13).pointee == UInt8.c &&
+            (keyEnd-12).pointee == UInt8.u &&
+            (keyEnd-11).pointee == UInt8.r &&
+            (keyEnd-10).pointee == UInt8.e &&
+            (keyEnd-9).pointee == UInt8.minus &&
+            (keyEnd-8).pointee == UInt8.R &&
+            (keyEnd-7).pointee == UInt8.e &&
+            (keyEnd-6).pointee == UInt8.q &&
+            (keyEnd-5).pointee == UInt8.u &&
+            (keyEnd-4).pointee == UInt8.e &&
+            (keyEnd-3).pointee == UInt8.s &&
+            (keyEnd-2).pointee == UInt8.t &&
+            (keyEnd-1).pointee == UInt8.s {
             $upgradeInsecureRequests = InMemory(initialValue: nil,
                                                 buffer,
                                                 valueStart - buffer,
@@ -588,20 +587,20 @@ public class HttpRequest {
 
         if  $contentLength.isEmpty() &&
             size >= 14 &&
-            (keyEnd-14).pointee == CChar.C &&
-            (keyEnd-13).pointee == CChar.o &&
-            (keyEnd-12).pointee == CChar.n &&
-            (keyEnd-11).pointee == CChar.t &&
-            (keyEnd-10).pointee == CChar.e &&
-            (keyEnd-9).pointee == CChar.n &&
-            (keyEnd-8).pointee == CChar.t &&
-            (keyEnd-7).pointee == CChar.minus &&
-            (keyEnd-6).pointee == CChar.L &&
-            (keyEnd-5).pointee == CChar.e &&
-            (keyEnd-4).pointee == CChar.n &&
-            (keyEnd-3).pointee == CChar.g &&
-            (keyEnd-2).pointee == CChar.t &&
-            (keyEnd-1).pointee == CChar.h {
+            (keyEnd-14).pointee == UInt8.C &&
+            (keyEnd-13).pointee == UInt8.o &&
+            (keyEnd-12).pointee == UInt8.n &&
+            (keyEnd-11).pointee == UInt8.t &&
+            (keyEnd-10).pointee == UInt8.e &&
+            (keyEnd-9).pointee == UInt8.n &&
+            (keyEnd-8).pointee == UInt8.t &&
+            (keyEnd-7).pointee == UInt8.minus &&
+            (keyEnd-6).pointee == UInt8.L &&
+            (keyEnd-5).pointee == UInt8.e &&
+            (keyEnd-4).pointee == UInt8.n &&
+            (keyEnd-3).pointee == UInt8.g &&
+            (keyEnd-2).pointee == UInt8.t &&
+            (keyEnd-1).pointee == UInt8.h {
             $contentLength = InMemory(initialValue: nil,
                                       buffer,
                                       valueStart - buffer,
@@ -610,18 +609,18 @@ public class HttpRequest {
 
         if  $contentType.isEmpty() &&
             size >= 12 &&
-            (keyEnd-12).pointee == CChar.C &&
-            (keyEnd-11).pointee == CChar.o &&
-            (keyEnd-10).pointee == CChar.n &&
-            (keyEnd-9).pointee == CChar.t &&
-            (keyEnd-8).pointee == CChar.e &&
-            (keyEnd-7).pointee == CChar.n &&
-            (keyEnd-6).pointee == CChar.t &&
-            (keyEnd-5).pointee == CChar.minus &&
-            (keyEnd-4).pointee == CChar.T &&
-            (keyEnd-3).pointee == CChar.y &&
-            (keyEnd-2).pointee == CChar.p &&
-            (keyEnd-1).pointee == CChar.e {
+            (keyEnd-12).pointee == UInt8.C &&
+            (keyEnd-11).pointee == UInt8.o &&
+            (keyEnd-10).pointee == UInt8.n &&
+            (keyEnd-9).pointee == UInt8.t &&
+            (keyEnd-8).pointee == UInt8.e &&
+            (keyEnd-7).pointee == UInt8.n &&
+            (keyEnd-6).pointee == UInt8.t &&
+            (keyEnd-5).pointee == UInt8.minus &&
+            (keyEnd-4).pointee == UInt8.T &&
+            (keyEnd-3).pointee == UInt8.y &&
+            (keyEnd-2).pointee == UInt8.p &&
+            (keyEnd-1).pointee == UInt8.e {
             $contentType = InMemory(initialValue: nil,
                                     buffer,
                                     valueStart - buffer,
@@ -630,25 +629,25 @@ public class HttpRequest {
 
         if  $contentDisposition.isEmpty() &&
             size >= 19 &&
-            (keyEnd-19).pointee == CChar.C &&
-            (keyEnd-18).pointee == CChar.o &&
-            (keyEnd-17).pointee == CChar.n &&
-            (keyEnd-16).pointee == CChar.t &&
-            (keyEnd-15).pointee == CChar.e &&
-            (keyEnd-14).pointee == CChar.n &&
-            (keyEnd-13).pointee == CChar.t &&
-            (keyEnd-12).pointee == CChar.minus &&
-            (keyEnd-11).pointee == CChar.D &&
-            (keyEnd-10).pointee == CChar.i &&
-            (keyEnd-9).pointee == CChar.s &&
-            (keyEnd-8).pointee == CChar.p &&
-            (keyEnd-7).pointee == CChar.o &&
-            (keyEnd-6).pointee == CChar.s &&
-            (keyEnd-5).pointee == CChar.i &&
-            (keyEnd-4).pointee == CChar.t &&
-            (keyEnd-3).pointee == CChar.i &&
-            (keyEnd-2).pointee == CChar.o &&
-            (keyEnd-1).pointee == CChar.n {
+            (keyEnd-19).pointee == UInt8.C &&
+            (keyEnd-18).pointee == UInt8.o &&
+            (keyEnd-17).pointee == UInt8.n &&
+            (keyEnd-16).pointee == UInt8.t &&
+            (keyEnd-15).pointee == UInt8.e &&
+            (keyEnd-14).pointee == UInt8.n &&
+            (keyEnd-13).pointee == UInt8.t &&
+            (keyEnd-12).pointee == UInt8.minus &&
+            (keyEnd-11).pointee == UInt8.D &&
+            (keyEnd-10).pointee == UInt8.i &&
+            (keyEnd-9).pointee == UInt8.s &&
+            (keyEnd-8).pointee == UInt8.p &&
+            (keyEnd-7).pointee == UInt8.o &&
+            (keyEnd-6).pointee == UInt8.s &&
+            (keyEnd-5).pointee == UInt8.i &&
+            (keyEnd-4).pointee == UInt8.t &&
+            (keyEnd-3).pointee == UInt8.i &&
+            (keyEnd-2).pointee == UInt8.o &&
+            (keyEnd-1).pointee == UInt8.n {
             $contentDisposition = InMemory(initialValue: nil,
                                            buffer,
                                            valueStart - buffer,
@@ -657,23 +656,23 @@ public class HttpRequest {
 
         if  $ifModifiedSince.isEmpty() &&
             size >= 17 &&
-            (keyEnd-17).pointee == CChar.I &&
-            (keyEnd-16).pointee == CChar.f &&
-            (keyEnd-15).pointee == CChar.minus &&
-            (keyEnd-14).pointee == CChar.M &&
-            (keyEnd-13).pointee == CChar.o &&
-            (keyEnd-12).pointee == CChar.d &&
-            (keyEnd-11).pointee == CChar.i &&
-            (keyEnd-10).pointee == CChar.f &&
-            (keyEnd-9).pointee == CChar.i &&
-            (keyEnd-8).pointee == CChar.e &&
-            (keyEnd-7).pointee == CChar.d &&
-            (keyEnd-6).pointee == CChar.minus &&
-            (keyEnd-5).pointee == CChar.S &&
-            (keyEnd-4).pointee == CChar.i &&
-            (keyEnd-3).pointee == CChar.n &&
-            (keyEnd-2).pointee == CChar.c &&
-            (keyEnd-1).pointee == CChar.e {
+            (keyEnd-17).pointee == UInt8.I &&
+            (keyEnd-16).pointee == UInt8.f &&
+            (keyEnd-15).pointee == UInt8.minus &&
+            (keyEnd-14).pointee == UInt8.M &&
+            (keyEnd-13).pointee == UInt8.o &&
+            (keyEnd-12).pointee == UInt8.d &&
+            (keyEnd-11).pointee == UInt8.i &&
+            (keyEnd-10).pointee == UInt8.f &&
+            (keyEnd-9).pointee == UInt8.i &&
+            (keyEnd-8).pointee == UInt8.e &&
+            (keyEnd-7).pointee == UInt8.d &&
+            (keyEnd-6).pointee == UInt8.minus &&
+            (keyEnd-5).pointee == UInt8.S &&
+            (keyEnd-4).pointee == UInt8.i &&
+            (keyEnd-3).pointee == UInt8.n &&
+            (keyEnd-2).pointee == UInt8.c &&
+            (keyEnd-1).pointee == UInt8.e {
             $ifModifiedSince = InMemory(initialValue: nil,
                                         buffer,
                                         valueStart - buffer,
@@ -682,12 +681,12 @@ public class HttpRequest {
 
         if  $cookie.isEmpty() &&
             size >= 6 &&
-            (keyEnd-6).pointee == CChar.C &&
-            (keyEnd-5).pointee == CChar.o &&
-            (keyEnd-4).pointee == CChar.o &&
-            (keyEnd-3).pointee == CChar.k &&
-            (keyEnd-2).pointee == CChar.i &&
-            (keyEnd-1).pointee == CChar.e {
+            (keyEnd-6).pointee == UInt8.C &&
+            (keyEnd-5).pointee == UInt8.o &&
+            (keyEnd-4).pointee == UInt8.o &&
+            (keyEnd-3).pointee == UInt8.k &&
+            (keyEnd-2).pointee == UInt8.i &&
+            (keyEnd-1).pointee == UInt8.e {
             $cookie = InMemory(initialValue: nil,
                                buffer,
                                valueStart - buffer,
@@ -696,12 +695,12 @@ public class HttpRequest {
 
         if  $expect.isEmpty() &&
             size >= 6 &&
-            (keyEnd-6).pointee == CChar.E &&
-            (keyEnd-5).pointee == CChar.x &&
-            (keyEnd-4).pointee == CChar.p &&
-            (keyEnd-3).pointee == CChar.e &&
-            (keyEnd-2).pointee == CChar.c &&
-            (keyEnd-1).pointee == CChar.t {
+            (keyEnd-6).pointee == UInt8.E &&
+            (keyEnd-5).pointee == UInt8.x &&
+            (keyEnd-4).pointee == UInt8.p &&
+            (keyEnd-3).pointee == UInt8.e &&
+            (keyEnd-2).pointee == UInt8.c &&
+            (keyEnd-1).pointee == UInt8.t {
             $expect = InMemory(initialValue: nil,
                                buffer,
                                valueStart - buffer,
@@ -710,15 +709,15 @@ public class HttpRequest {
 
         if  $flynnTag.isEmpty() &&
             size >= 9 &&
-            (keyEnd-9).pointee == CChar.F &&
-            (keyEnd-8).pointee == CChar.l &&
-            (keyEnd-7).pointee == CChar.y &&
-            (keyEnd-6).pointee == CChar.n &&
-            (keyEnd-5).pointee == CChar.n &&
-            (keyEnd-4).pointee == CChar.minus &&
-            (keyEnd-3).pointee == CChar.T &&
-            (keyEnd-2).pointee == CChar.a &&
-            (keyEnd-1).pointee == CChar.g {
+            (keyEnd-9).pointee == UInt8.F &&
+            (keyEnd-8).pointee == UInt8.l &&
+            (keyEnd-7).pointee == UInt8.y &&
+            (keyEnd-6).pointee == UInt8.n &&
+            (keyEnd-5).pointee == UInt8.n &&
+            (keyEnd-4).pointee == UInt8.minus &&
+            (keyEnd-3).pointee == UInt8.T &&
+            (keyEnd-2).pointee == UInt8.a &&
+            (keyEnd-1).pointee == UInt8.g {
             $flynnTag = InMemory(initialValue: nil,
                                  buffer,
                                  valueStart - buffer,
@@ -727,16 +726,16 @@ public class HttpRequest {
 
         if  $sessionId.isEmpty() &&
             size >= 10 &&
-            (keyEnd-10).pointee == CChar.S &&
-            (keyEnd-9).pointee == CChar.e &&
-            (keyEnd-8).pointee == CChar.s &&
-            (keyEnd-7).pointee == CChar.s &&
-            (keyEnd-6).pointee == CChar.i &&
-            (keyEnd-5).pointee == CChar.o &&
-            (keyEnd-4).pointee == CChar.n &&
-            (keyEnd-3).pointee == CChar.minus &&
-            (keyEnd-2).pointee == CChar.I &&
-            (keyEnd-1).pointee == CChar.d {
+            (keyEnd-10).pointee == UInt8.S &&
+            (keyEnd-9).pointee == UInt8.e &&
+            (keyEnd-8).pointee == UInt8.s &&
+            (keyEnd-7).pointee == UInt8.s &&
+            (keyEnd-6).pointee == UInt8.i &&
+            (keyEnd-5).pointee == UInt8.o &&
+            (keyEnd-4).pointee == UInt8.n &&
+            (keyEnd-3).pointee == UInt8.minus &&
+            (keyEnd-2).pointee == UInt8.I &&
+            (keyEnd-1).pointee == UInt8.d {
             $sessionId = InMemory(initialValue: nil,
                                   buffer,
                                   valueStart - buffer,

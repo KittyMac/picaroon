@@ -15,7 +15,6 @@ let package = Package(
 		.package(url: "https://github.com/KittyMac/Flynn.git", .upToNextMinor(from: "0.2.0")),
         .package(url: "https://github.com/KittyMac/Hitch.git", .upToNextMinor(from: "0.3.0")),
         .package(url: "https://github.com/KittyMac/Sextant.git", .upToNextMinor(from: "0.4.0")),
-		.package(url: "https://github.com/IBM-Swift/BlueSocket.git", .upToNextMinor(from: "1.0.0")),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "0.3.0"),
     ],
     targets: [
@@ -28,7 +27,6 @@ let package = Package(
             dependencies: [
                 "Flynn",
                 "Hitch",
-				"Socket",
                 "Sextant",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
 				

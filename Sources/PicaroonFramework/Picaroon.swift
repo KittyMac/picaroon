@@ -1,6 +1,5 @@
 import Foundation
 import Flynn
-import Socket
 
 extension String {
     private func substring(with nsrange: NSRange) -> Substring? {

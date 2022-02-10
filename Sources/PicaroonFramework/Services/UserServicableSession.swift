@@ -1,6 +1,5 @@
 import Flynn
 import Foundation
-import Socket
 import Hitch
 import Sextant
 import Spanker
