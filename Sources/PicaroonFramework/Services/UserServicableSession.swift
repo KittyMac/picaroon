@@ -23,14 +23,17 @@ public typealias ServiceResultCallback = (Bool) -> Void
 /// now be fulfilled (for a non-admin, these request will fail to match a service and will
 /// will result in error. For the authenticated admin user, it will match the service
 /// and process normally).
+///
+/// Note: The name of the service is name of the class as returned by
+/// String(describing: type(of: service))
 open class UserServicableSession: UserSession {
-    private var services = [HalfHitch: Service]()
+    private var services = [HalfHitch: ServiceActor]()
     
-    private func _beAdd(service: Service) {
+    private func _beAdd(service: ServiceActor) {
         self.services[service.unsafeServiceName.halfhitch()] = service
     }
     
-    private func _beRemove(service: Service) {
+    private func _beRemove(service: ServiceActor) {
         self.services.removeValue(forKey: service.unsafeServiceName.halfhitch())
     }
     
@@ -75,12 +78,12 @@ open class UserServicableSession: UserSession {
 extension UserServicableSession {
 
     @discardableResult
-    public func beAdd(service: Service) -> Self {
+    public func beAdd(service: ServiceActor) -> Self {
         unsafeSend { self._beAdd(service: service) }
         return self
     }
     @discardableResult
-    public func beRemove(service: Service) -> Self {
+    public func beRemove(service: ServiceActor) -> Self {
         unsafeSend { self._beRemove(service: service) }
         return self
     }
