@@ -51,15 +51,30 @@ open class UserServicableSession: UserSession {
         // [{"service":"HelloWorldService", "result":"Hello World"}, {"service":"AdminUserService","error":"500"}]
         let results = JsonElement(unknown: [])
         var servicesCalled = 0
+        var servicesFinished = 0
+        
+        
+        // TODO: We cannot do it this way because the memory backing the service
+        // jsonElement is only garaunteed for the life of the .query() call.
+        // We can work through a loophole if content were a hitch, then we can
+        // garauntee it be around for the life of the hitch (which could be tied
+        // to the life of the http request object
+        
         content.query(forEach: #"$[?(@.service)]"#) { service in
             if let serviceName = service[halfHitch: "service"],
                let serviceActor = services[serviceName] {
+                let serviceIndex = servicesCalled
+                
                 servicesCalled += 1
                 serviceActor.beHandleRequest(jsonElement: service,
                                              httpRequest: httpRequest,
                                              self) { result in
-                    results.append(value: result)
-                    if results.count == servicesCalled {
+                    results.set(value: result, at: serviceIndex)
+                    
+                    print("1: \(results)")
+                    servicesFinished += 1
+                    if servicesFinished == servicesCalled {
+                        print("2: \(results)")
                         connection.beSendData(HttpResponse.asData(self, .ok, .json, results.description))
                     }
                 }
