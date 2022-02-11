@@ -3,8 +3,6 @@ import Flynn
 
 #if canImport(FoundationNetworking)
 import FoundationNetworking
-
-private typealias Darwin = Glibc
 #endif
 
 public class Socket {
@@ -60,7 +58,11 @@ public class Socket {
         if value > 0 {
             timeout.tv_sec = Int(Double(value / 1000))
             let uSecs = Int32(Double(value % 1000)) * 1000
+            #if os(Linux)
+            timeout.tv_usec = Int(uSecs)
+            #else
             timeout.tv_usec = Int32(uSecs)
+            #endif
         }
         setsockopt (socketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.stride))
     }
@@ -70,15 +72,24 @@ public class Socket {
         if milliseconds > 0 {
             timeout.tv_sec = Int(milliseconds / 1000)
             let uSecs = (milliseconds % 1000) * 1000
+            #if os(Linux)
+            timeout.tv_usec = Int(uSecs)
+            #else
             timeout.tv_usec = Int32(uSecs)
+            #endif
         }
         setsockopt (socketFd, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.stride))
     }
     
     public func close() {
         guard socketFd >= 0 else { return }
+        #if os(Linux)
+        Glibc.shutdown(socketFd, Int32(SHUT_RDWR))
+        Glibc.close(socketFd)
+        #else
         Darwin.shutdown(socketFd, Int32(SHUT_RDWR))
         Darwin.close(socketFd)
+        #endif
         socketFd = -1
     }
     
@@ -112,7 +123,12 @@ public class Socket {
         let endPtr = startPtr + count
         
         while cptr < endPtr {
+            #if os(Linux)
+            let bytesWritten = Glibc.send(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
+            #else
             let bytesWritten = Darwin.send(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
+            #endif
+            
             if (bytesWritten < 0) {
                 if errno == EWOULDBLOCK || errno == EAGAIN {
                     return cptr - startPtr
@@ -137,7 +153,12 @@ public class Socket {
         let startPtr = bytes
         let endPtr = startPtr + count
                             
+        #if os(Linux)
+        let bytesRead = Glibc.recv(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
+        #else
         let bytesRead = Darwin.recv(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
+        #endif
+        
         if (bytesRead <= 0) {
             if bytesRead < 0 && errno == EWOULDBLOCK || errno == EAGAIN {
                 return 0
@@ -171,7 +192,12 @@ public class Socket {
             return -1
         }
         
+        #if os(Linux)
+        let ret = Glibc.listen(socketFd, 128)
+        #else
         let ret = Darwin.listen(socketFd, 128)
+        #endif
+        
         if ret < 0 {
             self.close()
             return -1
@@ -182,7 +208,13 @@ public class Socket {
     
     @discardableResult
     public func accept(blocking: Bool = true) -> Socket? {
+        
+        #if os(Linux)
+        let clientFd = Glibc.accept(socketFd, nil, nil)
+        #else
         let clientFd = Darwin.accept(socketFd, nil, nil)
+        #endif
+        
         let socket = Socket(socketFd: clientFd,
                             blocking: blocking)
         

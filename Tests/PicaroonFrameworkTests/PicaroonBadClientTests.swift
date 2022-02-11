@@ -52,5 +52,9 @@ final class picaroonBadClientTests: XCTestCase {
     
     static var allTests = [
         ("testBadClient0", testBadClient0),
+        ("testBadClient1", testBadClient1),
+        ("testBadClient2", testBadClient2),
+        ("testBadClient3", testBadClient3),
+        ("testBadClient4", testBadClient4),
     ]
 }

@@ -318,6 +318,13 @@ final class picaroonConnectionTests: XCTestCase {
     }
 
     static var allTests = [
-        ("testPerformance1", testPerformance1),
+        ("testSessionIdParameter1", testSessionIdParameter1),
+        ("testSessionIdParameter2", testSessionIdParameter2),
+        ("testMultipartRequest", testMultipartRequest),
+        //("testSimpleConnectionPersistance", testSimpleConnectionPersistance),
+        //("testMultipleConnectionPersistance", testMultipleConnectionPersistance),
+        //("testConnectionReassociation", testConnectionReassociation),
+        //("testConnectionReassociationBySidInUrl", testConnectionReassociationBySidInUrl),
+        //("testArrayAccessPerformance", testArrayAccessPerformance)
     ]
 }

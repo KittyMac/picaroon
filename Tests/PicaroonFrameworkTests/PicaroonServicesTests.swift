@@ -42,9 +42,41 @@ class TestServicesSession: UserServicableSession {
     }
 }
 
+public class TestConnection: AnyConnection {
+    public func beSendData(_ data: Data) -> Self { return self }
+    public func beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) -> Self { return self }
+    public func beEndUserSession() -> Self { return self }
+    public func beSendInternalError() -> Self { return self }
+    public func beSendServiceUnavailable() -> Self { return self }
+    public func beSendSuccess(_ message: String) -> Self { return self }
+    public func beSendError(_ error: String) -> Self { return self }
+    public func beSendNotModified() -> Self { return self }
+    public func beSetTimeout(_ timeout: TimeInterval) -> Self { return self }
+}
+
 final class picaroonServicesTests: XCTestCase {
     
     func testHelloWorldService0() {
+        let userSession = TestServicesSession()
+        let connection = TestConnection()
+        
+        let content = """
+        GET /user?state=sid%3DF3901E70-DA28-44CE-939B-D43C1CFF75CF HTTP/1.1\r
+        Content-Type: text/plain\r
+        Content-Length: 11\r
+        \r
+        Hello World
+        """.halfhitch()
+        
+        guard let request = HttpRequest(request: content.raw()!, size: content.count) else {
+            return XCTFail()
+        }
+        
+        userSession.beHandleRequest(connection: connection,
+                                    httpRequest: request)
+    }
+    
+    func testHelloWorldService1() {
         let expectation = XCTestExpectation(description: "success")
         
         let port = Int.random(in: 8000..<65500)
