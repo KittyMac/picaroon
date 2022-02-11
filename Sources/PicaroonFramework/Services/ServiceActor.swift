@@ -14,14 +14,14 @@ open class ServiceActor: Actor {
     }
     
     /// Overridden by subclass to use custom service name
-    var unsafeServiceName: Hitch {
+    open var unsafeServiceName: Hitch {
         return serviceName
     }
     
     /// Overridden by subclass to handle requests
-    func safeHandleRequest(jsonElement: JsonElement,
-                           httpRequest: HttpRequest,
-                           _ returnCallback: (JsonElement) -> ()) {
+    open func safeHandleRequest(jsonElement: JsonElement,
+                                httpRequest: HttpRequest,
+                                _ returnCallback: (JsonElement) -> ()) {
         returnCallback(JsonElement(unknown: nil))
     }    
     
