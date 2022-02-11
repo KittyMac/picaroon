@@ -1,5 +1,7 @@
 import Flynn
 import Foundation
+import Hitch
+import Spanker
 
 // swiftlint:disable function_body_length
 // swiftlint:disable cyclomatic_complexity
@@ -8,93 +10,40 @@ import Foundation
 // swiftlint:disable file_length
 
 public class HttpRequest {
+    
     public var method: HttpMethod?
-
-    @InMemory public var url: String?
-    @InMemory public var urlParameters: String?
-    @InMemory public var host: String?
-    @InMemory public var userAgent: String?
-    @InMemory public var accept: String?
-    @InMemory public var acceptEncoding: String?
-    @InMemory public var acceptCharset: String?
-    @InMemory public var acceptLanguage: String?
-    @InMemory public var connection: String?
-    @InMemory public var upgradeInsecureRequests: String?
-    @InMemory public var contentLength: String?
-    @InMemory public var contentType: String?
-    @InMemory public var contentDisposition: String?
-    @InMemory public var ifModifiedSince: String?
-    @InMemory public var cookie: String?
-    @InMemory public var expect: String?
-    @InMemory public var flynnTag: String?
-    @InMemory public var sessionId: String?
-    @InMemory public var sid: String?
-
-    private var parameters: [String: String]?
-    public func parameter(name: String) -> String? {
-        if let parameters = parameters {
-            return parameters[name]
-        }
-
-        guard let urlParameters = urlParameters else { return nil }
-        guard let url = URL(string: "https://www.a.com/b?\(urlParameters)") else { return nil }
-
-        parameters = [:]
-
-        if let components = URLComponents(url: url,
-                                          resolvingAgainstBaseURL: false),
-           let items = components.queryItems {
-            for item in items {
-                parameters?[item.name] = item.value
-            }
-            return parameters?[name]
-        }
-        return nil
-    }
-
-    private var internalBuffer: UnsafeMutablePointer<UInt8>?
-
-    private func bake(buffer: UnsafePointer<UInt8>,
-                      size bufferSize: Int) {
-
-        internalBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
-
-        if let internalBuffer = internalBuffer {
-            internalBuffer.assign(from: buffer, count: bufferSize)
-
-            $url.bufferPtr = UnsafePointer(internalBuffer)
-            $urlParameters.bufferPtr = UnsafePointer(internalBuffer)
-            $host.bufferPtr = UnsafePointer(internalBuffer)
-            $userAgent.bufferPtr = UnsafePointer(internalBuffer)
-            $accept.bufferPtr = UnsafePointer(internalBuffer)
-            $acceptEncoding.bufferPtr = UnsafePointer(internalBuffer)
-            $acceptCharset.bufferPtr = UnsafePointer(internalBuffer)
-            $acceptLanguage.bufferPtr = UnsafePointer(internalBuffer)
-            $connection.bufferPtr = UnsafePointer(internalBuffer)
-            $upgradeInsecureRequests.bufferPtr = UnsafePointer(internalBuffer)
-            $contentLength.bufferPtr = UnsafePointer(internalBuffer)
-            $contentType.bufferPtr = UnsafePointer(internalBuffer)
-            $contentDisposition.bufferPtr = UnsafePointer(internalBuffer)
-            $ifModifiedSince.bufferPtr = UnsafePointer(internalBuffer)
-            $cookie.bufferPtr = UnsafePointer(internalBuffer)
-            $expect.bufferPtr = UnsafePointer(internalBuffer)
-            $flynnTag.bufferPtr = UnsafePointer(internalBuffer)
-            $sessionId.bufferPtr = UnsafePointer(internalBuffer)
-        }
-    }
-
-    deinit {
-        if let internalBuffer = internalBuffer {
-            internalBuffer.deallocate()
-        }
-    }
-
+    
+    public var url: HalfHitch?
+    public var urlParameters: HalfHitch?
+    public var host: HalfHitch?
+    public var userAgent: HalfHitch?
+    public var accept: HalfHitch?
+    public var acceptEncoding: HalfHitch?
+    public var acceptCharset: HalfHitch?
+    public var acceptLanguage: HalfHitch?
+    public var connection: HalfHitch?
+    public var upgradeInsecureRequests: HalfHitch?
+    public var contentLength: HalfHitch?
+    public var contentType: HalfHitch?
+    public var contentDisposition: HalfHitch?
+    public var ifModifiedSince: HalfHitch?
+    public var cookie: HalfHitch?
+    public var expect: HalfHitch?
+    public var flynnTag: HalfHitch?
+    public var sessionId: HalfHitch?
+    public var sid: HalfHitch?
+    
+    public var content: HalfHitch?
+    public var json: JsonElement?
+    
+    public var description: Hitch?
+    
     public var cookies: [String: String] {
         var _cookies: [String: String] = [:]
 
         if let cookie = cookie {
             // cookie1=something; cookie2=another
-            let keyValuePairs = cookie.components(separatedBy: ";")
+            let keyValuePairs = cookie.description.components(separatedBy: ";")
             for pair in keyValuePairs {
                 let parts = pair.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "=")
                 if parts.count == 2 {
@@ -104,36 +53,14 @@ public class HttpRequest {
         }
         return _cookies
     }
-
-    public var content: Data?
-
-    public var incomplete: Bool
-
-    public init() {
-        incomplete = true
-    }
-
-    public convenience init(request unsafeRawBufferPointer: UnsafeRawBufferPointer,
-                            size bufferSize: Int) {
-        let unsafeBufferPointer = unsafeRawBufferPointer.bindMemory(to: UInt8.self)
-        guard let buffer = unsafeBufferPointer.baseAddress else {
-            self.init()
-            return
-        }
-        self.init(request: buffer, size: bufferSize)
-    }
-
-    public init(request buffer: UnsafePointer<UInt8>,
-                size bufferSize: Int) {
-
+    
+    public init?(request buffer: UnsafeMutablePointer<UInt8>,
+                 size bufferSize: Int) {
+        
         let startPtr = buffer
         let endPtr = buffer + bufferSize
-
         var ptr = startPtr + 3
-
         var lineNumber = 0
-
-        incomplete = true
 
         while ptr < endPtr {
             var size = ptr - startPtr
@@ -244,22 +171,24 @@ public class HttpRequest {
 
                             ptr += 1
                         }
-                        $url = InMemory(initialValue: nil,
-                                        buffer,
-                                        urlStartPtr - buffer,
-                                        urlEndPtr - buffer)
-
+                        
+                        
+                        url = HalfHitch(raw: buffer,
+                                        count: bufferSize,
+                                        from: urlStartPtr - buffer,
+                                        to: urlEndPtr - buffer)
+                        
                         if sessionStartPtr < sessionEndPtr {
-                            $sid = InMemory(initialValue: nil,
-                                            buffer,
-                                            sessionStartPtr - buffer,
-                                            sessionEndPtr - buffer)
+                            sid = HalfHitch(raw: buffer,
+                                            count: bufferSize,
+                                            from: sessionStartPtr - buffer,
+                                            to: sessionEndPtr - buffer)
                         }
                         if urlParametersStartPtr < urlParametersEndPtr {
-                            $urlParameters = InMemory(initialValue: nil,
-                                                      buffer,
-                                                      urlParametersStartPtr - buffer,
-                                                      urlParametersEndPtr - buffer)
+                            urlParameters = HalfHitch(raw: buffer,
+                                                      count: bufferSize,
+                                                      from: urlParametersStartPtr - buffer,
+                                                      to: urlParametersEndPtr - buffer)
                         }
                     }
                 }
@@ -275,17 +204,21 @@ public class HttpRequest {
                         }
                         // If we reach here, we're at the point we're looking for payload data
                         if let contentLength = contentLength {
-                            if let contentLengthBytes = Int(contentLength) {
+                            if let contentLengthBytes = contentLength.toInt() {
                                 if endPtr - ptr >= contentLengthBytes {
-                                    content = Data(bytes: ptr, count: contentLengthBytes)
-                                    incomplete = false
-                                    bake(buffer: buffer, size: ptr - buffer)
+                                    content = HalfHitch(raw: buffer,
+                                                        count: bufferSize,
+                                                        from: ptr - buffer,
+                                                        to: (ptr - buffer) + contentLengthBytes)
                                 }
                             }
-                        } else {
-                            incomplete = false
-                            bake(buffer: buffer, size: ptr - buffer)
                         }
+                        
+                        // Congrats! we have successfully parsed the http request. We now need to bake the request
+                        // (ie copy to our own buffer before we pass it along to other people)
+                        bake(buffer: buffer,
+                             bufferSize: bufferSize)
+                        
                         return
                     }
                     if ptr.pointee == UInt8.colon {
@@ -310,6 +243,7 @@ public class HttpRequest {
 
                 // 3. For speed, we only match against the keys we support (no generics)
                 parseKeyValue(buffer: buffer,
+                              bufferSize: bufferSize,
                               ptr: ptr,
                               valueStart: valueStart,
                               keyEnd: keyEnd)
@@ -336,9 +270,12 @@ public class HttpRequest {
 
             ptr += 1
         }
+        
+        return nil
     }
-
-    public init(multipart buffer: UnsafePointer<UInt8>, size bufferSize: Int) {
+    
+    public init?(multipart buffer: UnsafeMutablePointer<UInt8>,
+                 size bufferSize: Int) {
 
         let startPtr = buffer
         let endPtr = buffer + bufferSize
@@ -346,8 +283,6 @@ public class HttpRequest {
         var ptr = startPtr + 3
 
         var lineNumber = 0
-
-        incomplete = false
 
         while ptr < endPtr {
             // Every line after the header is a Key-Word-No-Space: Whatever Until New Line
@@ -362,7 +297,10 @@ public class HttpRequest {
 
                     // If we reach here, the rest of the content is the payload
                     if endPtr - ptr >= 0 {
-                        content = Data(bytes: ptr, count: endPtr - ptr)
+                        content = HalfHitch(raw: buffer,
+                                            count: bufferSize,
+                                            from: ptr - buffer,
+                                            to: (ptr - buffer) + (endPtr - ptr))
                     }
                     return
                 }
@@ -388,6 +326,7 @@ public class HttpRequest {
 
             // 3. For speed, we only match against the keys we support (no generics)
             parseKeyValue(buffer: buffer,
+                          bufferSize: bufferSize,
                           ptr: ptr,
                           valueStart: valueStart,
                           keyEnd: keyEnd)
@@ -413,28 +352,80 @@ public class HttpRequest {
 
             ptr += 1
         }
+        
+        return nil
     }
-
-    @inline(__always)
-    private func parseKeyValue(buffer: UnsafePointer<UInt8>,
-                               ptr: UnsafePointer<UInt8>,
-                               valueStart: UnsafePointer<UInt8>,
-                               keyEnd: UnsafePointer<UInt8>) {
+    
+    @inlinable @inline(__always)
+    func bake(buffer: UnsafeMutablePointer<UInt8>,
+              bufferSize: Int,
+              using: HalfHitch?) -> HalfHitch? {
+        guard let halfhitch = using else { return nil }
+        guard let oldRaw = halfhitch.raw() else { return nil }
+        guard let newRaw = description?.raw() else { return nil }
+        
+        let startIndex = oldRaw - buffer
+        
+        return HalfHitch(raw: newRaw,
+                         count: bufferSize,
+                         from: startIndex,
+                         to: startIndex + halfhitch.count)
+    }
+    
+    @inlinable @inline(__always)
+    func bake(buffer: UnsafeMutablePointer<UInt8>,
+              bufferSize: Int) {
+        
+        description = Hitch(bytes: buffer, offset: 0, count: bufferSize)
+                
+        url = bake(buffer: buffer, bufferSize: bufferSize, using: url)
+        urlParameters = bake(buffer: buffer, bufferSize: bufferSize, using: urlParameters)
+        host = bake(buffer: buffer, bufferSize: bufferSize, using: host)
+        userAgent = bake(buffer: buffer, bufferSize: bufferSize, using: userAgent)
+        accept = bake(buffer: buffer, bufferSize: bufferSize, using: accept)
+        acceptEncoding = bake(buffer: buffer, bufferSize: bufferSize, using: acceptEncoding)
+        acceptCharset = bake(buffer: buffer, bufferSize: bufferSize, using: acceptCharset)
+        acceptLanguage = bake(buffer: buffer, bufferSize: bufferSize, using: acceptLanguage)
+        connection = bake(buffer: buffer, bufferSize: bufferSize, using: connection)
+        upgradeInsecureRequests = bake(buffer: buffer, bufferSize: bufferSize, using: upgradeInsecureRequests)
+        contentLength = bake(buffer: buffer, bufferSize: bufferSize, using: contentLength)
+        contentType = bake(buffer: buffer, bufferSize: bufferSize, using: contentType)
+        contentDisposition = bake(buffer: buffer, bufferSize: bufferSize, using: contentDisposition)
+        ifModifiedSince = bake(buffer: buffer, bufferSize: bufferSize, using: ifModifiedSince)
+        cookie = bake(buffer: buffer, bufferSize: bufferSize, using: cookie)
+        expect = bake(buffer: buffer, bufferSize: bufferSize, using: expect)
+        flynnTag = bake(buffer: buffer, bufferSize: bufferSize, using: flynnTag)
+        sessionId = bake(buffer: buffer, bufferSize: bufferSize, using: sessionId)
+        sid = bake(buffer: buffer, bufferSize: bufferSize, using: sid)
+        content = bake(buffer: buffer, bufferSize: bufferSize, using: content)
+        
+        // If we have json content, automatically parse it out
+        if let content = content {
+            json = Spanker.parse(halfhitch: content)
+        }
+    }
+    
+    @inlinable @inline(__always)
+    func parseKeyValue(buffer: UnsafeMutablePointer<UInt8>,
+                       bufferSize: Int,
+                       ptr: UnsafeMutablePointer<UInt8>,
+                       valueStart: UnsafeMutablePointer<UInt8>,
+                       keyEnd: UnsafeMutablePointer<UInt8>) {
         let size = keyEnd - buffer
 
-        if  $host.isEmpty() &&
+        if  host == nil &&
             size >= 5 &&
             (keyEnd-4).pointee == UInt8.H &&
             (keyEnd-3).pointee == UInt8.o &&
             (keyEnd-2).pointee == UInt8.s &&
             (keyEnd-1).pointee == UInt8.t {
-            $host = InMemory(initialValue: nil,
-                             buffer,
-                             valueStart - buffer,
-                             ptr - buffer)
+            host = HalfHitch(raw: buffer,
+                             count: bufferSize,
+                             from: valueStart - buffer,
+                             to: ptr - buffer)
         }
 
-        if  $userAgent.isEmpty() &&
+        if  userAgent == nil &&
             size >= 10 &&
             (keyEnd-10).pointee == UInt8.U &&
             (keyEnd-9).pointee == UInt8.s &&
@@ -446,13 +437,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.e &&
             (keyEnd-2).pointee == UInt8.n &&
             (keyEnd-1).pointee == UInt8.t {
-            $userAgent = InMemory(initialValue: nil,
-                                  buffer,
-                                  valueStart - buffer,
-                                  ptr - buffer)
+            userAgent = HalfHitch(raw: buffer,
+                                  count: bufferSize,
+                                  from: valueStart - buffer,
+                                  to: ptr - buffer)
         }
 
-        if  $accept.isEmpty() &&
+        if  accept == nil &&
             size >= 6 &&
             (keyEnd-6).pointee == UInt8.A &&
             (keyEnd-5).pointee == UInt8.c &&
@@ -460,13 +451,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.e &&
             (keyEnd-2).pointee == UInt8.p &&
             (keyEnd-1).pointee == UInt8.t {
-            $accept = InMemory(initialValue: nil,
-                               buffer,
-                               valueStart - buffer,
-                               ptr - buffer)
+            accept = HalfHitch(raw: buffer,
+                               count: bufferSize,
+                               from: valueStart - buffer,
+                               to: ptr - buffer)
         }
 
-        if  $acceptEncoding.isEmpty() &&
+        if  acceptEncoding == nil &&
             size >= 15 &&
             (keyEnd-15).pointee == UInt8.A &&
             (keyEnd-14).pointee == UInt8.c &&
@@ -483,13 +474,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.i &&
             (keyEnd-2).pointee == UInt8.n &&
             (keyEnd-1).pointee == UInt8.g {
-            $acceptEncoding = InMemory(initialValue: nil,
-                                       buffer,
-                                       valueStart - buffer,
-                                       ptr - buffer)
+            acceptEncoding = HalfHitch(raw: buffer,
+                                       count: bufferSize,
+                                       from: valueStart - buffer,
+                                       to: ptr - buffer)
         }
 
-        if  $acceptCharset.isEmpty() &&
+        if  acceptCharset == nil &&
             size >= 14 &&
             (keyEnd-14).pointee == UInt8.A &&
             (keyEnd-13).pointee == UInt8.c &&
@@ -505,13 +496,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.s &&
             (keyEnd-2).pointee == UInt8.e &&
             (keyEnd-1).pointee == UInt8.t {
-            $acceptCharset = InMemory(initialValue: nil,
-                                      buffer,
-                                      valueStart - buffer,
-                                      ptr - buffer)
+            acceptCharset = HalfHitch(raw: buffer,
+                                      count: bufferSize,
+                                      from: valueStart - buffer,
+                                      to: ptr - buffer)
         }
 
-        if  $acceptLanguage.isEmpty() &&
+        if  acceptLanguage == nil &&
             size >= 15 &&
             (keyEnd-15).pointee == UInt8.A &&
             (keyEnd-14).pointee == UInt8.c &&
@@ -528,13 +519,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.a &&
             (keyEnd-2).pointee == UInt8.g &&
             (keyEnd-1).pointee == UInt8.e {
-            $acceptLanguage = InMemory(initialValue: nil,
-                                       buffer,
-                                       valueStart - buffer,
-                                       ptr - buffer)
+            acceptLanguage = HalfHitch(raw: buffer,
+                                       count: bufferSize,
+                                       from: valueStart - buffer,
+                                       to: ptr - buffer)
         }
 
-        if  $connection.isEmpty() &&
+        if  connection == nil &&
             size >= 10 &&
             (keyEnd-10).pointee == UInt8.C &&
             (keyEnd-9).pointee == UInt8.o &&
@@ -546,13 +537,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.i &&
             (keyEnd-2).pointee == UInt8.o &&
             (keyEnd-1).pointee == UInt8.n {
-            $connection = InMemory(initialValue: nil,
-                                   buffer,
-                                   valueStart - buffer,
-                                   ptr - buffer)
+            connection = HalfHitch(raw: buffer,
+                                   count: bufferSize,
+                                   from: valueStart - buffer,
+                                   to: ptr - buffer)
         }
 
-        if  $upgradeInsecureRequests.isEmpty() &&
+        if  upgradeInsecureRequests == nil &&
             size >= 25 &&
             (keyEnd-25).pointee == UInt8.U &&
             (keyEnd-24).pointee == UInt8.p &&
@@ -579,13 +570,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.s &&
             (keyEnd-2).pointee == UInt8.t &&
             (keyEnd-1).pointee == UInt8.s {
-            $upgradeInsecureRequests = InMemory(initialValue: nil,
-                                                buffer,
-                                                valueStart - buffer,
-                                                ptr - buffer)
+            upgradeInsecureRequests = HalfHitch(raw: buffer,
+                                                count: bufferSize,
+                                                from: valueStart - buffer,
+                                                to: ptr - buffer)
         }
 
-        if  $contentLength.isEmpty() &&
+        if  contentLength == nil &&
             size >= 14 &&
             (keyEnd-14).pointee == UInt8.C &&
             (keyEnd-13).pointee == UInt8.o &&
@@ -601,13 +592,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.g &&
             (keyEnd-2).pointee == UInt8.t &&
             (keyEnd-1).pointee == UInt8.h {
-            $contentLength = InMemory(initialValue: nil,
-                                      buffer,
-                                      valueStart - buffer,
-                                      ptr - buffer)
+            contentLength = HalfHitch(raw: buffer,
+                                      count: bufferSize,
+                                      from: valueStart - buffer,
+                                      to: ptr - buffer)
         }
 
-        if  $contentType.isEmpty() &&
+        if  contentType == nil &&
             size >= 12 &&
             (keyEnd-12).pointee == UInt8.C &&
             (keyEnd-11).pointee == UInt8.o &&
@@ -621,13 +612,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.y &&
             (keyEnd-2).pointee == UInt8.p &&
             (keyEnd-1).pointee == UInt8.e {
-            $contentType = InMemory(initialValue: nil,
-                                    buffer,
-                                    valueStart - buffer,
-                                    ptr - buffer)
+            contentType = HalfHitch(raw: buffer,
+                                    count: bufferSize,
+                                    from: valueStart - buffer,
+                                    to: ptr - buffer)
         }
 
-        if  $contentDisposition.isEmpty() &&
+        if  contentDisposition == nil &&
             size >= 19 &&
             (keyEnd-19).pointee == UInt8.C &&
             (keyEnd-18).pointee == UInt8.o &&
@@ -648,13 +639,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.i &&
             (keyEnd-2).pointee == UInt8.o &&
             (keyEnd-1).pointee == UInt8.n {
-            $contentDisposition = InMemory(initialValue: nil,
-                                           buffer,
-                                           valueStart - buffer,
-                                           ptr - buffer)
+            contentDisposition = HalfHitch(raw: buffer,
+                                           count: bufferSize,
+                                           from: valueStart - buffer,
+                                           to: ptr - buffer)
         }
 
-        if  $ifModifiedSince.isEmpty() &&
+        if  ifModifiedSince == nil &&
             size >= 17 &&
             (keyEnd-17).pointee == UInt8.I &&
             (keyEnd-16).pointee == UInt8.f &&
@@ -673,13 +664,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.n &&
             (keyEnd-2).pointee == UInt8.c &&
             (keyEnd-1).pointee == UInt8.e {
-            $ifModifiedSince = InMemory(initialValue: nil,
-                                        buffer,
-                                        valueStart - buffer,
-                                        ptr - buffer)
+            ifModifiedSince = HalfHitch(raw: buffer,
+                                        count: bufferSize,
+                                        from: valueStart - buffer,
+                                        to: ptr - buffer)
         }
 
-        if  $cookie.isEmpty() &&
+        if  cookie == nil &&
             size >= 6 &&
             (keyEnd-6).pointee == UInt8.C &&
             (keyEnd-5).pointee == UInt8.o &&
@@ -687,13 +678,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.k &&
             (keyEnd-2).pointee == UInt8.i &&
             (keyEnd-1).pointee == UInt8.e {
-            $cookie = InMemory(initialValue: nil,
-                               buffer,
-                               valueStart - buffer,
-                               ptr - buffer)
+            cookie = HalfHitch(raw: buffer,
+                               count: bufferSize,
+                               from: valueStart - buffer,
+                               to: ptr - buffer)
         }
 
-        if  $expect.isEmpty() &&
+        if  expect == nil &&
             size >= 6 &&
             (keyEnd-6).pointee == UInt8.E &&
             (keyEnd-5).pointee == UInt8.x &&
@@ -701,13 +692,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.e &&
             (keyEnd-2).pointee == UInt8.c &&
             (keyEnd-1).pointee == UInt8.t {
-            $expect = InMemory(initialValue: nil,
-                               buffer,
-                               valueStart - buffer,
-                               ptr - buffer)
+            expect = HalfHitch(raw: buffer,
+                               count: bufferSize,
+                               from: valueStart - buffer,
+                               to: ptr - buffer)
         }
 
-        if  $flynnTag.isEmpty() &&
+        if  flynnTag == nil &&
             size >= 9 &&
             (keyEnd-9).pointee == UInt8.F &&
             (keyEnd-8).pointee == UInt8.l &&
@@ -718,13 +709,13 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.T &&
             (keyEnd-2).pointee == UInt8.a &&
             (keyEnd-1).pointee == UInt8.g {
-            $flynnTag = InMemory(initialValue: nil,
-                                 buffer,
-                                 valueStart - buffer,
-                                 ptr - buffer)
+            flynnTag = HalfHitch(raw: buffer,
+                                 count: bufferSize,
+                                 from: valueStart - buffer,
+                                 to: ptr - buffer)
         }
 
-        if  $sessionId.isEmpty() &&
+        if  sessionId == nil &&
             size >= 10 &&
             (keyEnd-10).pointee == UInt8.S &&
             (keyEnd-9).pointee == UInt8.e &&
@@ -736,11 +727,10 @@ public class HttpRequest {
             (keyEnd-3).pointee == UInt8.minus &&
             (keyEnd-2).pointee == UInt8.I &&
             (keyEnd-1).pointee == UInt8.d {
-            $sessionId = InMemory(initialValue: nil,
-                                  buffer,
-                                  valueStart - buffer,
-                                  ptr - buffer)
+            sessionId = HalfHitch(raw: buffer,
+                                  count: bufferSize,
+                                  from: valueStart - buffer,
+                                  to: ptr - buffer)
         }
-
     }
 }

@@ -19,8 +19,7 @@ extension PicaroonTesting {
         open override func safeHandleRequest(connection: AnyConnection,
                                              httpRequest: HttpRequest) {
             if let content = httpRequest.content,
-               let contentString = String(data: content, encoding: .utf8),
-               contentString.contains("Server_AllowReassociation") {
+               content.contains("Server_AllowReassociation") {
                 beAllowReassociation()
             }
 

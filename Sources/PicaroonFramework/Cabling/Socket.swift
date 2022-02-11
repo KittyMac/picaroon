@@ -112,8 +112,7 @@ public class Socket {
         let endPtr = startPtr + count
         
         while cptr < endPtr {
-            let date = Date()
-            let bytesWritten = Darwin.send(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))            
+            let bytesWritten = Darwin.send(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
             if (bytesWritten < 0) {
                 if errno == EWOULDBLOCK || errno == EAGAIN {
                     return cptr - startPtr

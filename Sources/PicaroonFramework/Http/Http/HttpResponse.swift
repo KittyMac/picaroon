@@ -6,7 +6,7 @@ import Foundation
 public struct HttpResponse {
 
     public static let sharedLastModifiedDate = Date()
-    public static let sharedLastModifiedDateString = "\(sharedLastModifiedDate)"
+    public static let sharedLastModifiedDateString = "\(sharedLastModifiedDate)".halfhitch()
 
     public static func isNew(_ request: HttpRequest) -> Bool {
         if let modifiedDate = request.ifModifiedSince {

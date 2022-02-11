@@ -38,7 +38,7 @@ open class UserServicableSession: UserSession {
     
     open override func safeHandleRequest(connection: AnyConnection,
                                          httpRequest: HttpRequest) {
-        guard let content = httpRequest.content else {
+        guard let json = httpRequest.json else {
             connection.beSendInternalError()
             return
         }
@@ -59,7 +59,7 @@ open class UserServicableSession: UserSession {
         // garauntee it be around for the life of the hitch (which could be tied
         // to the life of the http request object
         
-        content.query(forEach: #"$[?(@.service)]"#) { service in
+        json.query(forEach: #"$[?(@.service)]"#) { service in
             if let serviceName = service[halfHitch: "service"],
                let serviceActor = services[serviceName] {
                 let serviceIndex = servicesCalled

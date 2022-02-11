@@ -25,19 +25,17 @@ final class picaroonConnectionTests: XCTestCase {
         Content-Length: 11\r
         \r
         Hello World
-        """.data(using: .utf8)!
+        """.halfhitch()
         
-        content.withUnsafeBytes { buffer in
-            let request = HttpRequest(request: buffer, size: content.count)
-            
-            XCTAssertEqual(request.method, HttpMethod.GET)
-            XCTAssertEqual(request.contentType, "text/plain")
-            XCTAssertEqual(request.contentLength, "11")
-            XCTAssertEqual(request.content!.count, 11)
-            XCTAssertEqual(request.sid, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
-            XCTAssertEqual(request.urlParameters, "state=sid%3DF3901E70-DA28-44CE-939B-D43C1CFF75CF")
-            XCTAssertEqual(request.url, "/user")
-        }
+        let request = HttpRequest(request: content.raw()!, size: content.count)!
+        
+        XCTAssertEqual(request.method, HttpMethod.GET)
+        XCTAssertEqual(request.contentType, "text/plain")
+        XCTAssertEqual(request.contentLength, "11")
+        XCTAssertEqual(request.content!.count, 11)
+        XCTAssertEqual(request.sid, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
+        XCTAssertEqual(request.urlParameters, "state=sid%3DF3901E70-DA28-44CE-939B-D43C1CFF75CF")
+        XCTAssertEqual(request.url, "/user")
     }
     
     func testSessionIdParameter2() {
@@ -47,19 +45,17 @@ final class picaroonConnectionTests: XCTestCase {
         Content-Length: 11\r
         \r
         Hello World
-        """.data(using: .utf8)!
+        """.halfhitch()
         
-        content.withUnsafeBytes { buffer in
-            let request = HttpRequest(request: buffer, size: content.count)
-            
-            XCTAssertEqual(request.method, HttpMethod.GET)
-            XCTAssertEqual(request.contentType, "text/plain")
-            XCTAssertEqual(request.contentLength, "11")
-            XCTAssertEqual(request.content!.count, 11)
-            XCTAssertEqual(request.sid, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
-            XCTAssertEqual(request.urlParameters, "sid=F3901E70-DA28-44CE-939B-D43C1CFF75CF&code=Gf0I76pKptuRrNkJfDf5QrryqQJR4B")
-            XCTAssertEqual(request.url, "/user")
-        }
+        let request = HttpRequest(request: content.raw()!, size: content.count)!
+
+        XCTAssertEqual(request.method, HttpMethod.GET)
+        XCTAssertEqual(request.contentType, "text/plain")
+        XCTAssertEqual(request.contentLength, "11")
+        XCTAssertEqual(request.content!.count, 11)
+        XCTAssertEqual(request.sid, "F3901E70-DA28-44CE-939B-D43C1CFF75CF")
+        XCTAssertEqual(request.urlParameters, "sid=F3901E70-DA28-44CE-939B-D43C1CFF75CF&code=Gf0I76pKptuRrNkJfDf5QrryqQJR4B")
+        XCTAssertEqual(request.url, "/user")
     }
 
     func testMultipartRequest() {
@@ -79,28 +75,26 @@ final class picaroonConnectionTests: XCTestCase {
         test 1
         \r
         ------WebKitFormBoundaryd9xBKq96rap8J36e--\r
-        """.data(using: .utf8)!
+        """.halfhitch()
         
-        content.withUnsafeBytes { buffer in
-            let request = HttpRequest(request: buffer, size: content.count)
-            
-            XCTAssertEqual(request.method, HttpMethod.GET)
-            XCTAssertEqual(request.contentType, "multipart/form-data")
-            XCTAssertEqual(request.contentLength, "303")
-            
-            let parts = request.multipartContent
-            
-            XCTAssertEqual(parts.count, 2)
-            
-            XCTAssertEqual(parts[0].contentDisposition, #"form-data; name="type""#)
-            XCTAssertEqual(String(data: parts[0].content!, encoding: .utf8), "UploadClassificationsFile")
-            
-            XCTAssertEqual(parts[1].contentDisposition, #"form-data; name="file"; filename="test1.txt""#)
-            XCTAssertEqual(parts[1].contentType, #"text/plain"#)
-            XCTAssertEqual(String(data: parts[1].content!, encoding: .utf8), "test 1\n")
-        }
+        let request = HttpRequest(request: content.raw()!, size: content.count)!
+
+        XCTAssertEqual(request.method, HttpMethod.GET)
+        XCTAssertEqual(request.contentType, "multipart/form-data")
+        XCTAssertEqual(request.contentLength, "303")
+        
+        let parts = request.multipartContent
+        
+        XCTAssertEqual(parts.count, 2)
+        
+        XCTAssertEqual(parts[0].contentDisposition, #"form-data; name="type""#)
+        XCTAssertEqual(parts[0].content, "UploadClassificationsFile")
+        
+        XCTAssertEqual(parts[1].contentDisposition, #"form-data; name="file"; filename="test1.txt""#)
+        XCTAssertEqual(parts[1].contentType, #"text/plain"#)
+        XCTAssertEqual(parts[1].content, "test 1\n")
     }
-        
+            
     func testPerformance1() {
         
         let port = Int.random(in: 8000..<65500)
@@ -161,8 +155,8 @@ final class picaroonConnectionTests: XCTestCase {
         
         // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
         webview.load(url: baseUrl) { data, response, error in
-            webview.ajax(payload: #"{"className":"Server_GetPedia","language":"en"}"#, nil)
-            webview.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+            webview.ajax(payload: #"{"service":"Server_GetPedia","language":"en"}"#, nil)
+            webview.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
                 XCTAssertEqual(webserver.numberOfUserSessions(), 1)
                 expectation.fulfill()
             }
@@ -184,8 +178,8 @@ final class picaroonConnectionTests: XCTestCase {
             
             // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
             webview.load(url: baseUrl) { data, response, error in
-                webview.ajax(payload: #"{"className":"Server_GetPedia","language":"en"}"#, nil)
-                webview.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                webview.ajax(payload: #"{"service":"Server_GetPedia","language":"en"}"#, nil)
+                webview.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
                     XCTAssertEqual(webserver.numberOfUserSessions(), 3)
                     expectation.fulfill()
                 }
@@ -214,14 +208,14 @@ final class picaroonConnectionTests: XCTestCase {
             XCTAssertNotNil(data)
             XCTAssertNil(error)
                             
-            webview1.ajax(payload: #"{"className":"Server_AllowReassociation"}"#) { data, response, error in
+            webview1.ajax(payload: #"{"service":"Server_AllowReassociation"}"#) { data, response, error in
                 XCTAssertNotNil(data)
                 XCTAssertNil(error)
                 
                 let firstActorSessionUUID = webview1.serverActorSessionUUID
                 webview1.clearCookies()
                 
-                webview1.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                webview1.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
                     XCTAssertNotNil(data)
                     XCTAssertNil(error)
                     
@@ -251,7 +245,7 @@ final class picaroonConnectionTests: XCTestCase {
             XCTAssertNotNil(data)
             XCTAssertNil(error)
                         
-            webview1.ajax(payload: #"{"className":"Server_AllowReassociation"}"#) { data, response, error in
+            webview1.ajax(payload: #"{"service":"Server_AllowReassociation"}"#) { data, response, error in
                 XCTAssertNotNil(data)
                 XCTAssertNil(error)
                 
@@ -262,7 +256,7 @@ final class picaroonConnectionTests: XCTestCase {
                     XCTAssertNotNil(data)
                     XCTAssertNil(error)
                                         
-                    webview2.ajax(payload: #"{"className":"Server_GetSettings"}"#) { data, response, error in
+                    webview2.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
                         print("3: " + (webview2.javascriptSessionUUID ?? "unknown"))
                         XCTAssertNotNil(data)
                         XCTAssertNil(error)

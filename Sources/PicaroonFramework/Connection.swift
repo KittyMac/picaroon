@@ -168,11 +168,9 @@ public class Connection: Actor, AnyConnection {
         }
 
         // See if it is complete http request; if it is incomplete, we wait until we get more data
-        let httpRequest = HttpRequest(request: buffer,
-                                      size: currentPtr - buffer + 1)
-
-        // We have a complete http request, we need to process it
-        if httpRequest.incomplete {
+        guard let httpRequest = HttpRequest(request: buffer,
+                                            size: currentPtr - buffer + 1) else {
+            // We have an incomplete https request, wait for more data and try again
             checkForMoreDataIfNeeded()
             return
         }
@@ -208,10 +206,11 @@ public class Connection: Actor, AnyConnection {
         //    malicious individuals from stealing a live session just by knowing the client-side session UUID
 
         let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]
-        var javascriptSessionUUID = httpRequest.sessionId ?? httpRequest.sid
+        var javascriptSessionUUID = (httpRequest.sessionId ?? httpRequest.sid)?.toString()
+        let httpRequestSid = httpRequest.sid?.description
 
         if let newJavascriptSessionUUID = javascriptSessionUUID,
-           let oldJavascriptSessionUUID = httpRequest.sid,
+           let oldJavascriptSessionUUID = httpRequestSid,
            oldJavascriptSessionUUID != newJavascriptSessionUUID {
             if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                 oldJavascriptSessionUUID, newJavascriptSessionUUID) {
@@ -222,7 +221,7 @@ public class Connection: Actor, AnyConnection {
             return _beSendInternalError()
         }
 
-        if let oldJavascriptSessionUUID = httpRequest.sid {
+        if let oldJavascriptSessionUUID = httpRequestSid {
             if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                 oldJavascriptSessionUUID, oldJavascriptSessionUUID) {
                 userSession.beHandleRequest(connection: self,
