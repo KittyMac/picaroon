@@ -18,6 +18,32 @@ func handleHelloWorldStaticRequest(_ httpRequest: HttpRequest) -> Data? {
 
 final class picaroonConnectionTests: XCTestCase {
     
+    private func test(_ iterations: Int,
+                      _ functionName: String,
+                      _ leftString: () -> (),
+                      _ rightString: () -> ()) -> Bool {
+        
+        let leftStart = Date()
+        for _ in 0..<iterations {
+            leftString()
+        }
+        let leftTime = abs(leftStart.timeIntervalSinceNow / Double(iterations))
+        
+        let rightStart = Date()
+        for _ in 0..<iterations {
+            rightString()
+        }
+        let rightTime = abs(rightStart.timeIntervalSinceNow / Double(iterations))
+        
+        if rightTime < leftTime {
+            print("\(functionName) is \(leftTime/rightTime)x faster in (right)" )
+        } else {
+            print("\(functionName) is \(rightTime/leftTime)x slower in (right)" )
+        }
+                
+        return rightTime < leftTime
+    }
+    
     func testSessionIdParameter1() {
         let content = """
         GET /user?state=sid%3DF3901E70-DA28-44CE-939B-D43C1CFF75CF HTTP/1.1\r
@@ -271,6 +297,24 @@ final class picaroonConnectionTests: XCTestCase {
         }
         
         wait(for: [expectation], timeout: 2)
+    }
+    
+    func testArrayAccessPerformance() {
+        let hitch = "This is some sample data!".hitch()
+        guard let raw = hitch.raw() else { return XCTFail() }
+        
+        XCTAssert(
+            test (100000000, "array access",
+            {
+                for i in 0..<hitch.count {
+                    raw[i] = raw[i] &+ 1
+                }
+            }, {
+                for i in 0..<hitch.count {
+                    (raw+i).pointee = (raw+i).pointee &+ 1
+                }
+            })
+        )
     }
 
     static var allTests = [

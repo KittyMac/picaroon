@@ -157,7 +157,6 @@ public class Connection: Actor, AnyConnection {
 
         lastCommunicationTime = ProcessInfo.processInfo.systemUptime
 
-        currentPtr[bytesRead] = 0
         currentPtr += bytesRead
 
         // if we're reading more data than our buffer allows, end the connection
@@ -174,10 +173,6 @@ public class Connection: Actor, AnyConnection {
             checkForMoreDataIfNeeded()
             return
         }
-
-        // if let requestString = String(bytesNoCopy: buffer, length: currentPtr - buffer + 1, encoding: .utf8, freeWhenDone: false) {
-        //    print(requestString)
-        // }
 
         // reset current pointer to be read for the next http request
         currentPtr = buffer

@@ -4,6 +4,7 @@ import Foundation
 // swiftlint:disable identifier_name
 
 public enum HttpMethod {
+    case UNKNOWN
     case GET
     case HEAD
     case PUT

@@ -70,10 +70,8 @@ open class UserServicableSession: UserSession {
                                              self) { result in
                     results.set(value: result, at: serviceIndex)
                     
-                    print("1: \(results)")
                     servicesFinished += 1
                     if servicesFinished == servicesCalled {
-                        print("2: \(results)")
                         connection.beSendData(HttpResponse.asData(self, .ok, .json, results.description))
                     }
                 }
