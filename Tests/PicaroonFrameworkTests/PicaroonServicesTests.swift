@@ -25,7 +25,7 @@ class ToUpperService: ServiceActor {
     }
 }
 
-class TestServicesSession: UserServicableSession {
+class TestServicesSession: UserServiceableSession {
     public required init() {
         super.init()
         setInitialServices()

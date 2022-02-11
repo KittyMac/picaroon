@@ -14,7 +14,7 @@ import FoundationNetworking
 /// connections to utilize the same user session.
 ///
 /// UserSessions are intented to be subclassed by the application code
-/// 
+///
 open class UserSession: Actor, Equatable {
 
     public static func == (lhs: UserSession, rhs: UserSession) -> Bool {
@@ -68,6 +68,11 @@ open class UserSession: Actor, Equatable {
         sessionUUID = UserSessionManager.combined(self.cookieSessionUUID, self.javascriptSessionUUID)
         super.init()
     }
+    
+    open func safeHandleServiceRequest(connection: AnyConnection,
+                                       httpRequest: HttpRequest) -> Bool {
+        return false
+    }
 
     open func safeHandleRequest(connection: AnyConnection,
                                 httpRequest: HttpRequest) {
@@ -76,6 +81,11 @@ open class UserSession: Actor, Equatable {
 
     private func _beHandleRequest(connection: AnyConnection,
                                   httpRequest: HttpRequest) {
+        if safeHandleServiceRequest(connection: connection,
+                                    httpRequest: httpRequest) {
+            return
+        }
+        
         safeHandleRequest(connection: connection,
                           httpRequest: httpRequest)
     }

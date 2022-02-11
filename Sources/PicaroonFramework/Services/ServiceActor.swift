@@ -4,7 +4,7 @@ import Hitch
 import Spanker
 
 /// A service is an actor which generically provides additional functionality to a
-/// UserServicableSession.
+/// UserServiceableSession.
 open class ServiceActor: Actor {
     
     private let serviceName: Hitch
