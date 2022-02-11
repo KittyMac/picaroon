@@ -38,14 +38,14 @@ public class HttpRequest {
     
     public var description: Hitch?
     
-    public var cookies: [String: String] {
-        var _cookies: [String: String] = [:]
+    public var cookies: [Hitch: Hitch] {
+        var _cookies: [Hitch: Hitch] = [:]
         
         if let cookie = cookie {
             // cookie1=something; cookie2=another
-            let keyValuePairs = cookie.description.components(separatedBy: ";")
+            let keyValuePairs: [Hitch] = cookie.components(separatedBy: ";")
             for pair in keyValuePairs {
-                let parts = pair.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "=")
+                let parts: [Hitch] = pair.trim().components(separatedBy: "=")
                 if parts.count == 2 {
                     _cookies[parts[0]] = parts[1]
                 }

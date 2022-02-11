@@ -200,7 +200,7 @@ public class Connection: Actor, AnyConnection {
         //    about to log in using a 3rd party service and that process will lose our http session cookie). This prevents
         //    malicious individuals from stealing a live session just by knowing the client-side session UUID
 
-        let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]
+        let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]?.toString()
         var javascriptSessionUUID = (httpRequest.sessionId ?? httpRequest.sid)?.toString()
         let httpRequestSid = httpRequest.sid?.description
 
