@@ -56,7 +56,7 @@ final class picaroonServicesTests: XCTestCase {
         
         server.listen()
         
-        for _ in 0..<1 {
+        for _ in 0..<100 {
             let baseUrl = "http://127.0.0.1:\(port)/"
             let jsonRequest = #"[{"service":"HelloWorldService"},{"service":"EchoService"},{"service":"ToUpperService","value":"goodbye world"},{"service":"HelloWorldService"}]"#
             client.beUrlRequest(url: baseUrl,
@@ -70,7 +70,6 @@ final class picaroonServicesTests: XCTestCase {
                 guard let data = data else { return XCTFail() }
                 guard let json = String(data: data, encoding: .utf8) else { return XCTFail() }
 
-                print(json)
                 XCTAssertEqual(json, #"["Hello World!","GOODBYE WORLD","Hello World!"]"#)
                 
                 expectation.fulfill()

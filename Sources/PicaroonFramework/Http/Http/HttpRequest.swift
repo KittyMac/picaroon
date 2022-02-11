@@ -203,15 +203,13 @@ public class HttpRequest {
                             ptr += 1
                         }
                         // If we reach here, we're at the point we're looking for payload data
-                        if let contentLength = contentLength {
-                            if let contentLengthBytes = contentLength.toInt() {
-                                if endPtr - ptr >= contentLengthBytes {
-                                    content = HalfHitch(raw: buffer,
-                                                        count: bufferSize,
-                                                        from: ptr - buffer,
-                                                        to: (ptr - buffer) + contentLengthBytes)
-                                }
-                            }
+                        if let contentLength = contentLength,
+                           let contentLengthBytes = contentLength.toInt() {
+                            guard endPtr - ptr >= contentLengthBytes else { return nil }
+                            content = HalfHitch(raw: buffer,
+                                                count: bufferSize,
+                                                from: ptr - buffer,
+                                                to: (ptr - buffer) + contentLengthBytes)
                         }
                         
                         // Congrats! we have successfully parsed the http request. We now need to bake the request
