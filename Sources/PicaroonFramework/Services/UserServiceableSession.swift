@@ -65,7 +65,12 @@ open class UserServiceableSession: UserSession {
                     
                     servicesFinished += 1
                     if servicesFinished == servicesCalled {
-                        connection.beSendData(HttpResponse.asData(self, .ok, .json, results.description))
+                        // if the original request was a single object, then return just a single object
+                        if json.type == .dictionary {
+                            connection.beSendData(HttpResponse.asData(self, .ok, .json, result.description))
+                        } else {
+                            connection.beSendData(HttpResponse.asData(self, .ok, .json, results.description))
+                        }
                     }
                 }
             }

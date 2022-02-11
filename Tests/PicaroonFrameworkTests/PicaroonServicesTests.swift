@@ -111,6 +111,41 @@ final class picaroonServicesTests: XCTestCase {
         wait(for: [expectation], timeout: 30)
     }
     
+    func testHelloWorldService2() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        let config = ServerConfig(address: "0.0.0.0",
+                                  port: port)
+        
+        let server = Server<TestServicesSession>(config: config)
+        let client = UserSession()
+        
+        server.listen()
+        
+        for _ in 0..<100 {
+            let baseUrl = "http://127.0.0.1:\(port)/"
+            let jsonRequest = #"{"service":"HelloWorldService"}"#
+            client.beUrlRequest(url: baseUrl,
+                                httpMethod: "POST",
+                                params: [:],
+                                headers: [:],
+                                body: jsonRequest.data(using: .utf8),
+                                client) { data, response, error in
+                //XCTAssertNil(error)
+                
+                guard let data = data else { return XCTFail() }
+                guard let json = String(data: data, encoding: .utf8) else { return XCTFail() }
+
+                XCTAssertEqual(json, #""Hello World!""#)
+                
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 30)
+    }
+    
     static var allTests = [
         ("testHelloWorldService0", testHelloWorldService0),
     ]
