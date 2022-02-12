@@ -1,7 +1,7 @@
 import XCTest
 @testable import PicaroonFramework
 
-let helloWorldResponse = HttpResponse.asData(nil, .ok, .txt, "Hello World")
+let helloWorldResponse = HttpResponse(text: "Hello World")
 
 class HelloWorld: UserSession {
     override func safeHandleRequest(connection: AnyConnection,
@@ -10,7 +10,7 @@ class HelloWorld: UserSession {
     }
 }
 
-func handleHelloWorldStaticRequest(_ httpRequest: HttpRequest) -> Data? {
+func handleHelloWorldStaticRequest(_ httpRequest: HttpRequest) -> HttpResponse? {
     return helloWorldResponse
 }
 
@@ -167,6 +167,26 @@ final class picaroonConnectionTests: XCTestCase {
         print(output)
         
         XCTAssertTrue(requestsPerSecond > 90000)
+    }
+    
+    func testSimpleStaticResponse() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        
+        let webserver = PicaroonTesting.WebServer<PicaroonTesting.WebUserSession>(port: port)
+        
+        let webview = PicaroonTesting.WebView()
+        let baseUrl = "http://127.0.0.1:\(port)/"
+        
+        // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
+        webview.load(url: baseUrl) { data, response, error in
+            XCTAssertNil(error)
+            XCTAssertNotNil(data)
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 2)
     }
     
     func testSimpleConnectionPersistance() {

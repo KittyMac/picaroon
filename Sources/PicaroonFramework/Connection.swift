@@ -1,20 +1,22 @@
 import Flynn
 import Foundation
+import Hitch
 
 // swiftlint:disable function_body_length
 // swiftlint:disable line_length
 // swiftlint:disable cyclomatic_complexity
 
 public protocol AnyConnection {
-    @discardableResult func beSendData(_ data: Data) -> Self
-    @discardableResult func beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) -> Self
+    @discardableResult func beSetTimeout(_ timeout: TimeInterval) -> Self
+    @discardableResult func beSend(httpResponse: HttpResponse) -> Self
+    @discardableResult func beSendIfModified(httpRequest: HttpRequest,
+                                             httpResponse: HttpResponse) -> Self
     @discardableResult func beEndUserSession() -> Self
     @discardableResult func beSendInternalError() -> Self
     @discardableResult func beSendServiceUnavailable() -> Self
-    @discardableResult func beSendSuccess(_ message: String) -> Self
-    @discardableResult func beSendError(_ error: String) -> Self
+    @discardableResult func beSendSuccess(_ message: Hitch) -> Self
+    @discardableResult func beSendError(_ error: Hitch) -> Self
     @discardableResult func beSendNotModified() -> Self
-    @discardableResult func beSetTimeout(_ timeout: TimeInterval) -> Self
 }
 
 public class Connection: Actor, AnyConnection {
@@ -73,20 +75,22 @@ public class Connection: Actor, AnyConnection {
     private func _beSetTimeout(_ timeout: TimeInterval) {
         self.timeout = timeout
     }
-
-    private func _beSendData(_ data: Data) {
-        socket.send(data: data)
+    
+    private func _beSend(httpResponse: HttpResponse) {
+        httpResponse.send(socket: socket,
+                          userSession: userSession)
 
         // If we write data, then we should expect to read data
         checkForMoreDataIfNeeded()
     }
 
-    private func _beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) {
+    private func _beSendIfModified(httpRequest: HttpRequest,
+                                   httpResponse: HttpResponse) {
 #if DEBUG
-        _beSendData(data)
+        _beSend(httpResponse: httpResponse)
 #else
-        if HttpResponse.isNew(httpRequest) {
-            _beSendData(data)
+        if httpResponse.isNew(httpRequest) {
+            _beSend(httpResponse: httpResponse)
         } else {
             _beSendNotModified()
         }
@@ -101,23 +105,27 @@ public class Connection: Actor, AnyConnection {
     }
 
     private func _beSendInternalError() {
-        _beSendData(HttpResponse.asData(userSession, .internalServerError, .txt))
+        _beSend(httpResponse: HttpResponse.internalServerError)
     }
 
     private func _beSendServiceUnavailable() {
-        _beSendData(HttpResponse.asData(userSession, .serviceUnavailable, .txt))
+        _beSend(httpResponse: HttpResponse.serviceUnavailable)
     }
 
-    private func _beSendSuccess(_ message: String = "success") {
-        _beSendData(HttpResponse.asData(userSession, .ok, .txt, message))
+    private func _beSendSuccess(_ message: Hitch = "success") {
+        _beSend(httpResponse: HttpResponse(text: message))
     }
 
-    private func _beSendError(_ error: String) {
-        _beSendData(HttpResponse.asData(userSession, .badRequest, .txt, error))
+    private func _beSendError(_ error: Hitch) {
+        _beSend(httpResponse: HttpResponse(status: .badRequest,
+                                           type: .txt,
+                                           payload: error))
     }
 
     private func _beSendNotModified() {
-        _beSendData(HttpResponse.asData(userSession, .notModified, .txt, "not modified"))
+        _beSend(httpResponse: HttpResponse(status: .notModified,
+                                           type: .txt,
+                                           payload: "not modified"))
     }
 
     private func checkForMoreDataIfNeeded() {
@@ -182,8 +190,9 @@ public class Connection: Actor, AnyConnection {
         // critical because only the one call will have the sid reassociation parameter, and that one call
         // will need to ensure the return passes back the correct session UUIDs
         if  let staticStorageHandler = self.staticStorageHandler,
-            let data = staticStorageHandler(httpRequest) {
-            self._beSendDataIfChanged(httpRequest, data)
+            let httpResponse = staticStorageHandler(httpRequest) {
+            _beSendIfModified(httpRequest: httpRequest,
+                              httpResponse: httpResponse)
             return
         }
 
@@ -209,6 +218,8 @@ public class Connection: Actor, AnyConnection {
            oldJavascriptSessionUUID != newJavascriptSessionUUID {
             if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                 oldJavascriptSessionUUID, newJavascriptSessionUUID) {
+                self.userSession = userSession
+                
                 userSession.beHandleRequest(connection: self,
                                             httpRequest: httpRequest)
                 return
@@ -219,6 +230,8 @@ public class Connection: Actor, AnyConnection {
         if let oldJavascriptSessionUUID = httpRequestSid {
             if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                 oldJavascriptSessionUUID, oldJavascriptSessionUUID) {
+                self.userSession = userSession
+                
                 userSession.beHandleRequest(connection: self,
                                             httpRequest: httpRequest)
                 return
@@ -231,6 +244,8 @@ public class Connection: Actor, AnyConnection {
         // error  (it should be served by the static handler if we don't have a client which is
         // running enough to provide us a session id).
         if let userSession = userSessionManager.get(cookieSessionUUID, javascriptSessionUUID) {
+            self.userSession = userSession
+            
             userSession.beHandleRequest(connection: self,
                                         httpRequest: httpRequest)
             return
@@ -251,14 +266,14 @@ extension Connection {
         return self
     }
     @discardableResult
-    public func beSendData(_ data: Data) -> Self {
-        unsafeSend { self._beSendData(data) }
+    public func beSend(httpResponse: HttpResponse) -> Self {
+        unsafeSend { self._beSend(httpResponse: httpResponse) }
         return self
     }
     @discardableResult
-    public func beSendDataIfChanged(_ httpRequest: HttpRequest,
-                                    _ data: Data) -> Self {
-        unsafeSend { self._beSendDataIfChanged(httpRequest, data) }
+    public func beSendIfModified(httpRequest: HttpRequest,
+                                 httpResponse: HttpResponse) -> Self {
+        unsafeSend { self._beSendIfModified(httpRequest: httpRequest, httpResponse: httpResponse) }
         return self
     }
     @discardableResult
@@ -277,12 +292,12 @@ extension Connection {
         return self
     }
     @discardableResult
-    public func beSendSuccess(_ message: String) -> Self {
+    public func beSendSuccess(_ message: Hitch) -> Self {
         unsafeSend { self._beSendSuccess(message) }
         return self
     }
     @discardableResult
-    public func beSendError(_ error: String) -> Self {
+    public func beSendError(_ error: Hitch) -> Self {
         unsafeSend { self._beSendError(error) }
         return self
     }

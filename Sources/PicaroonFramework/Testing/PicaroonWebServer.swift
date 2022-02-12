@@ -4,12 +4,12 @@ import Foundation
 import FoundationNetworking
 #endif
 
-private func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
+private func handleStaticRequest(_ httpRequest: HttpRequest) -> HttpResponse? {
     if httpRequest.url == "/" {
         return nil
     }
     if httpRequest.method == .GET {
-        return HttpResponse.asData(nil, .ok, .txt, "static resource")
+        return HttpResponse(text: "static resource")
     }
     return nil
 }
@@ -24,13 +24,13 @@ extension PicaroonTesting {
             }
 
             if httpRequest.url == "/" || httpRequest.urlParameters?.contains("sid=") == true {
-                let data = HttpResponse.asData(self, .ok, .js, "sessionStorage.setItem('Session-Id', '\(unsafeJavascriptSessionUUID)');")
-                connection.beSendData(data)
+                connection.beSend(httpResponse:
+                    HttpResponse(javascript: "sessionStorage.setItem('Session-Id', '\(unsafeJavascriptSessionUUID)');")
+                )
                 return
             }
 
-            let data = HttpResponse.asData(self, .ok, .txt, unsafeUUID)
-            connection.beSendData(data)
+            connection.beSend(httpResponse: HttpResponse(text: unsafeUUID))
         }
     }
 

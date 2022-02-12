@@ -1,5 +1,6 @@
 import Foundation
 import Flynn
+import Hitch
 
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -101,6 +102,13 @@ public class Socket {
     @inlinable @inline(__always)
     public func fd() -> Int32 {
         return socketFd
+    }
+    
+    @discardableResult
+    @inlinable @inline(__always)
+    public func send(hitch: Hitch) -> Int {
+        return send(bytes: hitch.raw(),
+                    count: hitch.count)
     }
     
     @discardableResult

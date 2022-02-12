@@ -1,14 +1,15 @@
 import XCTest
 import Spanker
+import Hitch
 
 @testable import PicaroonFramework
 
 class HelloWorldService: ServiceActor {
-    private let response = JsonElement(unknown: "Hello World!")
+    private let response = HttpResponse(text: "Hello World")
             
     override func safeHandleRequest(jsonElement: JsonElement,
                                     httpRequest: HttpRequest,
-                                    _ returnCallback: (JsonElement) -> ()) {
+                                    _ returnCallback: (HttpResponse) -> ()) {
         returnCallback(response)
     }
 }
@@ -18,10 +19,10 @@ class ToUpperService: ServiceActor {
             
     override func safeHandleRequest(jsonElement: JsonElement,
                                     httpRequest: HttpRequest,
-                                    _ returnCallback: (JsonElement) -> ()) {
+                                    _ returnCallback: (HttpResponse) -> ()) {
         let value = jsonElement[hitch: "value"] ?? "no value"
         value.uppercase()
-        returnCallback(JsonElement(unknown: value))
+        returnCallback(HttpResponse(json: jsonElement))
     }
 }
 
@@ -43,15 +44,16 @@ class TestServicesSession: UserServiceableSession {
 }
 
 public class TestConnection: AnyConnection {
-    public func beSendData(_ data: Data) -> Self { return self }
-    public func beSendDataIfChanged(_ httpRequest: HttpRequest, _ data: Data) -> Self { return self }
+    public func beSetTimeout(_ timeout: TimeInterval) -> Self { return self }
+    public func beSend(httpResponse: HttpResponse) -> Self { return self }
+    public func beSendIfModified(httpRequest: HttpRequest,
+                                 httpResponse: HttpResponse) -> Self { return self }
     public func beEndUserSession() -> Self { return self }
     public func beSendInternalError() -> Self { return self }
     public func beSendServiceUnavailable() -> Self { return self }
-    public func beSendSuccess(_ message: String) -> Self { return self }
-    public func beSendError(_ error: String) -> Self { return self }
+    public func beSendSuccess(_ message: Hitch) -> Self { return self }
+    public func beSendError(_ error: Hitch) -> Self { return self }
     public func beSendNotModified() -> Self { return self }
-    public func beSetTimeout(_ timeout: TimeInterval) -> Self { return self }
 }
 
 final class picaroonServicesTests: XCTestCase {

@@ -48,28 +48,30 @@ open class UserServiceableSession: UserSession {
         
         // Output: We expect an array of results
         // [{"service":"HelloWorldService", "result":"Hello World"}, {"service":"AdminUserService","error":"500"}]
-        let results = JsonElement(unknown: [])
+        var results = [(HalfHitch,HttpResponse)]()
         var servicesCalled = 0
         var servicesFinished = 0
         
         json.query(forEach: #"$[?(@.service)]"#) { service in
             if let serviceName = service[halfHitch: "service"],
                let serviceActor = services[serviceName] {
-                let serviceIndex = servicesCalled
                 
                 servicesCalled += 1
                 serviceActor.beHandleRequest(jsonElement: service,
                                              httpRequest: httpRequest,
-                                             self) { result in
-                    results.set(value: result, at: serviceIndex)
+                                             self) { httpResponse in
                     
-                    servicesFinished += 1
-                    if servicesFinished == servicesCalled {
-                        // if the original request was a single object, then return just a single object
-                        if json.type == .dictionary {
-                            connection.beSendData(HttpResponse.asData(self, .ok, .json, result.description))
-                        } else {
-                            connection.beSendData(HttpResponse.asData(self, .ok, .json, results.description))
+                    
+                    if json.type == .dictionary {
+                        // Single request, fast path
+                        connection.beSend(httpResponse: httpResponse)
+                    } else {
+                        // Multiple requests, send back as multipart form data once all are completed
+                        results.append((serviceName, httpResponse))
+                        
+                        servicesFinished += 1
+                        if servicesFinished == servicesCalled {
+                            fatalError("to be implemented")
                         }
                     }
                 }

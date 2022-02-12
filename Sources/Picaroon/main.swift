@@ -1,7 +1,7 @@
 import Foundation
 import PicaroonFramework
 
-let helloWorldResponse = HttpResponse.asData(nil, .ok, .txt, "Hello World")
+let helloWorldResponse = HttpResponse(text: "Hello World")
 
 class HelloWorld: UserSession {
     override func safeHandleRequest(connection: AnyConnection,
@@ -10,7 +10,7 @@ class HelloWorld: UserSession {
     }
 }
 
-func handleStaticRequest(_ httpRequest: HttpRequest) -> Data? {
+func handleStaticRequest(_ httpRequest: HttpRequest) -> HttpResponse? {
     return helloWorldResponse
 }
 
