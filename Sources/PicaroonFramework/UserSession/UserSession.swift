@@ -23,6 +23,8 @@ open class UserSession: Actor, Equatable {
         }
         return false
     }
+    
+    public var unsafeSupportsGzip: Bool = false
 
     public var unsafeSessionUUID: String {
         return sessionUUID
@@ -81,6 +83,9 @@ open class UserSession: Actor, Equatable {
 
     private func _beHandleRequest(connection: AnyConnection,
                                   httpRequest: HttpRequest) {
+        
+        unsafeSupportsGzip = httpRequest.acceptEncoding?.contains("gzip") == true
+        
         if safeHandleServiceRequest(connection: connection,
                                     httpRequest: httpRequest) {
             return
