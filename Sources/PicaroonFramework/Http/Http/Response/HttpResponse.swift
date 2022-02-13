@@ -4,7 +4,7 @@ import Hitch
 import Spanker
 
 private let hitchContentDispositionFormDataWithName = "Content-Disposition:form-data;name=\"".hitch()
-private let hitchContentDiscpositionFormData = "Content-Disposition:form-data\r\n".hitch()
+private let hitchContentDispositionFormData = "Content-Disposition:form-data\r\n".hitch()
 private let hitchContentLength = "Content-Length:".hitch()
 private let hitchNewLine = "\r\n".hitch()
 private let hitchCacheControl = "Cache-Control:public, max-age=".hitch()
@@ -168,11 +168,18 @@ public class HttpResponse {
             combined.append(.doubleQuote)
             combined.append(hitchNewLine)
         } else {
-            combined.append(hitchContentDiscpositionFormData)
+            combined.append(hitchContentDispositionFormData)
         }
         combined.append(hitchContentLength)
         combined.append(number: payload.count)
         combined.append(hitchNewLine)
+        
+        if let encoding = encoding {
+            combined.append(hitchContentEncoding)
+            combined.append(encoding)
+            combined.append(hitchNewLine)
+        }
+        
         combined.append(hitchNewLine)
         payload.using { bytes, count in
             guard let bytes = bytes else { return }

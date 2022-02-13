@@ -61,7 +61,6 @@ open class UserServiceableSession: UserSession {
                                              httpRequest: httpRequest,
                                              self) { httpResponse in
                     
-                    
                     if json.type == .dictionary {
                         // Single request, fast path
                         connection.beSend(httpResponse: httpResponse)

@@ -159,7 +159,7 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
     func testSimpleMultipart() {
         let response = HttpStaticResponse(multipart: [
             HttpStaticResponse(text: "Part 1", multipartName: "ServiceActor.0"),
-            HttpStaticResponse(text: "Part 2", multipartName: "ServiceActor.1")
+            HttpStaticResponse(text: "Part 2", multipartName: "ServiceActor.1", encoding: HttpEncoding.gzip.rawValue)
         ])
         let socket = TestSocket()
         
@@ -171,7 +171,7 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
         Last-Modified:2022-02-12 21:05:32 +0000\r
         Connection:keep-alive\r
         Content-Type:multipart/form-data\r
-        Content-Length:288\r
+        Content-Length:311\r
         \r
         ------WebKitFormBoundaryd9xBKq96rap8J36e\r
         Content-Disposition:form-data;name="ServiceActor.0"\r
@@ -181,6 +181,7 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
         ------WebKitFormBoundaryd9xBKq96rap8J36e\r
         Content-Disposition:form-data;name="ServiceActor.1"\r
         Content-Length:6\r
+        Content-Encoding:gzip\r
         \r
         Part 2\r
         ------WebKitFormBoundaryd9xBKq96rap8J36e\r\n
