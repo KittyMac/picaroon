@@ -1,5 +1,6 @@
 import Foundation
 import Flynn
+import Hitch
 
 extension String {
     private func substring(with nsrange: NSRange) -> Substring? {
@@ -28,5 +29,5 @@ extension String {
 }
 
 public enum Picaroon {
-    static let userSessionCookie = UUID().uuidString.hitch()
+    static let userSessionCookie: Hitch = UUID().uuidString.hitch()
 }

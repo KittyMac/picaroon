@@ -1,13 +1,14 @@
 import Flynn
 import Foundation
+import Hitch
 
 public typealias GetUserSessionCallback = (UserSession?) -> Void
 
 protocol AnyUserSessionManager {
-    func reassociate(cookieSessionUUID: String?,
-                     _ oldJavascriptSessionUUID: String,
-                     _ newJavascriptSessionUUID: String) -> UserSession?
-    func get(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String?) -> UserSession?
+    func reassociate(cookieSessionUUID: Hitch?,
+                     _ oldJavascriptSessionUUID: Hitch,
+                     _ newJavascriptSessionUUID: Hitch) -> UserSession?
+    func get(_ cookieSessionUUID: Hitch?, _ javascriptSessionUUID: Hitch?) -> UserSession?
     func end(_ userSession: UserSession)
 }
 
@@ -15,13 +16,17 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
 
     private let config: ServerConfig
 
-    private var sessionsByJavascriptSessionUUID: [String: UserSession] = [:]
-    private var sessionsByCookieSessionUUID: [String: UserSession] = [:]
-    private var sessionsByCombinedSessionUUID: [String: UserSession] = [:]
+    private var sessionsByJavascriptSessionUUID: [Hitch: UserSession] = [:]
+    private var sessionsByCookieSessionUUID: [Hitch: UserSession] = [:]
+    private var sessionsByCombinedSessionUUID: [Hitch: UserSession] = [:]
     private var lock = NSLock()
 
-    class func combined(_ cookieSessionUUID: String, _ javascriptSessionUUID: String) -> String {
-        return "\(cookieSessionUUID)|\(javascriptSessionUUID)"
+    class func combined(_ cookieSessionUUID: Hitch, _ javascriptSessionUUID: Hitch) -> Hitch {
+        let combined = Hitch(capacity: 80)
+        combined.append(cookieSessionUUID)
+        combined.append(.pipe)
+        combined.append(javascriptSessionUUID)
+        return combined
     }
 
     init(config: ServerConfig) {
@@ -36,9 +41,9 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         return sessionsByCombinedSessionUUID.count
     }
 
-    func reassociate(cookieSessionUUID: String?,
-                     _ oldJavascriptSessionUUID: String,
-                     _ newJavascriptSessionUUID: String) -> UserSession? {
+    func reassociate(cookieSessionUUID: Hitch?,
+                     _ oldJavascriptSessionUUID: Hitch,
+                     _ newJavascriptSessionUUID: Hitch) -> UserSession? {
         lock.lock()
         defer {
             lock.unlock()
@@ -49,9 +54,9 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
                                 new: newJavascriptSessionUUID)
     }
 
-    private func reassociate(cookieSessionUUID: String?,
-                             old oldJavascriptSessionUUID: String,
-                             new newJavascriptSessionUUID: String) -> UserSession? {
+    private func reassociate(cookieSessionUUID: Hitch?,
+                             old oldJavascriptSessionUUID: Hitch,
+                             new newJavascriptSessionUUID: Hitch) -> UserSession? {
 
         // protect callers from trying to reassociation a session which already exists verbatim
         if let cookieSessionUUID = cookieSessionUUID {
@@ -84,15 +89,15 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         return nil
     }
 
-    func get(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String?) -> UserSession? {
+    func get(_ cookieSessionUUID: Hitch?, _ javascriptSessionUUID: Hitch?) -> UserSession? {
         lock.lock()
         defer {
             lock.unlock()
         }
 
-        let localJavascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString
+        let localJavascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString.hitch()
 
-        let localCookieSessionUUID = cookieSessionUUID ?? UUID().uuidString
+        let localCookieSessionUUID = cookieSessionUUID ?? UUID().uuidString.hitch()
         let combinedSessionUUID = Self.combined(localCookieSessionUUID, localJavascriptSessionUUID)
 
         // happy path: we have both cookies, and we have a user session which matches that unique session UUID

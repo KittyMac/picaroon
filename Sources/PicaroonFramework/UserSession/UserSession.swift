@@ -1,5 +1,6 @@
 import Flynn
 import Foundation
+import Hitch
 
 // swiftlint:disable function_parameter_count
 // swiftlint:disable line_length
@@ -24,24 +25,24 @@ open class UserSession: Actor, Equatable {
         return false
     }
     
-    public var unsafeSessionUUID: String {
+    public var unsafeSessionUUID: Hitch {
         return sessionUUID
     }
-    public var unsafeJavascriptSessionUUID: String {
+    public var unsafeJavascriptSessionUUID: Hitch {
         return javascriptSessionUUID
     }
 
-    var unsafeCookieSessionUUID: String {
+    var unsafeCookieSessionUUID: Hitch {
         return cookieSessionUUID
     }
 
-    private var sessionUUID: String
-    private var cookieSessionUUID: String
-    private var javascriptSessionUUID: String
+    private var sessionUUID: Hitch
+    private var cookieSessionUUID: Hitch
+    private var javascriptSessionUUID: Hitch
 
     private var allowReassociationFromDate: Date?
 
-    var unsafeSessionHeaders: [String] = []
+    var unsafeSessionHeaders: [Hitch] = []
 
     func unsafeReassociationIsAllowed() -> Bool {
         guard let date = allowReassociationFromDate else { return false }
@@ -49,22 +50,22 @@ open class UserSession: Actor, Equatable {
         return abs(date.timeIntervalSinceNow) < 5 * 60
     }
 
-    func unsafeUpdateSessionUUIDs(_ cookieSessionUUID: String?, _ javascriptSessionUUID: String?) {
-        self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidString
-        self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString
+    func unsafeUpdateSessionUUIDs(_ cookieSessionUUID: Hitch?, _ javascriptSessionUUID: Hitch?) {
+        self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidString.hitch()
+        self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString.hitch()
         sessionUUID = UserSessionManager.combined(unsafeCookieSessionUUID, unsafeJavascriptSessionUUID)
     }
 
     required public override init() {
-        cookieSessionUUID = UUID().uuidString
-        javascriptSessionUUID = UUID().uuidString
+        cookieSessionUUID = UUID().uuidString.hitch()
+        javascriptSessionUUID = UUID().uuidString.hitch()
         sessionUUID = UserSessionManager.combined(cookieSessionUUID, javascriptSessionUUID)
         super.init()
     }
 
-    required public init(cookieSessionUUID: String?, javascriptSessionUUID: String?) {
-        self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidString
-        self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString
+    required public init(cookieSessionUUID: Hitch?, javascriptSessionUUID: Hitch?) {
+        self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidString.hitch()
+        self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString.hitch()
         sessionUUID = UserSessionManager.combined(self.cookieSessionUUID, self.javascriptSessionUUID)
         super.init()
     }

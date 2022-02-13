@@ -48,7 +48,7 @@ open class UserServiceableSession: UserSession {
         
         // Output: We expect an array of results
         // [{"service":"HelloWorldService", "result":"Hello World"}, {"service":"AdminUserService","error":"500"}]
-        var results = [(HalfHitch,HttpResponse)]()
+        var responses = [HttpResponse]()
         var servicesCalled = 0
         var servicesFinished = 0
         
@@ -67,11 +67,13 @@ open class UserServiceableSession: UserSession {
                         connection.beSend(httpResponse: httpResponse)
                     } else {
                         // Multiple requests, send back as multipart form data once all are completed
-                        results.append((serviceName, httpResponse))
+                        responses.append(HttpResponse(httpResponse: httpResponse,
+                                                      multipartName: serviceName.hitch()))
                         
                         servicesFinished += 1
                         if servicesFinished == servicesCalled {
-                            fatalError("to be implemented")
+                            let multipartResponse = HttpResponse(multipart: responses)
+                            connection.beSend(httpResponse: multipartResponse)
                         }
                     }
                 }

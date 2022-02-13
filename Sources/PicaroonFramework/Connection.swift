@@ -40,7 +40,8 @@ public class Connection: Actor, AnyConnection {
 
     private let staticStorageHandler: StaticStorageHandler?
 
-    private var checkForMoreDataScheduled = false
+    @usableFromInline
+    var safeCheckForMoreDataScheduled = false
 
     init(socket: Socket,
          config: ServerConfig,
@@ -65,7 +66,7 @@ public class Connection: Actor, AnyConnection {
 
         unsafeMessageBatchSize = 1
 
-        checkForMoreDataIfNeeded()
+        safeCheckForMoreDataIfNeeded()
     }
 
     deinit {
@@ -81,7 +82,7 @@ public class Connection: Actor, AnyConnection {
                           userSession: userSession)
 
         // If we write data, then we should expect to read data
-        checkForMoreDataIfNeeded()
+        safeCheckForMoreDataIfNeeded()
     }
 
     private func _beSendIfModified(httpRequest: HttpRequest,
@@ -90,7 +91,9 @@ public class Connection: Actor, AnyConnection {
         _beSend(httpResponse: httpResponse)
 #else
         if httpResponse.isNew(httpRequest) {
-            _beSend(httpResponse: httpResponse)
+            httpResponse.send(socket: socket,
+                              userSession: userSession)
+            safeCheckForMoreDataIfNeeded()
         } else {
             _beSendNotModified()
         }
@@ -105,11 +108,11 @@ public class Connection: Actor, AnyConnection {
     }
 
     private func _beSendInternalError() {
-        _beSend(httpResponse: HttpResponse.internalServerError)
+        _beSend(httpResponse: HttpStaticResponse.internalServerError)
     }
 
     private func _beSendServiceUnavailable() {
-        _beSend(httpResponse: HttpResponse.serviceUnavailable)
+        _beSend(httpResponse: HttpStaticResponse.serviceUnavailable)
     }
 
     private func _beSendSuccess(_ message: Hitch = "success") {
@@ -128,16 +131,18 @@ public class Connection: Actor, AnyConnection {
                                            payload: "not modified"))
     }
 
-    private func checkForMoreDataIfNeeded() {
-        if checkForMoreDataScheduled == false {
-            checkForMoreDataScheduled = true
-            unsafeSend { self.checkForMoreData() }
+    @inlinable @inline(__always)
+    internal func safeCheckForMoreDataIfNeeded() {
+        if safeCheckForMoreDataScheduled == false {
+            safeCheckForMoreDataScheduled = true
+            unsafeSend { self.safeCheckForMoreData() }
         }
     }
 
-    private func checkForMoreData() {
+    @usableFromInline
+    func safeCheckForMoreData() {
 
-        checkForMoreDataScheduled = false
+        safeCheckForMoreDataScheduled = false
 
         // Checks the socket to see if there is an HTTP command ready to be processed.
         // Whether we process one or not, we call beNextCommand() to check again in
@@ -159,7 +164,7 @@ public class Connection: Actor, AnyConnection {
                 return
             }
 
-            checkForMoreDataIfNeeded()
+            safeCheckForMoreDataIfNeeded()
             return
         }
 
@@ -178,7 +183,7 @@ public class Connection: Actor, AnyConnection {
         guard let httpRequest = HttpRequest(request: buffer,
                                             size: currentPtr - buffer + 1) else {
             // We have an incomplete https request, wait for more data and try again
-            checkForMoreDataIfNeeded()
+            safeCheckForMoreDataIfNeeded()
             return
         }
 
@@ -209,9 +214,9 @@ public class Connection: Actor, AnyConnection {
         //    about to log in using a 3rd party service and that process will lose our http session cookie). This prevents
         //    malicious individuals from stealing a live session just by knowing the client-side session UUID
 
-        let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]?.toString()
-        var javascriptSessionUUID = (httpRequest.sessionId ?? httpRequest.sid)?.toString()
-        let httpRequestSid = httpRequest.sid?.description
+        let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]
+        var javascriptSessionUUID = (httpRequest.sessionId ?? httpRequest.sid)?.hitch()
+        let httpRequestSid = httpRequest.sid?.hitch()
 
         if let newJavascriptSessionUUID = javascriptSessionUUID,
            let oldJavascriptSessionUUID = httpRequestSid,

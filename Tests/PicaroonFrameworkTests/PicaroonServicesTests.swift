@@ -15,14 +15,15 @@ class HelloWorldService: ServiceActor {
 }
 
 class ToUpperService: ServiceActor {
-    private let response = JsonElement(unknown: "Hello World!")
-            
     override func safeHandleRequest(jsonElement: JsonElement,
                                     httpRequest: HttpRequest,
                                     _ returnCallback: (HttpResponse) -> ()) {
-        let value = jsonElement[hitch: "value"] ?? "no value"
+        guard let value = jsonElement[hitch: "value"] else {
+            returnCallback(HttpStaticResponse.badRequest)
+            return
+        }
         value.uppercase()
-        returnCallback(HttpResponse(json: jsonElement))
+        returnCallback(HttpResponse(text: value))
     }
 }
 
@@ -32,7 +33,7 @@ class TestServicesSession: UserServiceableSession {
         setInitialServices()
     }
 
-    required init(cookieSessionUUID: String?, javascriptSessionUUID: String?) {
+    required init(cookieSessionUUID: Hitch?, javascriptSessionUUID: Hitch?) {
         super.init(cookieSessionUUID: cookieSessionUUID, javascriptSessionUUID: javascriptSessionUUID)
         setInitialServices()
     }
@@ -104,7 +105,24 @@ final class picaroonServicesTests: XCTestCase {
                 guard let data = data else { return XCTFail() }
                 guard let json = String(data: data, encoding: .utf8) else { return XCTFail() }
 
-                XCTAssertEqual(json, #"["Hello World!","GOODBYE WORLD","Hello World!"]"#)
+                XCTAssertEqual(json, """
+                    ------WebKitFormBoundaryd9xBKq96rap8J36e\r
+                    Content-Disposition:form-data;name="HelloWorldService"\r
+                    Content-Length:11\r
+                    \r
+                    Hello World\r
+                    ------WebKitFormBoundaryd9xBKq96rap8J36e\r
+                    Content-Disposition:form-data;name="HelloWorldService"\r
+                    Content-Length:11\r
+                    \r
+                    Hello World\r
+                    ------WebKitFormBoundaryd9xBKq96rap8J36e\r
+                    Content-Disposition:form-data;name="ToUpperService"\r
+                    Content-Length:13\r
+                    \r
+                    GOODBYE WORLD\r
+                    ------WebKitFormBoundaryd9xBKq96rap8J36e\r\n
+                    """)
                 
                 expectation.fulfill()
             }
@@ -139,7 +157,7 @@ final class picaroonServicesTests: XCTestCase {
                 guard let data = data else { return XCTFail() }
                 guard let json = String(data: data, encoding: .utf8) else { return XCTFail() }
 
-                XCTAssertEqual(json, #""Hello World!""#)
+                XCTAssertEqual(json, #"Hello World"#)
                 
                 expectation.fulfill()
             }

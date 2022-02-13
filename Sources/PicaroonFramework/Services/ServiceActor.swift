@@ -22,7 +22,7 @@ open class ServiceActor: Actor {
     open func safeHandleRequest(jsonElement: JsonElement,
                                 httpRequest: HttpRequest,
                                 _ returnCallback: (HttpResponse) -> ()) {
-        returnCallback(HttpResponse.internalServerError)
+        returnCallback(HttpStaticResponse.internalServerError)
     }    
     
     private func _beHandleRequest(jsonElement: JsonElement,

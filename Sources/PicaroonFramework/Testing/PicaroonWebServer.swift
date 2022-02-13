@@ -1,4 +1,5 @@
 import Foundation
+import Hitch
 
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -25,12 +26,12 @@ extension PicaroonTesting {
 
             if httpRequest.url == "/" || httpRequest.urlParameters?.contains("sid=") == true {
                 connection.beSend(httpResponse:
-                    HttpResponse(javascript: "sessionStorage.setItem('Session-Id', '\(unsafeJavascriptSessionUUID)');")
+                    HttpResponse(javascript: Hitch("sessionStorage.setItem('Session-Id', '{0}');", unsafeJavascriptSessionUUID))
                 )
                 return
             }
 
-            connection.beSend(httpResponse: HttpResponse(text: unsafeUUID))
+            connection.beSend(httpResponse: HttpResponse(text: unsafeUUID.hitch()))
         }
     }
 

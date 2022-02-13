@@ -1,5 +1,6 @@
 import Flynn
 import Foundation
+import Hitch
 
 // swiftlint:disable identifier_name
 
@@ -22,7 +23,7 @@ public enum HttpStatus: Int {
     case internalServerError = 500
     case serviceUnavailable = 503
 
-    public var string: String {
+    public var string: Hitch {
         switch self {
         case .ok: return "HTTP/1.1 200 OK"
         case .notModified: return "HTTP/1.1 304 Not Modified"
@@ -36,7 +37,7 @@ public enum HttpStatus: Int {
     }
 }
 
-public enum HttpContentType: String {
+public enum HttpContentType: Hitch {
     case arc = "arc"
     case avi = "avi"
     case azw = "azw"
@@ -51,6 +52,7 @@ public enum HttpContentType: String {
     case docx = "docx"
     case eot = "eot"
     case epub = "epub"
+    case formData = "form-data"
     case gz = "gz"
     case gif = "gif"
     case htm = "htm"
@@ -111,15 +113,17 @@ public enum HttpContentType: String {
     case _7z = "7z"
     case force = "force"
 
-    public static func fromPath(_ path: String) -> HttpContentType {
-        let fileExt = (path as NSString).pathExtension
-        if let type = HttpContentType(rawValue: fileExt) {
-            return type
+    public static func fromPath(_ path: Hitch) -> HttpContentType {
+        if let lastDot = path.lastIndex(of: .dot),
+           let fileExt = path.substring(lastDot + 1, path.count) {
+            if let type = HttpContentType(rawValue: fileExt) {
+                return type
+            }
         }
         return .txt
     }
 
-    public var string: String {
+    public var string: Hitch {
         switch self {
         case .arc: return "application/x-freearc"
         case .avi: return "video/x-msvideo"
@@ -135,6 +139,7 @@ public enum HttpContentType: String {
         case .docx: return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         case .eot: return "application/vnd.ms-fontobject"
         case .epub: return "application/epub+zip"
+        case .formData: return "multipart/form-data"
         case .gz: return  "application/gzip"
         case .gif: return "image/gif"
         case .htm: return "text/html"
