@@ -188,6 +188,14 @@ public class HttpResponse {
         combined.append(hitchNewLine)
     }
     
+    public var description: Hitch {
+        let combined = Hitch()
+        process(hitch: combined,
+                socket: nil,
+                userSession: nil)
+        return combined
+    }
+    
     func process(hitch: Hitch?,
                  socket: SocketSendable?,
                  userSession: UserSession?) {
@@ -198,7 +206,7 @@ public class HttpResponse {
         let combined: Hitch = hitch ?? Hitch(capacity: 512)
         combined.reserveCapacity(512)
 
-        combined.append(status.string)
+        combined.append(status.hitch)
         combined.append(hitchNewLine)
 
         if cacheMaxAge > 0 {
@@ -274,7 +282,6 @@ public class HttpResponse {
             hitch?.append(multipartCombined)
             
         } else if let payload = payload {
-            // There is no payload, we're done!
             combined.append(hitchContentType)
             combined.append(type.hitch)
             combined.append(hitchNewLine)
@@ -292,6 +299,16 @@ public class HttpResponse {
                 }
             }
         } else {
+            
+            combined.append(hitchContentType)
+            combined.append(HttpContentType.txt.rawValue)
+            combined.append(hitchNewLine)
+            
+            combined.append(hitchContentLength)
+            combined.append(.zero)
+            combined.append(hitchNewLine)
+            combined.append(hitchNewLine)
+            
             combined.append(hitchNewLine)
             socket?.send(hitch: combined)
         }

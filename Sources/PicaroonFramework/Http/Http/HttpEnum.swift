@@ -32,7 +32,7 @@ public enum HttpStatus: Int {
     case internalServerError = 500
     case serviceUnavailable = 503
 
-    public var string: Hitch {
+    public var hitch: Hitch {
         switch self {
         case .ok: return hitchHttpOk
         case .notModified: return hitchHttpNotModified
@@ -130,7 +130,7 @@ public enum HttpContentType: Hitch {
     case _7z = "7z"
     case force = "force"
 
-    public static func fromPath(_ path: Hitch) -> HttpContentType {
+    public static func fromPath(_ path: Hitchable) -> HttpContentType {
         if let lastDot = path.lastIndex(of: .dot),
            let fileExt = path.substring(lastDot + 1, path.count) {
             if let type = HttpContentType(rawValue: fileExt) {
