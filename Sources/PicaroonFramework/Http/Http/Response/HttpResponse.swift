@@ -3,12 +3,15 @@ import Foundation
 import Hitch
 import Spanker
 
-private let hitchContentDispositionFormDataWithNameFormat = "Content-Disposition:form-data;name=\"{0}\"\r\n".hitch()
+private let hitchContentDispositionFormDataWithName = "Content-Disposition:form-data;name=\"".hitch()
 private let hitchContentDiscpositionFormData = "Content-Disposition:form-data\r\n".hitch()
 private let hitchContentLength = "Content-Length:".hitch()
 private let hitchNewLine = "\r\n".hitch()
 private let hitchCacheControl = "Cache-Control:public, max-age=".hitch()
-private let hitchSetCookieFormat = "Set-Cookie:{0}={1}; HttpOnly\r\n".hitch()
+
+private let hitchSetCookie1 = "Set-Cookie:".hitch()
+private let hitchSetCookie2 = "; HttpOnly\r\n".hitch()
+
 private let hitchContentEncoding = "Content-Encoding:".hitch()
 private let hitchLastModified = "Last-Modified:".hitch()
 private let hitchKeepAlive = "Connection:keep-alive\r\n".hitch()
@@ -160,7 +163,10 @@ public class HttpResponse {
     func multipartAppend(_ combined: Hitch) {
         guard let payload = payload else { return }
         if let multipartName = multipartName {
-            combined.append(format: hitchContentDispositionFormDataWithNameFormat, multipartName)
+            combined.append(hitchContentDispositionFormDataWithName)
+            combined.append(multipartName)
+            combined.append(.doubleQuote)
+            combined.append(hitchNewLine)
         } else {
             combined.append(hitchContentDiscpositionFormData)
         }
@@ -194,7 +200,13 @@ public class HttpResponse {
             combined.append(hitchNewLine)
         }
         if let userSession = userSession {
-            combined.append(format: hitchSetCookieFormat, Picaroon.userSessionCookie, userSession.unsafeSessionUUID.prefix(36))
+            
+            combined.append(hitchSetCookie1)
+            combined.append(Picaroon.userSessionCookie)
+            combined.append(.equal)
+            combined.append(userSession.unsafeCookieSessionUUID)
+            combined.append(hitchSetCookie2)
+            
             for header in userSession.unsafeSessionHeaders {
                 combined.append(header)
                 combined.append(hitchNewLine)

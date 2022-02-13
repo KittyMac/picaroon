@@ -3,6 +3,34 @@ import XCTest
 
 final class picaroonHttpRequestTests: XCTestCase {
     
+    func testCookies() {
+        let content = """
+        POST /? HTTP/1.1\r
+        Host: 127.0.0.1:49509\r
+        Accept: */*\r
+        Cache-Control: no-cache\r
+        User-Agent: xctest/18143 CFNetwork/1237 Darwin/20.4.0\r
+        Connection: keep-alive\r
+        Cookie: FABE1A47-B2FD-4CC3-AB92-D1F570002158=6AF73CB5-4D6A-4CBD-A893-89074F1F51CF\r
+        Session-Id: 6AF73CB5-4D6A-4CBD-A893-89074F1F51CF\r
+        Accept-Language: en-us\r
+        Accept-Encoding: gzip, deflate\r\n\r\n
+        """.halfhitch()
+        
+        let request = HttpRequest(request: content.raw()!, size: content.count)!
+        
+        XCTAssertEqual(request.method, HttpMethod.POST)
+        XCTAssertEqual(request.url, "/")
+        XCTAssertEqual(request.userAgent, "xctest/18143 CFNetwork/1237 Darwin/20.4.0")
+        XCTAssertEqual(request.connection, "keep-alive")
+        XCTAssertEqual(request.cookie, "FABE1A47-B2FD-4CC3-AB92-D1F570002158=6AF73CB5-4D6A-4CBD-A893-89074F1F51CF")
+        XCTAssertEqual(request.cookies["FABE1A47-B2FD-4CC3-AB92-D1F570002158"], "6AF73CB5-4D6A-4CBD-A893-89074F1F51CF")
+        XCTAssertEqual(request.sid, nil)
+        XCTAssertEqual(request.sessionId, "6AF73CB5-4D6A-4CBD-A893-89074F1F51CF")
+        XCTAssertEqual(request.acceptLanguage, "en-us")
+        XCTAssertEqual(request.acceptEncoding, "gzip, deflate")
+    }
+    
     func testSessionIdParameter1() {
         let content = """
         GET /user?state=sid%3DF3901E70-DA28-44CE-939B-D43C1CFF75CF HTTP/1.1\r
