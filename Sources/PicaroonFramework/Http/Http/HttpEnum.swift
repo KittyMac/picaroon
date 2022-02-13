@@ -46,7 +46,13 @@ public enum HttpStatus: Int {
     }
 }
 
-
+public enum HttpEncoding: Hitch {
+    case identity = "identity"
+    case gzip = "gzip"
+    case compress = "compress"
+    case deflate = "deflate"
+    case br = "br"
+}
 
 public enum HttpContentType: Hitch {
     case arc = "arc"

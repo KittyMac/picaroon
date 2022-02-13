@@ -181,26 +181,9 @@ public class HttpResponse {
         // Multifunctional method. Can be to put the data directly to a socket, or can be used
         // to bake it to a hitch.  Or both.
         
-        var multipartCount = 0
-        
-        var capacity = 512
-        if let payload = payload {
-            capacity += payload.count
-        }
-        if let multipart = multipart {
-            multipartCount += hitchMultipartBoundary.count
-            for part in multipart {
-                multipartCount += part.multipartCount()
-                multipartCount += hitchMultipartBoundary.count
-            }
-            multipartCount += hitchMultipartBoundary.count
-            
-            capacity += multipartCount
-        }
-        
-        let combined: Hitch = hitch ?? Hitch()
-        
-        combined.reserveCapacity(capacity)
+        // We're greedy and optimize for non-statis http responses
+        let combined: Hitch = hitch ?? Hitch(capacity: 512)
+        combined.reserveCapacity(512)
 
         combined.append(status.string)
         combined.append(hitchNewLine)
@@ -241,6 +224,15 @@ public class HttpResponse {
         // 2. There is a single payload content ( return content normally )
         // 3. There are multiple payload contents ( return as multipart/form-data )
         if let multipart = multipart {
+            var multipartCount = 0
+            
+            multipartCount += hitchMultipartBoundary.count
+            for part in multipart {
+                multipartCount += part.multipartCount()
+                multipartCount += hitchMultipartBoundary.count
+            }
+            multipartCount += hitchMultipartBoundary.count
+            
             let multipartCombined = Hitch(capacity: multipartCount)
             
             for part in multipart {
