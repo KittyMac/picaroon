@@ -5,15 +5,14 @@ import Spanker
 
 private let hitchContentDispositionFormDataWithNameFormat = "Content-Disposition:form-data;name=\"{0}\"\r\n".hitch()
 private let hitchContentDiscpositionFormData = "Content-Disposition:form-data\r\n".hitch()
-private let hitchContentLength = "Content-Length:{0}\r\n".hitch()
+private let hitchContentLength = "Content-Length:".hitch()
 private let hitchNewLine = "\r\n".hitch()
-private let hitchNewLineFormat = "{0}\r\n".hitch()
-private let hitchCacheControlFormat = "Cache-Control:public, max-age={0}\r\n".hitch()
+private let hitchCacheControl = "Cache-Control:public, max-age=".hitch()
 private let hitchSetCookieFormat = "Set-Cookie:{0}={1}; HttpOnly\r\n".hitch()
-private let hitchContentEncodingFormat = "Content-Encoding: {0}\r\n".hitch()
-private let hitchLastModifiedFormat = "Last-Modified:{0}\r\n".hitch()
+private let hitchContentEncoding = "Content-Encoding:".hitch()
+private let hitchLastModified = "Last-Modified:".hitch()
 private let hitchKeepAlive = "Connection:keep-alive\r\n".hitch()
-private let hitchContentTypeFormat = "Content-Type:{0}\r\n".hitch()
+private let hitchContentType = "Content-Type:".hitch()
 private let hitchMultipartBoundary = "------WebKitFormBoundaryd9xBKq96rap8J36e\r\n".hitch()
 
 protocol SocketSendable {
@@ -32,13 +31,14 @@ extension Socket: SocketSendable {
 public class HttpResponse {
     
     public static let sharedLastModifiedDate = Date()
-    public static let sharedLastModifiedDateString = "\(sharedLastModifiedDate)".halfhitch()
+    public static let sharedLastModifiedDateHitch = "\(sharedLastModifiedDate)".hitch()
+    public static let sharedLastModifiedDateHalfHitch = "\(sharedLastModifiedDate)".halfhitch()
     
     private let status: HttpStatus;
     private let type: HttpContentType
     private let headers: [Hitchable]?
     private let encoding: Hitchable?
-    private let lastModified: Date
+    private let lastModified: Hitch
     private let cacheMaxAge: Int
     
     private let payload: Payloadable?
@@ -67,13 +67,13 @@ public class HttpResponse {
     public init(multipart: [HttpResponse],
                 headers: [Hitchable]? = nil,
                 encoding: Hitchable? = nil,
-                lastModified: Date = sharedLastModifiedDate,
+                lastModified: Date? = nil,
                 cacheMaxAge: Int = 0) {
         self.status = .ok
         self.type = .txt
         self.headers = headers
         self.encoding = encoding
-        self.lastModified = lastModified
+        self.lastModified = lastModified?.description.hitch() ?? HttpResponse.sharedLastModifiedDateHitch
         self.cacheMaxAge = cacheMaxAge
         self.payload = nil
         self.multipart = multipart
@@ -87,13 +87,13 @@ public class HttpResponse {
                 multipartName: Hitch? = nil,
                 headers: [Hitchable]? = nil,
                 encoding: Hitchable? = nil,
-                lastModified: Date = sharedLastModifiedDate,
+                lastModified: Date? = nil,
                 cacheMaxAge: Int = 0) {
         self.status = status
         self.type = type
         self.headers = headers
         self.encoding = encoding
-        self.lastModified = lastModified
+        self.lastModified = lastModified?.description.hitch() ?? HttpResponse.sharedLastModifiedDateHitch
         self.cacheMaxAge = cacheMaxAge
         self.payload = nil
         self.multipart = nil
@@ -108,13 +108,13 @@ public class HttpResponse {
                 multipartName: Hitch? = nil,
                 headers: [Hitchable]? = nil,
                 encoding: Hitchable? = nil,
-                lastModified: Date = sharedLastModifiedDate,
+                lastModified: Date? = nil,
                 cacheMaxAge: Int = 0) {
         self.status = status
         self.type = type
         self.headers = headers
         self.encoding = encoding
-        self.lastModified = lastModified
+        self.lastModified = lastModified?.description.hitch() ?? HttpResponse.sharedLastModifiedDateHitch
         self.cacheMaxAge = cacheMaxAge
         self.payload = payload
         self.multipart = nil
@@ -129,13 +129,13 @@ public class HttpResponse {
                 multipartName: Hitch? = nil,
                 headers: [Hitchable]? = nil,
                 encoding: Hitchable? = nil,
-                lastModified: Date = sharedLastModifiedDate,
+                lastModified: Date? = nil,
                 cacheMaxAge: Int = 0) {
         self.status = status
         self.type = type
         self.headers = headers
         self.encoding = encoding
-        self.lastModified = lastModified
+        self.lastModified = lastModified?.description.hitch() ?? HttpResponse.sharedLastModifiedDateHitch
         self.cacheMaxAge = cacheMaxAge
         self.payload = payload
         self.multipart = nil
@@ -147,7 +147,7 @@ public class HttpResponse {
     @inlinable @inline(__always)
     func isNew(_ request: HttpRequest) -> Bool {
         if let modifiedDate = request.ifModifiedSince {
-            return HttpResponse.sharedLastModifiedDateString != modifiedDate
+            return HttpResponse.sharedLastModifiedDateHalfHitch != modifiedDate
         }
         return true
     }
@@ -164,7 +164,9 @@ public class HttpResponse {
         } else {
             combined.append(hitchContentDiscpositionFormData)
         }
-        combined.append(format: hitchContentLength, payload.count)
+        combined.append(hitchContentLength)
+        combined.append(number: payload.count)
+        combined.append(hitchNewLine)
         combined.append(hitchNewLine)
         payload.using { bytes, count in
             guard let bytes = bytes else { return }
@@ -204,25 +206,34 @@ public class HttpResponse {
         combined.append(hitchNewLine)
 
         if cacheMaxAge > 0 {
-            combined.append(format: hitchCacheControlFormat, cacheMaxAge)
+            combined.append(hitchCacheControl)
+            combined.append(number: cacheMaxAge)
+            combined.append(hitchNewLine)
         }
         if let userSession = userSession {
             combined.append(format: hitchSetCookieFormat, Picaroon.userSessionCookie, userSession.unsafeSessionUUID.prefix(36))
             for header in userSession.unsafeSessionHeaders {
-                combined.append(format: hitchNewLineFormat, header)
+                combined.append(header)
+                combined.append(hitchNewLine)
             }
         }
         if let encoding = encoding {
-            combined.append(format: hitchContentEncodingFormat, encoding)
+            combined.append(hitchContentEncoding)
+            combined.append(encoding)
+            combined.append(hitchNewLine)
         }
 
         if let headers = headers {
             for header in headers {
-                combined.append(format: hitchNewLineFormat, header)
+                combined.append(header)
+                combined.append(hitchNewLine)
             }
         }
         
-        combined.append(format: hitchLastModifiedFormat, lastModified)
+        combined.append(hitchLastModified)
+        combined.append(lastModified)
+        combined.append(hitchNewLine)
+
         combined.append(hitchKeepAlive)
         
         // Three possibilities:
@@ -238,8 +249,13 @@ public class HttpResponse {
             }
             multipartCombined.append(hitchMultipartBoundary)
             
-            combined.append(format: hitchContentTypeFormat, HttpContentType.formData.string)
-            combined.append(format: hitchContentLength, multipartCombined.count)
+            combined.append(hitchContentType)
+            combined.append(HttpContentType.formData.hitch)
+            combined.append(hitchNewLine)
+            
+            combined.append(hitchContentLength)
+            combined.append(number: multipartCombined.count)
+            combined.append(hitchNewLine)
             combined.append(hitchNewLine)
             
             socket?.send(hitch: combined)
@@ -248,8 +264,13 @@ public class HttpResponse {
             
         } else if let payload = payload {
             // There is no payload, we're done!
-            combined.append(format: hitchContentTypeFormat, type.string)
-            combined.append(format: hitchContentLength, payload.count)
+            combined.append(hitchContentType)
+            combined.append(type.hitch)
+            combined.append(hitchNewLine)
+            
+            combined.append(hitchContentLength)
+            combined.append(number: payload.count)
+            combined.append(hitchNewLine)
             combined.append(hitchNewLine)
             
             socket?.send(hitch: combined)

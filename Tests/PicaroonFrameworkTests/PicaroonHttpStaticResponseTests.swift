@@ -4,37 +4,41 @@ import Spanker
 
 @testable import PicaroonFramework
 
-final class picaroonHttpStaticResponseTests: XCTestCase {
-    
+class TestSocket: SocketSendable {
     static let hackDateTime = "2022-02-12 21:05:32 +0000".hitch()
- 
-    class TestSocket: SocketSendable {
-        private let sent = Hitch()
-        
-        func send(hitch: Hitch) -> Int {
-            sent.append(hitch)
-            return hitch.count
-        }
-        
-        func send(data: Data) -> Int {
-            sent.append(Hitch(data: data))
-            return data.count
-        }
-        
-        func send(bytes: UnsafePointer<UInt8>?, count: Int) -> Int {
-            guard let bytes = bytes else { return 0 }
-            sent.append(Hitch(bytes: bytes, offset: 0, count: count))
-            return count
-        }
-        
-        func result() -> Hitch {
-            // we need to sanitize the result by replaceing the date/times with known quantities
-            if let lastModified = sent.extract("Last-Modified:", "\r\n") {
-                sent.replace(occurencesOf: lastModified, with: hackDateTime)
-            }
-            return sent
-        }
+    
+    private let sent = Hitch()
+    
+    func send(hitch: Hitch) -> Int {
+        sent.append(hitch)
+        return hitch.count
     }
+    
+    func send(data: Data) -> Int {
+        sent.append(Hitch(data: data))
+        return data.count
+    }
+    
+    func send(bytes: UnsafePointer<UInt8>?, count: Int) -> Int {
+        guard let bytes = bytes else { return 0 }
+        sent.append(Hitch(bytes: bytes, offset: 0, count: count))
+        return count
+    }
+    
+    func result() -> Hitch {
+        // we need to sanitize the result by replaceing the date/times with known quantities
+        if let lastModified = sent.extract("Last-Modified:", "\r\n") {
+            sent.replace(occurencesOf: lastModified, with: TestSocket.hackDateTime)
+        }
+        return sent
+    }
+    
+    func clear() {
+        sent.clear()
+    }
+}
+
+final class picaroonHttpStaticResponseTests: XCTestCase {
     
     func testPerformance1() {
         
@@ -85,6 +89,22 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
         print(output)
         
         XCTAssertTrue(requestsPerSecond > 90000)
+    }
+    
+    func testProfile1() {
+        // 0.006
+        
+        let response = HttpStaticResponse.internalServerError
+        let socket = TestSocket()
+        
+        measure {
+            for _ in 0..<100000 {
+                response.send(socket: socket,
+                              userSession: nil)
+                
+                socket.clear()
+            }
+        }
     }
     
     func testSimpleJson() {

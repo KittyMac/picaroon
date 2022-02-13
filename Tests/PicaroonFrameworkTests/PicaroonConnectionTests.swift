@@ -188,7 +188,7 @@ final class picaroonConnectionTests: XCTestCase {
         guard let raw = hitch.raw() else { return XCTFail() }
         
         XCTAssert(
-            test (100000000, "array access",
+            test (1000000, "array access",
             {
                 for i in 0..<hitch.count {
                     raw[i] = raw[i] &+ 1

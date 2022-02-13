@@ -5,37 +5,7 @@ import Spanker
 @testable import PicaroonFramework
 
 final class picaroonHttpResponseTests: XCTestCase {
-    
-    static let hackDateTime = "2022-02-12 21:05:32 +0000".hitch()
- 
-    class TestSocket: SocketSendable {
-        private let sent = Hitch()
         
-        func send(hitch: Hitch) -> Int {
-            sent.append(hitch)
-            return hitch.count
-        }
-        
-        func send(data: Data) -> Int {
-            sent.append(Hitch(data: data))
-            return data.count
-        }
-        
-        func send(bytes: UnsafePointer<UInt8>?, count: Int) -> Int {
-            guard let bytes = bytes else { return 0 }
-            sent.append(Hitch(bytes: bytes, offset: 0, count: count))
-            return count
-        }
-        
-        func result() -> Hitch {
-            // we need to sanitize the result by replaceing the date/times with known quantities
-            if let lastModified = sent.extract("Last-Modified:", "\r\n") {
-                sent.replace(occurencesOf: lastModified, with: hackDateTime)
-            }
-            return sent
-        }
-    }
-    
     func testPerformance1() {
         
         let port = Int.random(in: 8000..<65500)
@@ -85,6 +55,25 @@ final class picaroonHttpResponseTests: XCTestCase {
         print(output)
         
         XCTAssertTrue(requestsPerSecond > 90000)
+    }
+    
+    func testProfile1() {
+        // 0.697
+        // 0.693
+        // 0.241
+        // 0.069
+        
+        let response = HttpResponse(status: .internalServerError, type: .txt)
+        let socket = TestSocket()
+        
+        measure {
+            for _ in 0..<100000 {
+                response.send(socket: socket,
+                              userSession: nil)
+                
+                socket.clear()
+            }
+        }
     }
     
     func testSimpleJson() {
