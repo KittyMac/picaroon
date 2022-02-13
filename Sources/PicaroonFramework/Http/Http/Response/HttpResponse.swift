@@ -3,8 +3,6 @@ import Foundation
 import Hitch
 import Spanker
 
-private let hitchContentDispositionFormDataWithName = "Content-Disposition:form-data;name=\"".hitch()
-private let hitchContentDispositionFormData = "Content-Disposition:form-data\r\n".hitch()
 private let hitchContentLength = "Content-Length:".hitch()
 private let hitchNewLine = "\r\n".hitch()
 private let hitchCacheControl = "Cache-Control:public, max-age=".hitch()
@@ -16,7 +14,11 @@ private let hitchContentEncoding = "Content-Encoding:".hitch()
 private let hitchLastModified = "Last-Modified:".hitch()
 private let hitchKeepAlive = "Connection:keep-alive\r\n".hitch()
 private let hitchContentType = "Content-Type:".hitch()
-private let hitchMultipartBoundary = "------WebKitFormBoundaryd9xBKq96rap8J36e\r\n".hitch()
+
+
+private let hitchMultipartBoundary = "Boundaryd9xBKq96rap8J36e".hitch()
+
+private let hitchMultipartMixed = "Content-Type:multipart/x-mixed-replace;boundary=".hitch()
 
 protocol SocketSendable {
     @discardableResult func send(hitch: Hitch) -> Int
@@ -162,14 +164,11 @@ public class HttpResponse {
     
     func multipartAppend(_ combined: Hitch) {
         guard let payload = payload else { return }
-        if let multipartName = multipartName {
-            combined.append(hitchContentDispositionFormDataWithName)
-            combined.append(multipartName)
-            combined.append(.doubleQuote)
-            combined.append(hitchNewLine)
-        } else {
-            combined.append(hitchContentDispositionFormData)
-        }
+        
+        combined.append(hitchContentType)
+        combined.append(type.hitch)
+        combined.append(hitchNewLine)
+        
         combined.append(hitchContentLength)
         combined.append(number: payload.count)
         combined.append(hitchNewLine)
@@ -263,13 +262,21 @@ public class HttpResponse {
             let multipartCombined = Hitch(capacity: multipartCount)
             
             for part in multipart {
+                multipartCombined.append(.minus)
+                multipartCombined.append(.minus)
                 multipartCombined.append(hitchMultipartBoundary)
+                multipartCombined.append(hitchNewLine)
                 part.multipartAppend(multipartCombined)
             }
-            multipartCombined.append(hitchMultipartBoundary)
             
-            combined.append(hitchContentType)
-            combined.append(HttpContentType.formData.hitch)
+            multipartCombined.append(.minus)
+            multipartCombined.append(.minus)
+            multipartCombined.append(hitchMultipartBoundary)
+            multipartCombined.append(.minus)
+            multipartCombined.append(.minus)
+            
+            combined.append(hitchMultipartMixed)
+            combined.append(hitchMultipartBoundary)
             combined.append(hitchNewLine)
             
             combined.append(hitchContentLength)

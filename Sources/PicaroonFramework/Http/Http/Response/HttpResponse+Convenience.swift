@@ -5,6 +5,23 @@ import Spanker
 
 // MARK: - HITCH
 public extension HttpResponse {
+    
+    convenience init(html: Hitch,
+                     multipartName: Hitch? = nil,
+                     headers: [Hitchable]? = nil,
+                     encoding: Hitchable? = nil,
+                     lastModified: Date? = nil,
+                     cacheMaxAge: Int = 0) {
+        self.init(status: .ok,
+                  type: .html,
+                  payload: html,
+                  multipartName: multipartName,
+                  headers: headers,
+                  encoding: encoding,
+                  lastModified: lastModified,
+                  cacheMaxAge: cacheMaxAge)
+    }
+    
     convenience init(text: Hitch,
                      multipartName: Hitch? = nil,
                      headers: [Hitchable]? = nil,
@@ -92,6 +109,22 @@ public extension HttpResponse {
 
 // MARK: - DATA
 public extension HttpResponse {
+    convenience init(html: Data,
+                     multipartName: Hitch? = nil,
+                     headers: [Hitchable]? = nil,
+                     encoding: Hitchable? = nil,
+                     lastModified: Date? = nil,
+                     cacheMaxAge: Int = 0) {
+        self.init(status: .ok,
+                  type: .html,
+                  payload: html,
+                  multipartName: multipartName,
+                  headers: headers,
+                  encoding: encoding,
+                  lastModified: lastModified,
+                  cacheMaxAge: cacheMaxAge)
+    }
+    
     convenience init(text: Data,
                      multipartName: Hitch? = nil,
                      headers: [Hitchable]? = nil,

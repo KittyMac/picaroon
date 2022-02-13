@@ -84,6 +84,7 @@ public enum HttpContentType: Hitch {
     case jsonld = "jsonld"
     case mid = "mid"
     case midi = "midi"
+    case mixed = "mixed"
     case mjs = "mjs"
     case mp3 = "mp3"
     case mpeg = "mpeg"
@@ -171,6 +172,7 @@ public enum HttpContentType: Hitch {
         case .jsonld: return hitchMimeTypeJsonld
         case .mid: return hitchMimeTypeMid
         case .midi: return hitchMimeTypeMidi
+        case .mixed: return hitchMimeTypeMixed
         case .mjs: return hitchMimeTypeMjs
         case .mp3: return hitchMimeTypeMp3
         case .mpeg: return hitchMimeTypeMpeg
@@ -249,6 +251,7 @@ private let hitchMimeTypeJson = "application/json".hitch()
 private let hitchMimeTypeJsonld = "application/ld+json".hitch()
 private let hitchMimeTypeMid = "audio/midi".hitch()
 private let hitchMimeTypeMidi = "audio/midi".hitch()
+private let hitchMimeTypeMixed = "multipart/mixed".hitch()
 private let hitchMimeTypeMjs = "text/javascript".hitch()
 private let hitchMimeTypeMp3 = "audio/mpeg".hitch()
 private let hitchMimeTypeMpeg = "video/mpeg".hitch()
