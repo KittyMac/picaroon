@@ -29,5 +29,5 @@ extension String {
 }
 
 public enum Picaroon {
-    static let userSessionCookie: Hitch = UUID().uuidString.hitch()
+    static let userSessionCookie: Hitch = UUID().uuidHitch
 }

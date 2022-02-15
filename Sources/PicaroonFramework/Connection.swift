@@ -126,9 +126,7 @@ public class Connection: Actor, AnyConnection {
     }
 
     private func _beSendNotModified() {
-        _beSend(httpResponse: HttpResponse(status: .notModified,
-                                           type: .txt,
-                                           payload: "not modified"))
+        _beSend(httpResponse: HttpStaticResponse.notModified)
     }
 
     @inlinable @inline(__always)

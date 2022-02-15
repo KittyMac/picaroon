@@ -54,7 +54,7 @@ public class HttpRequest {
         return _cookies
     }
     
-    public init?(request buffer: UnsafeMutablePointer<UInt8>,
+    public init?(request buffer: UnsafePointer<UInt8>,
                  size bufferSize: Int) {
         guard bufferSize > 6 else { return nil }
                 
@@ -282,7 +282,7 @@ public class HttpRequest {
         return nil
     }
     
-    public init?(multipart buffer: UnsafeMutablePointer<UInt8>,
+    public init?(multipart buffer: UnsafePointer<UInt8>,
                  size bufferSize: Int) {
         
         let startPtr = buffer
@@ -360,7 +360,7 @@ public class HttpRequest {
     }
     
     @inlinable @inline(__always)
-    func bake(buffer: UnsafeMutablePointer<UInt8>,
+    func bake(buffer: UnsafePointer<UInt8>,
               bufferSize: Int,
               using: HalfHitch?) -> HalfHitch? {
         guard let halfhitch = using else { return nil }
@@ -376,7 +376,7 @@ public class HttpRequest {
     }
     
     @inlinable @inline(__always)
-    func bake(buffer: UnsafeMutablePointer<UInt8>,
+    func bake(buffer: UnsafePointer<UInt8>,
               bufferSize: Int) {
         
         description = Hitch(bytes: buffer, offset: 0, count: bufferSize)
@@ -409,11 +409,11 @@ public class HttpRequest {
     }
     
     @inlinable @inline(__always)
-    func parseKeyValue(buffer: UnsafeMutablePointer<UInt8>,
+    func parseKeyValue(buffer: UnsafePointer<UInt8>,
                        bufferSize: Int,
-                       ptr: UnsafeMutablePointer<UInt8>,
-                       valueStart: UnsafeMutablePointer<UInt8>,
-                       keyEnd: UnsafeMutablePointer<UInt8>) {
+                       ptr: UnsafePointer<UInt8>,
+                       valueStart: UnsafePointer<UInt8>,
+                       keyEnd: UnsafePointer<UInt8>) {
         let size = keyEnd - buffer
         
         if host == nil &&

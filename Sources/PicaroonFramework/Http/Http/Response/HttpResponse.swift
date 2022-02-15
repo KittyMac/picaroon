@@ -3,22 +3,17 @@ import Foundation
 import Hitch
 import Spanker
 
-private let hitchContentLength = "Content-Length:".hitch()
-private let hitchNewLine = "\r\n".hitch()
-private let hitchCacheControl = "Cache-Control:public, max-age=".hitch()
+private let hitchContentLength: Hitch = "Content-Length:"
+private let hitchNewLine: Hitch = "\r\n"
+private let hitchCacheControl: Hitch = "Cache-Control:public, max-age="
 
-private let hitchSetCookie1 = "Set-Cookie:".hitch()
-private let hitchSetCookie2 = "; HttpOnly\r\n".hitch()
+private let hitchSetCookie1: Hitch = "Set-Cookie:"
+private let hitchSetCookie2: Hitch = "; HttpOnly\r\n"
 
-private let hitchContentEncoding = "Content-Encoding:".hitch()
-private let hitchLastModified = "Last-Modified:".hitch()
-private let hitchKeepAlive = "Connection:keep-alive\r\n".hitch()
-private let hitchContentType = "Content-Type:".hitch()
-
-
-private let hitchMultipartBoundary = "Boundaryd9xBKq96rap8J36e".hitch()
-
-private let hitchMultipartMixed = "Content-Type:multipart/x-mixed-replace;boundary=".hitch()
+private let hitchContentEncoding: Hitch = "Content-Encoding:"
+private let hitchLastModified: Hitch = "Last-Modified:"
+private let hitchKeepAlive: Hitch = "Connection:keep-alive\r\n"
+private let hitchContentType: Hitch = "Content-Type:"
 
 protocol SocketSendable {
     @discardableResult func send(hitch: Hitch) -> Int
@@ -36,26 +31,26 @@ extension Socket: SocketSendable {
 public class HttpResponse {
     
     public static let sharedLastModifiedDate = Date()
-    public static let sharedLastModifiedDateHitch = "\(sharedLastModifiedDate)".hitch()
-    public static let sharedLastModifiedDateHalfHitch = "\(sharedLastModifiedDate)".halfhitch()
+    public static let sharedLastModifiedDateHitch = Hitch(string: "\(sharedLastModifiedDate)")
+    public static let sharedLastModifiedDateHalfHitch = sharedLastModifiedDateHitch.halfhitch()
     
     private let status: HttpStatus;
     private let type: HttpContentType
-    private let headers: [Hitchable]?
-    private let encoding: Hitchable?
+    private let headers: [HalfHitch]?
+    private let encoding: HalfHitch?
     private let lastModified: Hitch
     private let cacheMaxAge: Int
     
     private let payload: Payloadable?
-    private let multipart: [HttpResponse]?
-    private let multipartName: Hitch?
-    
+    private let services: [HttpResponse]?
+    private let serviceName: Hitch?
+
     func postInit() {
 
     }
-    
+        
     public init(httpResponse: HttpResponse,
-                multipartName: Hitch? = nil) {
+                name: Hitch) {
         self.status = httpResponse.status
         self.type = httpResponse.type
         self.headers = httpResponse.headers
@@ -63,88 +58,81 @@ public class HttpResponse {
         self.lastModified = httpResponse.lastModified
         self.cacheMaxAge = httpResponse.cacheMaxAge
         self.payload = httpResponse.payload
-        self.multipart = httpResponse.multipart
-        self.multipartName = multipartName
+        self.services = httpResponse.services
+        self.serviceName = name
+        
+        postInit()
+    }
+        
+    public init(status: HttpStatus,
+                type: HttpContentType,
+                name: Hitch? = nil,
+                headers: [HalfHitch]? = nil,
+                encoding: HalfHitch? = nil,
+                lastModified: Date? = nil,
+                cacheMaxAge: Int = 0) {
+        self.status = status
+        self.type = type
+        self.headers = headers
+        self.encoding = encoding
+        if let lastModified = lastModified {
+            self.lastModified = Hitch(string: lastModified.description)
+        } else {
+            self.lastModified = HttpResponse.sharedLastModifiedDateHitch
+        }
+        self.cacheMaxAge = cacheMaxAge
+        self.payload = nil
+        self.services = nil
+        self.serviceName = name
         
         postInit()
     }
     
-    public init(multipart: [HttpResponse],
-                headers: [Hitchable]? = nil,
-                encoding: Hitchable? = nil,
+    public init(services: [HttpResponse],
+                name: Hitch? = nil,
+                headers: [HalfHitch]? = nil,
+                encoding: HalfHitch? = nil,
                 lastModified: Date? = nil,
                 cacheMaxAge: Int = 0) {
         self.status = .ok
         self.type = .txt
         self.headers = headers
         self.encoding = encoding
-        self.lastModified = lastModified?.description.hitch() ?? HttpResponse.sharedLastModifiedDateHitch
+        if let lastModified = lastModified {
+            self.lastModified = Hitch(string: lastModified.description)
+        } else {
+            self.lastModified = HttpResponse.sharedLastModifiedDateHitch
+        }
         self.cacheMaxAge = cacheMaxAge
         self.payload = nil
-        self.multipart = multipart
-        self.multipartName = nil
+        self.services = services
+        self.serviceName = name
         
         postInit()
     }
+
     
     public init(status: HttpStatus,
                 type: HttpContentType,
-                multipartName: Hitch? = nil,
-                headers: [Hitchable]? = nil,
-                encoding: Hitchable? = nil,
+                payload: ConvertableToPayloadable,
+                name: Hitch? = nil,
+                headers: [HalfHitch]? = nil,
+                encoding: HalfHitch? = nil,
                 lastModified: Date? = nil,
                 cacheMaxAge: Int = 0) {
         self.status = status
         self.type = type
         self.headers = headers
         self.encoding = encoding
-        self.lastModified = lastModified?.description.hitch() ?? HttpResponse.sharedLastModifiedDateHitch
+        if let lastModified = lastModified {
+            self.lastModified = Hitch(string: lastModified.description)
+        } else {
+            self.lastModified = HttpResponse.sharedLastModifiedDateHitch
+        }
         self.cacheMaxAge = cacheMaxAge
-        self.payload = nil
-        self.multipart = nil
-        self.multipartName = multipartName
-        
-        postInit()
-    }
-    
-    public init(status: HttpStatus,
-                type: HttpContentType,
-                payload: Payloadable,
-                multipartName: Hitch? = nil,
-                headers: [Hitchable]? = nil,
-                encoding: Hitchable? = nil,
-                lastModified: Date? = nil,
-                cacheMaxAge: Int = 0) {
-        self.status = status
-        self.type = type
-        self.headers = headers
-        self.encoding = encoding
-        self.lastModified = lastModified?.description.hitch() ?? HttpResponse.sharedLastModifiedDateHitch
-        self.cacheMaxAge = cacheMaxAge
-        self.payload = payload
-        self.multipart = nil
-        self.multipartName = multipartName
-        
-        postInit()
-    }
-    
-    public init(status: HttpStatus,
-                type: HttpContentType,
-                payload: Hitch,
-                multipartName: Hitch? = nil,
-                headers: [Hitchable]? = nil,
-                encoding: Hitchable? = nil,
-                lastModified: Date? = nil,
-                cacheMaxAge: Int = 0) {
-        self.status = status
-        self.type = type
-        self.headers = headers
-        self.encoding = encoding
-        self.lastModified = lastModified?.description.hitch() ?? HttpResponse.sharedLastModifiedDateHitch
-        self.cacheMaxAge = cacheMaxAge
-        self.payload = payload
-        self.multipart = nil
-        self.multipartName = multipartName
+        self.payload = payload.payload
+        self.services = nil
+        self.serviceName = name
         
         postInit()
     }
@@ -156,37 +144,7 @@ public class HttpResponse {
         }
         return true
     }
-    
-    func multipartCount() -> Int {
-        guard let payload = payload else { return 0 }
-        return 128 + payload.count
-    }
-    
-    func multipartAppend(_ combined: Hitch) {
-        guard let payload = payload else { return }
         
-        combined.append(hitchContentType)
-        combined.append(type.hitch)
-        combined.append(hitchNewLine)
-        
-        combined.append(hitchContentLength)
-        combined.append(number: payload.count)
-        combined.append(hitchNewLine)
-        
-        if let encoding = encoding {
-            combined.append(hitchContentEncoding)
-            combined.append(encoding)
-            combined.append(hitchNewLine)
-        }
-        
-        combined.append(hitchNewLine)
-        payload.using { bytes, count in
-            guard let bytes = bytes else { return }
-            combined.append(bytes, count: count)
-        }
-        combined.append(hitchNewLine)
-    }
-    
     public var description: Hitch {
         let combined = Hitch()
         process(hitch: combined,
@@ -245,61 +203,82 @@ public class HttpResponse {
 
         combined.append(hitchKeepAlive)
         
-        // Three possibilities:
-        // 1. There is no payload content
-        // 2. There is a single payload content ( return content normally )
-        // 3. There are multiple payload contents ( return as multipart/form-data )
-        if let multipart = multipart {
-            var multipartCount = 0
+        
+        var reifiedPayload = payload
+        
+        if let services = services {
+            // Since multipart http responses are not capable enough for what I want to do, we have to support
+            // multiple http responses in a but uniquely.  Here's how it goes:
+            // 1. Json reponses are stored in http headers, using the service name as the header name "userservice: [1,2,3,4,5]"
+            // 2. If a non-json response exists, it will become the main content of the http response
+            // 3. If no non-json response exists, then main content will be empty
+            // 4. If multiple json responses exist, then the main content will be internal server error
+            // 5. Headers attached to sub responses becaome the service name "dot" subheader "userservice.location: main"
+            //
+            // This system allows us to reach our main goal of being able to serve pre-gzipped resources alongside
+            // json results from service calls
             
-            multipartCount += hitchMultipartBoundary.count
-            for part in multipart {
-                multipartCount += part.multipartCount()
-                multipartCount += hitchMultipartBoundary.count
+            // Identify the main content service response, fail if there is more than one
+            var contentResponse: HttpResponse?
+            for service in services where service.type != .json {
+                guard contentResponse == nil else {
+                    combined.clear()
+                    HttpStaticResponse.internalServerError.process(hitch: hitch,
+                                                                   socket: socket,
+                                                                   userSession: userSession)
+                    return
+                }
+                contentResponse = service
             }
-            multipartCount += hitchMultipartBoundary.count
-            
-            let multipartCombined = Hitch(capacity: multipartCount)
-            
-            for part in multipart {
-                multipartCombined.append(.minus)
-                multipartCombined.append(.minus)
-                multipartCombined.append(hitchMultipartBoundary)
-                multipartCombined.append(hitchNewLine)
-                part.multipartAppend(multipartCombined)
+
+            // Handle injecting everything into the headers
+            for service in services {
+                guard let serviceName = service.serviceName else { continue }
+                
+                if service.type == .json {
+                    combined.append(serviceName)
+                    combined.append(.colon)
+                    service.payload?.using { bytes, count in
+                        if let bytes = bytes {
+                            combined.append(bytes, count: count)
+                        }
+                    }
+                    combined.append(hitchNewLine)
+                }
+                
+                if let serviceHeaders = service.headers {
+                    for serviceHeader in serviceHeaders {
+                        combined.append(serviceName)
+                        combined.append(.dot)
+                        combined.append(serviceHeader)
+                        combined.append(.colon)
+                        service.payload?.using { bytes, count in
+                            if let bytes = bytes {
+                                combined.append(bytes, count: count)
+                            }
+                        }
+                        combined.append(hitchNewLine)
+                    }
+                }
             }
             
-            multipartCombined.append(.minus)
-            multipartCombined.append(.minus)
-            multipartCombined.append(hitchMultipartBoundary)
-            multipartCombined.append(.minus)
-            multipartCombined.append(.minus)
-            
-            combined.append(hitchMultipartMixed)
-            combined.append(hitchMultipartBoundary)
-            combined.append(hitchNewLine)
-            
-            combined.append(hitchContentLength)
-            combined.append(number: multipartCombined.count)
-            combined.append(hitchNewLine)
-            combined.append(hitchNewLine)
-            
-            socket?.send(hitch: combined)
-            socket?.send(hitch: multipartCombined)
-            hitch?.append(multipartCombined)
-            
-        } else if let payload = payload {
+            reifiedPayload = contentResponse?.payload
+        }
+        
+        
+        
+        if let reifiedPayload = reifiedPayload {
             combined.append(hitchContentType)
             combined.append(type.hitch)
             combined.append(hitchNewLine)
             
             combined.append(hitchContentLength)
-            combined.append(number: payload.count)
+            combined.append(number: reifiedPayload.count)
             combined.append(hitchNewLine)
             combined.append(hitchNewLine)
             
             socket?.send(hitch: combined)
-            payload.using { bytes, count in
+            reifiedPayload.using { bytes, count in
                 if let bytes = bytes {
                     socket?.send(bytes: bytes, count: count)
                     hitch?.append(bytes, count: count)

@@ -1,4 +1,6 @@
 import XCTest
+import Hitch
+
 @testable import PicaroonFramework
 
 final class picaroonConnectionTests: XCTestCase {
@@ -184,8 +186,8 @@ final class picaroonConnectionTests: XCTestCase {
     }
     
     func testArrayAccessPerformance() {
-        let hitch = "This is some sample data!".hitch()
-        guard let raw = hitch.raw() else { return XCTFail() }
+        let hitch = Hitch(string: "This is some sample data!")
+        guard let raw = hitch.mutableRaw() else { return XCTFail() }
         
         XCTAssert(
             test (1000000, "array access",

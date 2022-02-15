@@ -4,15 +4,6 @@ import Hitch
 
 // swiftlint:disable identifier_name
 
-private let hitchHttpOk = "HTTP/1.1 200 OK".hitch()
-private let hitchHttpNotModified = "HTTP/1.1 304 Not Modified".hitch()
-private let hitchHttpBadRequest = "HTTP/1.1 400 Bad Request".hitch()
-private let hitchHttpNotFound = "HTTP/1.1 404 Not Found".hitch()
-private let hitchHttpRequestTimeout = "HTTP/1.1 408 Request Timeout".hitch()
-private let hitchHttpRequestTooLarge = "HTTP/1.1 413 Request Too Large".hitch()
-private let hitchHttpServiceUnavailable = "HTTP/1.1 503 Service Unavailable".hitch()
-private let hitchHttpInternalServerError = "HTTP/1.1 500 Internal Server Error".hitch()
-
 public enum HttpMethod {
     case UNKNOWN
     case GET
@@ -32,21 +23,21 @@ public enum HttpStatus: Int {
     case internalServerError = 500
     case serviceUnavailable = 503
 
-    public var hitch: Hitch {
+    public var hitch: HalfHitch {
         switch self {
-        case .ok: return hitchHttpOk
-        case .notModified: return hitchHttpNotModified
-        case .badRequest: return hitchHttpBadRequest
-        case .notFound: return hitchHttpNotFound
-        case .requestTimeout: return hitchHttpRequestTimeout
-        case .requestTooLarge: return hitchHttpRequestTooLarge
-        case .serviceUnavailable: return hitchHttpServiceUnavailable
-        default: return hitchHttpInternalServerError
+        case .ok: return "HTTP/1.1 200 OK"
+        case .notModified: return "HTTP/1.1 304 Not Modified"
+        case .badRequest: return "HTTP/1.1 400 Bad Request"
+        case .notFound: return "HTTP/1.1 404 Not Found"
+        case .requestTimeout: return "HTTP/1.1 408 Request Timeout"
+        case .requestTooLarge: return "HTTP/1.1 413 Request Too Large"
+        case .serviceUnavailable: return "HTTP/1.1 503 Service Unavailable"
+        default: return "HTTP/1.1 500 Internal Server Error"
         }
     }
 }
 
-public enum HttpEncoding: Hitch {
+public enum HttpEncoding: HalfHitch {
     case identity = "identity"
     case gzip = "gzip"
     case compress = "compress"
@@ -54,7 +45,7 @@ public enum HttpEncoding: Hitch {
     case br = "br"
 }
 
-public enum HttpContentType: Hitch {
+public enum HttpContentType: HalfHitch {
     case arc = "arc"
     case avi = "avi"
     case azw = "azw"
@@ -134,166 +125,166 @@ public enum HttpContentType: Hitch {
     public static func fromPath(_ path: Hitchable) -> HttpContentType {
         if let lastDot = path.lastIndex(of: .dot),
            let fileExt = path.substring(lastDot + 1, path.count) {
-            if let type = HttpContentType(rawValue: fileExt) {
+            if let type = HttpContentType(rawValue: fileExt.halfhitch()) {
                 return type
             }
         }
         return .txt
     }
 
-    public var hitch: Hitch {
+    public var hitch: HalfHitch {
         switch self {
-        case .arc: return hitchMimeTypeArc
-        case .avi: return hitchMimeTypeAvi
-        case .azw: return hitchMimeTypeAzw
-        case .bin: return hitchMimeTypeBin
-        case .bmp: return hitchMimeTypeBmp
-        case .bz: return hitchMimeTypeBz
-        case .bz2: return hitchMimeTypeBz2
-        case .csh: return hitchMimeTypeCsh
-        case .css: return hitchMimeTypeCss
-        case .csv: return hitchMimeTypeCsv
-        case .doc: return hitchMimeTypeDoc
-        case .docx: return hitchMimeTypeDocx
-        case .eot: return hitchMimeTypeEot
-        case .epub: return hitchMimeTypeEpub
-        case .formData: return hitchMimeTypeFormData
-        case .gz: return hitchMimeTypeGz
-        case .gif: return hitchMimeTypeGif
-        case .htm: return hitchMimeTypeHtm
-        case .html: return hitchMimeTypeHtml
-        case .ico: return hitchMimeTypeIco
-        case .ics: return hitchMimeTypeIcs
-        case .jar: return hitchMimeTypeJar
-        case .jpeg: return hitchMimeTypeJpeg
-        case .jpg: return hitchMimeTypeJpg
-        case .js: return hitchMimeTypeJs
-        case .json: return hitchMimeTypeJson
-        case .jsonld: return hitchMimeTypeJsonld
-        case .mid: return hitchMimeTypeMid
-        case .midi: return hitchMimeTypeMidi
-        case .mixed: return hitchMimeTypeMixed
-        case .mjs: return hitchMimeTypeMjs
-        case .mp3: return hitchMimeTypeMp3
-        case .mpeg: return hitchMimeTypeMpeg
-        case .mpkg: return hitchMimeTypeMpkg
-        case .odp: return hitchMimeTypeOdp
-        case .ods: return hitchMimeTypeOds
-        case .odt: return hitchMimeTypeOdt
-        case .oga: return hitchMimeTypeOga
-        case .ogv: return hitchMimeTypeOgv
-        case .ogx: return hitchMimeTypeOgx
-        case .opus: return hitchMimeTypeOpus
-        case .otf: return hitchMimeTypeOtf
-        case .png: return hitchMimeTypePng
-        case .pdf: return hitchMimeTypePdf
-        case .php: return hitchMimeTypePhp
-        case .ppt: return hitchMimeTypePpt
-        case .pptx: return hitchMimeTypePptx
-        case .rar: return hitchMimeTypeRar
-        case .rtf: return hitchMimeTypeRtf
-        case .sh: return hitchMimeTypeSh
-        case .svg: return hitchMimeTypeSvg
-        case .swf: return hitchMimeTypeSwf
-        case .tar: return hitchMimeTypeTar
-        case .tif: return hitchMimeTypeTif
-        case .tiff: return hitchMimeTypeTiff
-        case .ts: return hitchMimeTypeTs
-        case .ttf: return hitchMimeTypeTtf
-        case .txt: return hitchMimeTypeTxt
-        case .vsd: return hitchMimeTypeVsd
-        case .wav: return hitchMimeTypeWav
-        case .weba: return hitchMimeTypeWeba
-        case .webm: return hitchMimeTypeWebm
-        case .webp: return hitchMimeTypeWebp
-        case .woff: return hitchMimeTypeWoff
-        case .woff2: return hitchMimeTypeWoff2
-        case .xhtml: return hitchMimeTypeXhtml
-        case .xls: return hitchMimeTypeXls
-        case .xlsx: return hitchMimeTypeXlsx
-        case .xml: return hitchMimeTypeXml
-        case .xul: return hitchMimeTypeXul
-        case .zip: return hitchMimeTypeZip
-        case ._3gp: return hitchMimeType_3gp
-        case ._3g2: return hitchMimeType_3g2
-        case ._7z: return hitchMimeType_7z
-        case .force: return hitchMimeTypeForce
+        case .arc: return "application/x-freearc"
+        case .avi: return "video/x-msvideo"
+        case .azw: return "application/vnd.amazon.ebook"
+        case .bin: return "application/octet-stream"
+        case .bmp: return "image/bmp"
+        case .bz: return "application/x-bzip"
+        case .bz2: return "application/x-bzip2"
+        case .csh: return "application/x-csh"
+        case .css: return "text/css"
+        case .csv: return "text/csv"
+        case .doc: return "application/msword"
+        case .docx: return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        case .eot: return "application/vnd.ms-fontobject"
+        case .epub: return "application/epub+zip"
+        case .formData: return "multipart/form-data"
+        case .gz: return "application/gzip"
+        case .gif: return "image/gif"
+        case .htm: return "text/html"
+        case .html: return "text/html"
+        case .ico: return "image/vnd.microsoft.icon"
+        case .ics: return "text/calendar"
+        case .jar: return "application/java-archive"
+        case .jpeg: return "image/jpeg"
+        case .jpg: return "image/jpeg"
+        case .js: return "text/javascript"
+        case .json: return "application/json"
+        case .jsonld: return "application/ld+json"
+        case .mid: return "audio/midi"
+        case .midi: return "audio/midi"
+        case .mixed: return "multipart/mixed"
+        case .mjs: return "text/javascript"
+        case .mp3: return "audio/mpeg"
+        case .mpeg: return "video/mpeg"
+        case .mpkg: return "application/vnd.apple.installer+xml"
+        case .odp: return "application/vnd.oasis.opendocument.presentation"
+        case .ods: return "application/vnd.oasis.opendocument.spreadsheet"
+        case .odt: return "application/vnd.oasis.opendocument.text"
+        case .oga: return "audio/ogg"
+        case .ogv: return "video/ogg"
+        case .ogx: return "application/ogg"
+        case .opus: return "audio/opus"
+        case .otf: return "font/otf"
+        case .png: return "image/png"
+        case .pdf: return "application/pdf"
+        case .php: return "application/php"
+        case .ppt: return "application/vnd.ms-powerpoint"
+        case .pptx: return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        case .rar: return "application/x-rar-compressed"
+        case .rtf: return "application/rtf"
+        case .sh: return "application/x-sh"
+        case .svg: return "image/svg+xml"
+        case .swf: return "application/x-shockwave-flash"
+        case .tar: return "application/x-tar"
+        case .tif: return "image/tiff"
+        case .tiff: return "image/tiff"
+        case .ts: return "video/mp2t"
+        case .ttf: return "font/ttf"
+        case .txt: return "text/plain"
+        case .vsd: return "application/vnd.visio"
+        case .wav: return "audio/wav"
+        case .weba: return "audio/webm"
+        case .webm: return "video/webm"
+        case .webp: return "image/webp"
+        case .woff: return "font/woff"
+        case .woff2: return "font/woff2"
+        case .xhtml: return "application/xhtml+xml"
+        case .xls: return "application/vnd.ms-excel"
+        case .xlsx: return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        case .xml: return "application/xml"
+        case .xul: return "application/vnd.mozilla.xul+xml"
+        case .zip: return "application/zip"
+        case ._3gp: return "video/3gpp"
+        case ._3g2: return "video/3gpp2"
+        case ._7z: return "application/x-7z-compressed"
+        case .force: return "application/force-download"
         }
     }
 }
 
-private let hitchMimeTypeArc = "application/x-freearc".hitch()
-private let hitchMimeTypeAvi = "video/x-msvideo".hitch()
-private let hitchMimeTypeAzw = "application/vnd.amazon.ebook".hitch()
-private let hitchMimeTypeBin = "application/octet-stream".hitch()
-private let hitchMimeTypeBmp = "image/bmp".hitch()
-private let hitchMimeTypeBz =  "application/x-bzip".hitch()
-private let hitchMimeTypeBz2 = "application/x-bzip2".hitch()
-private let hitchMimeTypeCsh = "application/x-csh".hitch()
-private let hitchMimeTypeCss = "text/css".hitch()
-private let hitchMimeTypeCsv = "text/csv".hitch()
-private let hitchMimeTypeDoc = "application/msword".hitch()
-private let hitchMimeTypeDocx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document".hitch()
-private let hitchMimeTypeEot = "application/vnd.ms-fontobject".hitch()
-private let hitchMimeTypeEpub = "application/epub+zip".hitch()
-private let hitchMimeTypeFormData = "multipart/form-data".hitch()
-private let hitchMimeTypeGz =  "application/gzip".hitch()
-private let hitchMimeTypeGif = "image/gif".hitch()
-private let hitchMimeTypeHtm = "text/html".hitch()
-private let hitchMimeTypeHtml = "text/html".hitch()
-private let hitchMimeTypeIco = "image/vnd.microsoft.icon".hitch()
-private let hitchMimeTypeIcs = "text/calendar".hitch()
-private let hitchMimeTypeJar = "application/java-archive".hitch()
-private let hitchMimeTypeJpeg = "image/jpeg".hitch()
-private let hitchMimeTypeJpg = "image/jpeg".hitch()
-private let hitchMimeTypeJs = "text/javascript".hitch()
-private let hitchMimeTypeJson = "application/json".hitch()
-private let hitchMimeTypeJsonld = "application/ld+json".hitch()
-private let hitchMimeTypeMid = "audio/midi".hitch()
-private let hitchMimeTypeMidi = "audio/midi".hitch()
-private let hitchMimeTypeMixed = "multipart/mixed".hitch()
-private let hitchMimeTypeMjs = "text/javascript".hitch()
-private let hitchMimeTypeMp3 = "audio/mpeg".hitch()
-private let hitchMimeTypeMpeg = "video/mpeg".hitch()
-private let hitchMimeTypeMpkg = "application/vnd.apple.installer+xml".hitch()
-private let hitchMimeTypeOdp = "application/vnd.oasis.opendocument.presentation".hitch()
-private let hitchMimeTypeOds = "application/vnd.oasis.opendocument.spreadsheet".hitch()
-private let hitchMimeTypeOdt = "application/vnd.oasis.opendocument.text".hitch()
-private let hitchMimeTypeOga = "audio/ogg".hitch()
-private let hitchMimeTypeOgv = "video/ogg".hitch()
-private let hitchMimeTypeOgx = "application/ogg".hitch()
-private let hitchMimeTypeOpus = "audio/opus".hitch()
-private let hitchMimeTypeOtf = "font/otf".hitch()
-private let hitchMimeTypePng = "image/png".hitch()
-private let hitchMimeTypePdf = "application/pdf".hitch()
-private let hitchMimeTypePhp = "application/php".hitch()
-private let hitchMimeTypePpt = "application/vnd.ms-powerpoint".hitch()
-private let hitchMimeTypePptx = "application/vnd.openxmlformats-officedocument.presentationml.presentation".hitch()
-private let hitchMimeTypeRar = "application/x-rar-compressed".hitch()
-private let hitchMimeTypeRtf = "application/rtf".hitch()
-private let hitchMimeTypeSh = "application/x-sh".hitch()
-private let hitchMimeTypeSvg = "image/svg+xml".hitch()
-private let hitchMimeTypeSwf = "application/x-shockwave-flash".hitch()
-private let hitchMimeTypeTar = "application/x-tar".hitch()
-private let hitchMimeTypeTif = "image/tiff".hitch()
-private let hitchMimeTypeTiff = "image/tiff".hitch()
-private let hitchMimeTypeTs = "video/mp2t".hitch()
-private let hitchMimeTypeTtf = "font/ttf".hitch()
-private let hitchMimeTypeTxt = "text/plain".hitch()
-private let hitchMimeTypeVsd = "application/vnd.visio".hitch()
-private let hitchMimeTypeWav = "audio/wav".hitch()
-private let hitchMimeTypeWeba = "audio/webm".hitch()
-private let hitchMimeTypeWebm = "video/webm".hitch()
-private let hitchMimeTypeWebp = "image/webp".hitch()
-private let hitchMimeTypeWoff = "font/woff".hitch()
-private let hitchMimeTypeWoff2 = "font/woff2".hitch()
-private let hitchMimeTypeXhtml = "application/xhtml+xml".hitch()
-private let hitchMimeTypeXls = "application/vnd.ms-excel".hitch()
-private let hitchMimeTypeXlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".hitch()
-private let hitchMimeTypeXml = "application/xml".hitch()
-private let hitchMimeTypeXul = "application/vnd.mozilla.xul+xml".hitch()
-private let hitchMimeTypeZip = "application/zip".hitch()
-private let hitchMimeType_3gp = "video/3gpp".hitch()
-private let hitchMimeType_3g2 = "video/3gpp2".hitch()
-private let hitchMimeType_7z = "application/x-7z-compressed".hitch()
-private let hitchMimeTypeForce = "application/force-download".hitch()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

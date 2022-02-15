@@ -10,7 +10,7 @@ open class ServiceActor: Actor {
     private let serviceName: Hitch
     
     override public init() {
-        serviceName = String(describing: Self.self).hitch()
+        serviceName = Hitch(string: String(describing: Self.self))
     }
     
     /// Overridden by subclass to use custom service name

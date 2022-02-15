@@ -63,13 +63,13 @@ final class picaroonServicesTests: XCTestCase {
         let userSession = TestServicesSession()
         let connection = TestConnection()
         
-        let content = """
+        let content: HalfHitch = """
         GET /user?state=sid%3DF3901E70-DA28-44CE-939B-D43C1CFF75CF HTTP/1.1\r
         Content-Type: text/plain\r
         Content-Length: 11\r
         \r
         Hello World
-        """.halfhitch()
+        """
         
         guard let request = HttpRequest(request: content.raw()!, size: content.count) else {
             return XCTFail()
@@ -91,7 +91,7 @@ final class picaroonServicesTests: XCTestCase {
         
         server.listen()
         
-        for _ in 0..<100 {
+        for _ in 0..<1 {
             let baseUrl = "http://127.0.0.1:\(port)/"
             let jsonRequest = #"[{"service":"HelloWorldService"},{"service":"EchoService"},{"service":"ToUpperService","value":"goodbye world"},{"service":"HelloWorldService"}]"#
             client.beUrlRequest(url: baseUrl,
@@ -104,24 +104,11 @@ final class picaroonServicesTests: XCTestCase {
                 
                 guard let data = data else { return XCTFail() }
                 guard let json = String(data: data, encoding: .utf8) else { return XCTFail() }
+                
+                print(response?.allHeaderFields)
 
                 XCTAssertEqual(json, """
-                    ------WebKitFormBoundaryd9xBKq96rap8J36e\r
-                    Content-Disposition:form-data;name="HelloWorldService"\r
-                    Content-Length:11\r
-                    \r
-                    Hello World\r
-                    ------WebKitFormBoundaryd9xBKq96rap8J36e\r
-                    Content-Disposition:form-data;name="HelloWorldService"\r
-                    Content-Length:11\r
-                    \r
-                    Hello World\r
-                    ------WebKitFormBoundaryd9xBKq96rap8J36e\r
-                    Content-Disposition:form-data;name="ToUpperService"\r
-                    Content-Length:13\r
-                    \r
-                    GOODBYE WORLD\r
-                    ------WebKitFormBoundaryd9xBKq96rap8J36e\r\n
+                    TO BE IMPLEMENTED
                     """)
                 
                 expectation.fulfill()

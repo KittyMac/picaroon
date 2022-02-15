@@ -2,6 +2,12 @@ import Flynn
 import Foundation
 import Hitch
 
+extension UUID {
+    public var uuidHitch: Hitch {
+        return Hitch(string: self.uuidString)
+    }
+}
+
 // swiftlint:disable function_parameter_count
 // swiftlint:disable line_length
 
@@ -51,21 +57,21 @@ open class UserSession: Actor, Equatable {
     }
 
     func unsafeUpdateSessionUUIDs(_ cookieSessionUUID: Hitch?, _ javascriptSessionUUID: Hitch?) {
-        self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidString.hitch()
-        self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString.hitch()
+        self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidHitch
+        self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidHitch
         sessionUUID = UserSessionManager.combined(unsafeCookieSessionUUID, unsafeJavascriptSessionUUID)
     }
 
     required public override init() {
-        cookieSessionUUID = UUID().uuidString.hitch()
-        javascriptSessionUUID = UUID().uuidString.hitch()
+        cookieSessionUUID = UUID().uuidHitch
+        javascriptSessionUUID = UUID().uuidHitch
         sessionUUID = UserSessionManager.combined(cookieSessionUUID, javascriptSessionUUID)
         super.init()
     }
 
     required public init(cookieSessionUUID: Hitch?, javascriptSessionUUID: Hitch?) {
-        self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidString.hitch()
-        self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString.hitch()
+        self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidHitch
+        self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidHitch
         sessionUUID = UserSessionManager.combined(self.cookieSessionUUID, self.javascriptSessionUUID)
         super.init()
     }

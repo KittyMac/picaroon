@@ -67,12 +67,11 @@ open class UserServiceableSession: UserSession {
                     } else {
                         // Multiple requests, send back as multipart form data once all are completed
                         responses.append(HttpResponse(httpResponse: httpResponse,
-                                                      multipartName: serviceName.hitch()))
+                                                      name: serviceName.hitch()))
                         
                         servicesFinished += 1
                         if servicesFinished == servicesCalled {
-                            let multipartResponse = HttpResponse(multipart: responses)
-                            connection.beSend(httpResponse: multipartResponse)
+                            connection.beSend(httpResponse: HttpResponse(services: responses))
                         }
                     }
                 }

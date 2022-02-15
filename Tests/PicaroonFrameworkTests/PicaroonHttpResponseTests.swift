@@ -130,42 +130,10 @@ final class picaroonHttpResponseTests: XCTestCase {
         Hello World
         """)
     }
-        
-    func testSimpleMultipart() {
-        let response = HttpResponse(multipart: [
-            HttpResponse(text: "Part 1", multipartName: "ServiceActor.0"),
-            HttpResponse(text: "Part 2", multipartName: "ServiceActor.1")
-        ])
-        let socket = TestSocket()
-        
-        response.send(socket: socket,
-                      userSession: nil)
-        
-        XCTAssertEqual(socket.result(), """
-        HTTP/1.1 200 OK\r
-        Last-Modified:2022-02-12 21:05:32 +0000\r
-        Connection:keep-alive\r
-        Content-Type:multipart/form-data\r
-        Content-Length:288\r
-        \r
-        ------WebKitFormBoundaryd9xBKq96rap8J36e\r
-        Content-Disposition:form-data;name="ServiceActor.0"\r
-        Content-Length:6\r
-        \r
-        Part 1\r
-        ------WebKitFormBoundaryd9xBKq96rap8J36e\r
-        Content-Disposition:form-data;name="ServiceActor.1"\r
-        Content-Length:6\r
-        \r
-        Part 2\r
-        ------WebKitFormBoundaryd9xBKq96rap8J36e\r\n
-        """)
-    }
     
     static var allTests = [
         ("testSimpleJson", testSimpleJson),
-        ("testSimpleText", testSimpleText),
-        ("testSimpleMultipart", testSimpleMultipart),
+        ("testSimpleText", testSimpleText)
     ]
 }
 

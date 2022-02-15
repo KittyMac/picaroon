@@ -95,9 +95,9 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
             lock.unlock()
         }
 
-        let localJavascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidString.hitch()
+        let localJavascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidHitch
 
-        let localCookieSessionUUID = cookieSessionUUID ?? UUID().uuidString.hitch()
+        let localCookieSessionUUID = cookieSessionUUID ?? UUID().uuidHitch
         let combinedSessionUUID = Self.combined(localCookieSessionUUID, localJavascriptSessionUUID)
 
         // happy path: we have both cookies, and we have a user session which matches that unique session UUID

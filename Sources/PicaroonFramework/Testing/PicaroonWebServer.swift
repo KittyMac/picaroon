@@ -6,7 +6,7 @@ import FoundationNetworking
 #endif
 
 private func handleStaticRequest(_ httpRequest: HttpRequest) -> HttpResponse? {
-    if httpRequest.url == "/" {
+    if httpRequest.url?[0] == .forwardSlash {
         return nil
     }
     if httpRequest.method == .GET {
@@ -24,14 +24,14 @@ extension PicaroonTesting {
                 beAllowReassociation()
             }
 
-            if httpRequest.url == "/" || httpRequest.urlParameters?.contains("sid=") == true {
+            if httpRequest.url?[0] == .forwardSlash || httpRequest.urlParameters?.contains("sid=") == true {
                 connection.beSend(httpResponse:
                     HttpResponse(javascript: Hitch("sessionStorage.setItem('Session-Id', '{0}');", unsafeJavascriptSessionUUID))
                 )
                 return
             }
 
-            connection.beSend(httpResponse: HttpResponse(text: unsafeUUID.hitch()))
+            connection.beSend(httpResponse: HttpResponse(text: Hitch(string: unsafeUUID)))
         }
     }
 

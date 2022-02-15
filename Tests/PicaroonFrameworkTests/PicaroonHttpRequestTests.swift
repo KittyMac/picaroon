@@ -1,10 +1,12 @@
 import XCTest
+import Hitch
+
 @testable import PicaroonFramework
 
 final class picaroonHttpRequestTests: XCTestCase {
     
     func testCookies() {
-        let content = """
+        let content: HalfHitch = """
         POST /? HTTP/1.1\r
         Host: 127.0.0.1:49509\r
         Accept: */*\r
@@ -15,7 +17,7 @@ final class picaroonHttpRequestTests: XCTestCase {
         Session-Id: 6AF73CB5-4D6A-4CBD-A893-89074F1F51CF\r
         Accept-Language: en-us\r
         Accept-Encoding: gzip, deflate\r\n\r\n
-        """.halfhitch()
+        """
         
         let request = HttpRequest(request: content.raw()!, size: content.count)!
         
@@ -32,13 +34,13 @@ final class picaroonHttpRequestTests: XCTestCase {
     }
     
     func testSessionIdParameter1() {
-        let content = """
+        let content: HalfHitch = """
         GET /user?state=sid%3DF3901E70-DA28-44CE-939B-D43C1CFF75CF HTTP/1.1\r
         Content-Type: text/plain\r
         Content-Length: 11\r
         \r
         Hello World
-        """.halfhitch()
+        """
         
         let request = HttpRequest(request: content.raw()!, size: content.count)!
         
@@ -52,13 +54,13 @@ final class picaroonHttpRequestTests: XCTestCase {
     }
     
     func testSessionIdParameter2() {
-        let content = """
+        let content: HalfHitch = """
         GET /user?sid=F3901E70-DA28-44CE-939B-D43C1CFF75CF&code=Gf0I76pKptuRrNkJfDf5QrryqQJR4B HTTP/1.1\r
         Content-Type: text/plain\r
         Content-Length: 11\r
         \r
         Hello World
-        """.halfhitch()
+        """
         
         let request = HttpRequest(request: content.raw()!, size: content.count)!
 
@@ -72,7 +74,7 @@ final class picaroonHttpRequestTests: XCTestCase {
     }
 
     func testMultipartRequest() {
-        let content = """
+        let content: HalfHitch = """
         GET / HTTP/1.1\r
         Content-Type: multipart/form-data\r
         Content-Length: 303\r
@@ -88,7 +90,7 @@ final class picaroonHttpRequestTests: XCTestCase {
         test 1
         \r
         ------WebKitFormBoundaryd9xBKq96rap8J36e--\r
-        """.halfhitch()
+        """
         
         let request = HttpRequest(request: content.raw()!, size: content.count)!
 

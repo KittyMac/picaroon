@@ -3,19 +3,42 @@ import Foundation
 import Hitch
 import Spanker
 
-// MARK: - HITCH
+let hitchContentTransferEncodingBinary: HalfHitch = "Content-Transfer-Encoding: binary"
+let hitchContentDispositionFormat: HalfHitch = #"Content-Disposition: attachment; filename="{0}""#
+
+
+public extension HttpResponse {
+    convenience init(json: JsonElement,
+                     name: Hitch? = nil,
+                     headers: [HalfHitch]? = nil,
+                     encoding: HalfHitch? = nil,
+                     lastModified: Date? = nil,
+                     cacheMaxAge: Int = 0) {
+        self.init(status: .ok,
+                  type: .json,
+                  payload: json.toHitch(),
+                  name: name,
+                  headers: headers,
+                  encoding: encoding,
+                  lastModified: lastModified,
+                  cacheMaxAge: cacheMaxAge)
+    }
+}
+
+// MARK: - HALFHITCH
+
 public extension HttpResponse {
     
     convenience init(html: Hitch,
-                     multipartName: Hitch? = nil,
-                     headers: [Hitchable]? = nil,
-                     encoding: Hitchable? = nil,
+                     name: Hitch? = nil,
+                     headers: [HalfHitch]? = nil,
+                     encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0) {
         self.init(status: .ok,
                   type: .html,
                   payload: html,
-                  multipartName: multipartName,
+                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -23,15 +46,15 @@ public extension HttpResponse {
     }
     
     convenience init(text: Hitch,
-                     multipartName: Hitch? = nil,
-                     headers: [Hitchable]? = nil,
-                     encoding: Hitchable? = nil,
+                     name: Hitch? = nil,
+                     headers: [HalfHitch]? = nil,
+                     encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0) {
         self.init(status: .ok,
                   type: .txt,
                   payload: text,
-                  multipartName: multipartName,
+                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -39,15 +62,15 @@ public extension HttpResponse {
     }
     
     convenience init(javascript: Hitch,
-                     multipartName: Hitch? = nil,
-                     headers: [Hitchable]? = nil,
-                     encoding: Hitchable? = nil,
+                     name: Hitch? = nil,
+                     headers: [HalfHitch]? = nil,
+                     encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0) {
         self.init(status: .ok,
                   type: .js,
                   payload: javascript,
-                  multipartName: multipartName,
+                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -55,31 +78,15 @@ public extension HttpResponse {
     }
     
     convenience init(json: Hitch,
-                     multipartName: Hitch? = nil,
-                     headers: [Hitchable]? = nil,
-                     encoding: Hitchable? = nil,
+                     name: Hitch? = nil,
+                     headers: [HalfHitch]? = nil,
+                     encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0) {
         self.init(status: .ok,
                   type: .json,
                   payload: json,
-                  multipartName: multipartName,
-                  headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
-    }
-    
-    convenience init(json: JsonElement,
-                     multipartName: Hitch? = nil,
-                     headers: [Hitchable]? = nil,
-                     encoding: Hitchable? = nil,
-                     lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
-        self.init(status: .ok,
-                  type: .json,
-                  payload: json.toHitch(),
-                  multipartName: multipartName,
+                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -87,19 +94,19 @@ public extension HttpResponse {
     }
     
     convenience init(filename: Hitch,
+                     name: Hitch? = nil,
                      type: HttpContentType,
-                     payload: Payloadable,
-                     multipartName: Hitch? = nil,
-                     encoding: Hitchable? = nil,
+                     payload: ConvertableToPayloadable,
+                     encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0) {
         self.init(status: .ok,
                   type: type,
                   payload: payload,
-                  multipartName: multipartName,
+                  name: name,
                   headers: [
-                    "Content-Transfer-Encoding: binary",
-                    Hitch(#"Content-Disposition: attachment; filename="{0}""#, filename)
+                    hitchContentTransferEncodingBinary,
+                    Hitch(#"Content-Disposition: attachment; filename="{0}""#, filename).halfhitch()
                   ],
                   encoding: encoding,
                   lastModified: lastModified,
@@ -107,18 +114,20 @@ public extension HttpResponse {
     }
 }
 
-// MARK: - DATA
+// MARK: - Data
+
 public extension HttpResponse {
+    
     convenience init(html: Data,
-                     multipartName: Hitch? = nil,
-                     headers: [Hitchable]? = nil,
-                     encoding: Hitchable? = nil,
+                     name: Hitch? = nil,
+                     headers: [HalfHitch]? = nil,
+                     encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0) {
         self.init(status: .ok,
                   type: .html,
                   payload: html,
-                  multipartName: multipartName,
+                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -126,15 +135,15 @@ public extension HttpResponse {
     }
     
     convenience init(text: Data,
-                     multipartName: Hitch? = nil,
-                     headers: [Hitchable]? = nil,
-                     encoding: Hitchable? = nil,
+                     name: Hitch? = nil,
+                     headers: [HalfHitch]? = nil,
+                     encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0) {
         self.init(status: .ok,
                   type: .txt,
                   payload: text,
-                  multipartName: multipartName,
+                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -142,15 +151,15 @@ public extension HttpResponse {
     }
     
     convenience init(javascript: Data,
-                     multipartName: Hitch? = nil,
-                     headers: [Hitchable]? = nil,
-                     encoding: Hitchable? = nil,
+                     name: Hitch? = nil,
+                     headers: [HalfHitch]? = nil,
+                     encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0) {
         self.init(status: .ok,
                   type: .js,
                   payload: javascript,
-                  multipartName: multipartName,
+                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -158,38 +167,39 @@ public extension HttpResponse {
     }
     
     convenience init(json: Data,
-                     multipartName: Hitch? = nil,
-                     headers: [Hitchable]? = nil,
-                     encoding: Hitchable? = nil,
+                     name: Hitch? = nil,
+                     headers: [HalfHitch]? = nil,
+                     encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0) {
         self.init(status: .ok,
                   type: .json,
                   payload: json,
-                  multipartName: multipartName,
+                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
                   cacheMaxAge: cacheMaxAge)
     }
-        
+    
     convenience init(filename: Data,
+                     name: Hitch? = nil,
                      type: HttpContentType,
-                     payload: Payloadable,
-                     multipartName: Hitch? = nil,
-                     encoding: Hitchable? = nil,
+                     payload: ConvertableToPayloadable,
+                     encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0) {
         self.init(status: .ok,
                   type: type,
                   payload: payload,
-                  multipartName: multipartName,
+                  name: name,
                   headers: [
-                    "Content-Transfer-Encoding: binary",
-                    Hitch(#"Content-Disposition: attachment; filename="{0}""#, filename)
+                    hitchContentTransferEncodingBinary,
+                    Hitch(#"Content-Disposition: attachment; filename="{0}""#, filename).halfhitch()
                   ],
                   encoding: encoding,
                   lastModified: lastModified,
                   cacheMaxAge: cacheMaxAge)
     }
 }
+
