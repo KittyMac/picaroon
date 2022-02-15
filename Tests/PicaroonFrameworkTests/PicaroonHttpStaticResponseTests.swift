@@ -157,65 +157,10 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
         Content-Length:0\r\n\r\n\r\n
         """)
     }
-    
-    func testMultipleServiceResponse() {
-        let response = HttpStaticResponse(services: [
-            HttpStaticResponse(json: #"{"result":"Part 1"}"#, name: "ServiceA"),
-            HttpStaticResponse(json: #"{"result":"Part 2"}"#, name: "ServiceB", headers: ["Location: main"]),
-            HttpStaticResponse(html: #"<html><body>Hello World</body></html>"#, name: "ServiceHtml"),
-        ])
-        let socket = TestSocket()
         
-        response.send(socket: socket,
-                      userSession: nil)
-        
-        print(socket.result())
-        /*
-        XCTAssertEqual(socket.result(), """
-        HTTP/1.1 200 OK\r
-        Last-Modified:2022-02-12 21:05:32 +0000\r
-        Connection:keep-alive\r
-        Content-Type:multipart/form-data\r
-        Content-Length:311\r
-        \r
-        ------WebKitFormBoundaryd9xBKq96rap8J36e\r
-        Content-Disposition:form-data;name="ServiceActor.0"\r
-        Content-Length:6\r
-        \r
-        Part 1\r
-        ------WebKitFormBoundaryd9xBKq96rap8J36e\r
-        Content-Disposition:form-data;name="ServiceActor.1"\r
-        Content-Length:6\r
-        Content-Encoding:gzip\r
-        \r
-        Part 2\r
-        ------WebKitFormBoundaryd9xBKq96rap8J36e\r\n
-        """)*/
-    }
-    /*
-    func testMultipleServiceResponseServer() {
-                
-        let config = ServerConfig(address: "0.0.0.0", port: 8080)
-        
-        let response = HttpStaticResponse(services: [
-            HttpStaticResponse(json: #"{"result":"Part 1"}"#),
-            HttpStaticResponse(json: #"{"result":"Part 2"}"#),
-            HttpStaticResponse(html: #"<html><body>Hello World</body></html>"#),
-        ])
-
-        let server = Server(config: config) { _ in
-            print(response.description)
-            return response
-        }
-        server.listen()
-        
-        sleep(550)
-    }*/
-    
     static var allTests = [
         ("testSimpleJson", testSimpleJson),
         ("testSimpleText", testSimpleText),
-        ("testInternalError", testInternalError),
-        ("testMultipleServiceResponse", testMultipleServiceResponse),
+        ("testInternalError", testInternalError)
     ]
 }

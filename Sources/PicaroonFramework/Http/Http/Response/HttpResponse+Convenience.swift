@@ -9,7 +9,6 @@ let hitchContentDispositionFormat: HalfHitch = #"Content-Disposition: attachment
 
 public extension HttpResponse {
     convenience init(json: JsonElement,
-                     name: Hitch? = nil,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -17,7 +16,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: .json,
                   payload: json.toHitch(),
-                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -30,7 +28,6 @@ public extension HttpResponse {
 public extension HttpResponse {
     
     convenience init(html: Hitch,
-                     name: Hitch? = nil,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -38,7 +35,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: .html,
                   payload: html,
-                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -46,7 +42,6 @@ public extension HttpResponse {
     }
     
     convenience init(text: Hitch,
-                     name: Hitch? = nil,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -54,7 +49,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: .txt,
                   payload: text,
-                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -62,7 +56,6 @@ public extension HttpResponse {
     }
     
     convenience init(javascript: Hitch,
-                     name: Hitch? = nil,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -70,7 +63,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: .js,
                   payload: javascript,
-                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -78,7 +70,6 @@ public extension HttpResponse {
     }
     
     convenience init(json: Hitch,
-                     name: Hitch? = nil,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -86,7 +77,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: .json,
                   payload: json,
-                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -94,7 +84,6 @@ public extension HttpResponse {
     }
     
     convenience init(filename: Hitch,
-                     name: Hitch? = nil,
                      type: HttpContentType,
                      payload: ConvertableToPayloadable,
                      encoding: HalfHitch? = nil,
@@ -103,7 +92,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: type,
                   payload: payload,
-                  name: name,
                   headers: [
                     hitchContentTransferEncodingBinary,
                     Hitch(#"Content-Disposition: attachment; filename="{0}""#, filename).halfhitch()
@@ -119,7 +107,6 @@ public extension HttpResponse {
 public extension HttpResponse {
     
     convenience init(html: Data,
-                     name: Hitch? = nil,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -127,7 +114,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: .html,
                   payload: html,
-                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -135,7 +121,6 @@ public extension HttpResponse {
     }
     
     convenience init(text: Data,
-                     name: Hitch? = nil,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -143,7 +128,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: .txt,
                   payload: text,
-                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -151,7 +135,6 @@ public extension HttpResponse {
     }
     
     convenience init(javascript: Data,
-                     name: Hitch? = nil,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -159,7 +142,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: .js,
                   payload: javascript,
-                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -167,7 +149,6 @@ public extension HttpResponse {
     }
     
     convenience init(json: Data,
-                     name: Hitch? = nil,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -175,7 +156,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: .json,
                   payload: json,
-                  name: name,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
@@ -183,7 +163,6 @@ public extension HttpResponse {
     }
     
     convenience init(filename: Data,
-                     name: Hitch? = nil,
                      type: HttpContentType,
                      payload: ConvertableToPayloadable,
                      encoding: HalfHitch? = nil,
@@ -192,7 +171,6 @@ public extension HttpResponse {
         self.init(status: .ok,
                   type: type,
                   payload: payload,
-                  name: name,
                   headers: [
                     hitchContentTransferEncodingBinary,
                     Hitch(#"Content-Disposition: attachment; filename="{0}""#, filename).halfhitch()

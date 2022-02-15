@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/KittyMac/Hitch.git",
         "state": {
           "branch": null,
-          "revision": "2c2360326134933ccdbb93c3e037bf2501352ffe",
-          "version": "0.4.4"
+          "revision": "7423148c463711db2acf50905298c14b5e5db845",
+          "version": "0.4.5"
         }
       },
       {
@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/KittyMac/Spanker.git",
         "state": {
           "branch": null,
-          "revision": "cf012b9326759955925e6ea09292b3652bf95feb",
-          "version": "0.2.2"
+          "revision": "aa8fb3329160f6d013d4430d55e57818d863ad24",
+          "version": "0.2.4"
         }
       },
       {

@@ -9,21 +9,21 @@ class HelloWorldService: ServiceActor {
             
     override func safeHandleRequest(jsonElement: JsonElement,
                                     httpRequest: HttpRequest,
-                                    _ returnCallback: (HttpResponse) -> ()) {
-        returnCallback(response)
+                                    _ returnCallback: (JsonElement?, HttpResponse?) -> ()) {
+        returnCallback(nil, response)
     }
 }
 
 class ToUpperService: ServiceActor {
     override func safeHandleRequest(jsonElement: JsonElement,
                                     httpRequest: HttpRequest,
-                                    _ returnCallback: (HttpResponse) -> ()) {
+                                    _ returnCallback: (JsonElement?, HttpResponse?) -> ()) {
         guard let value = jsonElement[hitch: "value"] else {
-            returnCallback(HttpStaticResponse.badRequest)
+            returnCallback(JsonElement(unknown: "value field missing"), nil)
             return
         }
         value.uppercase()
-        returnCallback(HttpResponse(text: value))
+        returnCallback(JsonElement(unknown: value), nil)
     }
 }
 
@@ -79,7 +79,7 @@ final class picaroonServicesTests: XCTestCase {
                                     httpRequest: request)
     }
     
-    func testHelloWorldService1() {
+    func testMultipleServiceResponseWithNoContent() {
         let expectation = XCTestExpectation(description: "success")
         
         let port = Int.random(in: 8000..<65500)
@@ -93,24 +93,23 @@ final class picaroonServicesTests: XCTestCase {
         
         for _ in 0..<1 {
             let baseUrl = "http://127.0.0.1:\(port)/"
-            let jsonRequest = #"[{"service":"HelloWorldService"},{"service":"EchoService"},{"service":"ToUpperService","value":"goodbye world"},{"service":"HelloWorldService"}]"#
+            let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"ToUpperService","value":"test b"}]"#
             client.beUrlRequest(url: baseUrl,
                                 httpMethod: "POST",
                                 params: [:],
                                 headers: [:],
                                 body: jsonRequest.data(using: .utf8),
                                 client) { data, response, error in
-                //XCTAssertNil(error)
+                XCTAssertNil(error)
                 
                 guard let data = data else { return XCTFail() }
-                guard let json = String(data: data, encoding: .utf8) else { return XCTFail() }
+                guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
                 
-                print(response?.allHeaderFields)
+                guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
 
-                XCTAssertEqual(json, """
-                    TO BE IMPLEMENTED
-                    """)
-                
+                XCTAssertEqual(serviceResponse, #"["TEST A","TEST B"]"#)
+                XCTAssertEqual(dataAsString, "")
+
                 expectation.fulfill()
             }
         }
@@ -118,7 +117,7 @@ final class picaroonServicesTests: XCTestCase {
         wait(for: [expectation], timeout: 30)
     }
     
-    func testHelloWorldService2() {
+    func testMultipleServiceResponseWithNoHeadersAndOneContent() {
         let expectation = XCTestExpectation(description: "success")
         
         let port = Int.random(in: 8000..<65500)
@@ -130,7 +129,7 @@ final class picaroonServicesTests: XCTestCase {
         
         server.listen()
         
-        for _ in 0..<100 {
+        for _ in 0..<1 {
             let baseUrl = "http://127.0.0.1:\(port)/"
             let jsonRequest = #"{"service":"HelloWorldService"}"#
             client.beUrlRequest(url: baseUrl,
@@ -139,12 +138,91 @@ final class picaroonServicesTests: XCTestCase {
                                 headers: [:],
                                 body: jsonRequest.data(using: .utf8),
                                 client) { data, response, error in
-                //XCTAssertNil(error)
+                XCTAssertNil(error)
                 
                 guard let data = data else { return XCTFail() }
-                guard let json = String(data: data, encoding: .utf8) else { return XCTFail() }
+                guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
+                
+                guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
 
-                XCTAssertEqual(json, #"Hello World"#)
+                XCTAssertEqual(serviceResponse, #"null"#)
+                XCTAssertEqual(dataAsString, "Hello World")
+
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 30)
+    }
+    
+    func testMultipleServiceResponseWithHeadersAndOneContent() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        let config = ServerConfig(address: "0.0.0.0",
+                                  port: port)
+        
+        let server = Server<TestServicesSession>(config: config)
+        let client = UserSession()
+        
+        server.listen()
+        
+        for _ in 0..<1 {
+            let baseUrl = "http://127.0.0.1:\(port)/"
+            let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"ToUpperService","value":"test b"},{"service":"HelloWorldService"}]"#
+            client.beUrlRequest(url: baseUrl,
+                                httpMethod: "POST",
+                                params: [:],
+                                headers: [:],
+                                body: jsonRequest.data(using: .utf8),
+                                client) { data, response, error in
+                XCTAssertNil(error)
+                
+                guard let data = data else { return XCTFail() }
+                guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
+                
+                guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
+
+                XCTAssertEqual(serviceResponse, #"["TEST A","TEST B",null]"#)
+                XCTAssertEqual(dataAsString, "Hello World")
+
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 30)
+    }
+    
+    func testMultipleServiceResponseWithMultipleContentError() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        let config = ServerConfig(address: "0.0.0.0",
+                                  port: port)
+        
+        let server = Server<TestServicesSession>(config: config)
+        let client = UserSession()
+        
+        server.listen()
+        
+        for _ in 0..<1 {
+            let baseUrl = "http://127.0.0.1:\(port)/"
+            let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"HelloWorldService"},{"service":"HelloWorldService"}]"#
+            client.beUrlRequest(url: baseUrl,
+                                httpMethod: "POST",
+                                params: [:],
+                                headers: [:],
+                                body: jsonRequest.data(using: .utf8),
+                                client) { data, response, error in
+                XCTAssertNotNil(error)
+                
+                guard let data = data else { return XCTFail() }
+                guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
+                
+                guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
+
+                XCTAssertEqual(serviceResponse, #"["TEST A",null,null]"#)
+                XCTAssertEqual(dataAsString, "HTTP/1.1 500 Internal Server Error")
                 
                 expectation.fulfill()
             }
