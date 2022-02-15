@@ -26,12 +26,12 @@ extension PicaroonTesting {
 
             if httpRequest.url?[0] == .forwardSlash || httpRequest.urlParameters?.contains("sid=") == true {
                 connection.beSend(httpResponse:
-                    HttpResponse(javascript: Hitch("sessionStorage.setItem('Session-Id', '{0}');", unsafeJavascriptSessionUUID))
+                                    HttpResponse(javascript: "sessionStorage.setItem('Session-Id', '{0}');" << [unsafeJavascriptSessionUUID])
                 )
                 return
             }
 
-            connection.beSend(httpResponse: HttpResponse(text: Hitch(string: unsafeUUID)))
+            connection.beSend(httpResponse: HttpResponse(text: HalfHitch(string: unsafeUUID)))
         }
     }
 

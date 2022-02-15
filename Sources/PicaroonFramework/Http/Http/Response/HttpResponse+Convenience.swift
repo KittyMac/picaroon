@@ -23,11 +23,11 @@ public extension HttpResponse {
     }
 }
 
-// MARK: - HALFHITCH
+// MARK: - HalfHitch
 
 public extension HttpResponse {
     
-    convenience init(html: Hitch,
+    convenience init(html: HalfHitch,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -41,7 +41,7 @@ public extension HttpResponse {
                   cacheMaxAge: cacheMaxAge)
     }
     
-    convenience init(text: Hitch,
+    convenience init(text: HalfHitch,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -55,7 +55,7 @@ public extension HttpResponse {
                   cacheMaxAge: cacheMaxAge)
     }
     
-    convenience init(javascript: Hitch,
+    convenience init(javascript: HalfHitch,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -69,7 +69,7 @@ public extension HttpResponse {
                   cacheMaxAge: cacheMaxAge)
     }
     
-    convenience init(json: Hitch,
+    convenience init(json: HalfHitch,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -83,7 +83,7 @@ public extension HttpResponse {
                   cacheMaxAge: cacheMaxAge)
     }
     
-    convenience init(filename: Hitch,
+    convenience init(filename: HalfHitch,
                      type: HttpContentType,
                      payload: ConvertableToPayloadable,
                      encoding: HalfHitch? = nil,

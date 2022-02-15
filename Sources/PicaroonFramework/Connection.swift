@@ -116,7 +116,7 @@ public class Connection: Actor, AnyConnection {
     }
 
     private func _beSendSuccess(_ message: Hitch = "success") {
-        _beSend(httpResponse: HttpResponse(text: message))
+        _beSend(httpResponse: HttpResponse(text: message.halfhitch()))
     }
 
     private func _beSendError(_ error: Hitch) {
