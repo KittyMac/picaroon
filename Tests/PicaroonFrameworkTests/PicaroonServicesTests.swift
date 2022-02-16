@@ -9,7 +9,7 @@ class HelloWorldService: ServiceActor {
             
     override func safeHandleRequest(jsonElement: JsonElement,
                                     httpRequest: HttpRequest,
-                                    _ returnCallback: (JsonElement?, HttpResponse?) -> ()) {
+                                    _ returnCallback: @escaping (JsonElement?, HttpResponse?) -> ()) {
         returnCallback(nil, response)
     }
 }
@@ -17,7 +17,7 @@ class HelloWorldService: ServiceActor {
 class ToUpperService: ServiceActor {
     override func safeHandleRequest(jsonElement: JsonElement,
                                     httpRequest: HttpRequest,
-                                    _ returnCallback: (JsonElement?, HttpResponse?) -> ()) {
+                                    _ returnCallback: @escaping (JsonElement?, HttpResponse?) -> ()) {
         guard let value = jsonElement[hitch: "value"] else {
             returnCallback(JsonElement(unknown: "value field missing"), nil)
             return

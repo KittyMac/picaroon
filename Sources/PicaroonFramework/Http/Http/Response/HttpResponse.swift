@@ -26,6 +26,20 @@ extension Socket: SocketSendable {
     
 }
 
+fileprivate func detectEncoding(payload: Payloadable?) -> HalfHitch? {
+    // Check for magic bytes which will let us know if this is compressed content or not
+    var encoding: HalfHitch? = nil
+    payload?.using { bytes, count in
+        guard let bytes = bytes else { return }
+        guard count > 10 else { return }
+        // gzip magic header: https://en.wikipedia.org/wiki/Gzip
+        if bytes[0] == 0x1F && bytes[1] == 0x8B && bytes[2] == 0x08 {
+            encoding = "gzip"
+        }
+    }
+    return encoding
+}
+
 /// Holds all of the information necessary to write an http response to a socket. Does not
 /// copy the data it is given.
 public class HttpResponse {
@@ -98,7 +112,7 @@ public class HttpResponse {
         self.status = status
         self.type = type
         self.headers = headers
-        self.encoding = encoding
+        self.encoding = encoding ?? detectEncoding(payload: payload)
         if let lastModified = lastModified {
             self.lastModified = Hitch(string: lastModified.description)
         } else {
