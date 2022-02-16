@@ -21,7 +21,7 @@ open class ServiceActor: Actor {
     /// Overridden by subclass to handle requests
     open func safeHandleRequest(jsonElement: JsonElement,
                                 httpRequest: HttpRequest,
-                                _ returnCallback: (JsonElement?, HttpResponse?) -> ()) {
+                                _ returnCallback: @escaping (JsonElement?, HttpResponse?) -> ()) {
         returnCallback(JsonElement(unknown: [
             "error": "service actor not properly configured"
         ]), HttpStaticResponse.internalServerError)
@@ -29,7 +29,7 @@ open class ServiceActor: Actor {
     
     private func _beHandleRequest(jsonElement: JsonElement,
                                   httpRequest: HttpRequest,
-                                  _ returnCallback: (JsonElement?, HttpResponse?) -> ()) {
+                                  _ returnCallback: @escaping (JsonElement?, HttpResponse?) -> ()) {
         safeHandleRequest(jsonElement: jsonElement,
                           httpRequest: httpRequest,
                           returnCallback)
