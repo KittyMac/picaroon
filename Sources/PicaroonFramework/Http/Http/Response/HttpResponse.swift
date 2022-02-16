@@ -90,7 +90,7 @@ public class HttpResponse {
     
     public init(status: HttpStatus,
                 type: HttpContentType,
-                payload: ConvertableToPayloadable,
+                payload: Payloadable,
                 headers: [HalfHitch]? = nil,
                 encoding: HalfHitch? = nil,
                 lastModified: Date? = nil,
@@ -105,7 +105,7 @@ public class HttpResponse {
             self.lastModified = HttpResponse.sharedLastModifiedDateHitch
         }
         self.cacheMaxAge = cacheMaxAge
-        self.payload = payload.payload
+        self.payload = payload
         
         postInit()
     }
@@ -177,17 +177,18 @@ public class HttpResponse {
         combined.append(hitchKeepAlive)
         
         if let payload = payload {
-            combined.append(hitchContentType)
-            combined.append(type.hitch)
-            combined.append(hitchNewLine)
-            
-            combined.append(hitchContentLength)
-            combined.append(number: payload.count)
-            combined.append(hitchNewLine)
-            combined.append(hitchNewLine)
-            
-            socket?.send(hitch: combined)
             payload.using { bytes, count in
+                
+                combined.append(hitchContentType)
+                combined.append(type.hitch)
+                combined.append(hitchNewLine)
+                
+                combined.append(hitchContentLength)
+                combined.append(number: count)
+                combined.append(hitchNewLine)
+                combined.append(hitchNewLine)
+                socket?.send(hitch: combined)
+                
                 if let bytes = bytes {
                     socket?.send(bytes: bytes, count: count)
                     hitch?.append(bytes, count: count)

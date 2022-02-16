@@ -23,11 +23,9 @@ public extension HttpResponse {
     }
 }
 
-// MARK: - HalfHitch
-
 public extension HttpResponse {
     
-    convenience init(html: HalfHitch,
+    convenience init(html: Payloadable,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -41,7 +39,7 @@ public extension HttpResponse {
                   cacheMaxAge: cacheMaxAge)
     }
     
-    convenience init(text: HalfHitch,
+    convenience init(text: Payloadable,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -55,7 +53,7 @@ public extension HttpResponse {
                   cacheMaxAge: cacheMaxAge)
     }
     
-    convenience init(javascript: HalfHitch,
+    convenience init(javascript: Payloadable,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -69,7 +67,7 @@ public extension HttpResponse {
                   cacheMaxAge: cacheMaxAge)
     }
     
-    convenience init(json: HalfHitch,
+    convenience init(json: Payloadable,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
@@ -78,103 +76,6 @@ public extension HttpResponse {
                   type: .json,
                   payload: json,
                   headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
-    }
-    
-    convenience init(filename: HalfHitch,
-                     type: HttpContentType,
-                     payload: ConvertableToPayloadable,
-                     encoding: HalfHitch? = nil,
-                     lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
-        self.init(status: .ok,
-                  type: type,
-                  payload: payload,
-                  headers: [
-                    hitchContentTransferEncodingBinary,
-                    Hitch(#"Content-Disposition: attachment; filename="{0}""#, filename).halfhitch()
-                  ],
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
-    }
-}
-
-// MARK: - Data
-
-public extension HttpResponse {
-    
-    convenience init(html: Data,
-                     headers: [HalfHitch]? = nil,
-                     encoding: HalfHitch? = nil,
-                     lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
-        self.init(status: .ok,
-                  type: .html,
-                  payload: html,
-                  headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
-    }
-    
-    convenience init(text: Data,
-                     headers: [HalfHitch]? = nil,
-                     encoding: HalfHitch? = nil,
-                     lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
-        self.init(status: .ok,
-                  type: .txt,
-                  payload: text,
-                  headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
-    }
-    
-    convenience init(javascript: Data,
-                     headers: [HalfHitch]? = nil,
-                     encoding: HalfHitch? = nil,
-                     lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
-        self.init(status: .ok,
-                  type: .js,
-                  payload: javascript,
-                  headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
-    }
-    
-    convenience init(json: Data,
-                     headers: [HalfHitch]? = nil,
-                     encoding: HalfHitch? = nil,
-                     lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
-        self.init(status: .ok,
-                  type: .json,
-                  payload: json,
-                  headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
-    }
-    
-    convenience init(filename: Data,
-                     type: HttpContentType,
-                     payload: ConvertableToPayloadable,
-                     encoding: HalfHitch? = nil,
-                     lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
-        self.init(status: .ok,
-                  type: type,
-                  payload: payload,
-                  headers: [
-                    hitchContentTransferEncodingBinary,
-                    Hitch(#"Content-Disposition: attachment; filename="{0}""#, filename).halfhitch()
-                  ],
                   encoding: encoding,
                   lastModified: lastModified,
                   cacheMaxAge: cacheMaxAge)
