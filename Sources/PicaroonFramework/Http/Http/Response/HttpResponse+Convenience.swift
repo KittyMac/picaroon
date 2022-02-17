@@ -80,5 +80,24 @@ public extension HttpResponse {
                   lastModified: lastModified,
                   cacheMaxAge: cacheMaxAge)
     }
+    
+    convenience init(filename: HalfHitch,
+                     type: HttpContentType,
+                     payload: Payloadable,
+                     encoding: HalfHitch? = nil,
+                     lastModified: Date? = nil,
+                     cacheMaxAge: Int = 0) {
+        self.init(status: .ok,
+                  type: type,
+                  payload: payload,
+                  headers: [
+                    hitchContentTransferEncodingBinary,
+                    #"Content-Disposition: attachment; filename="{0}""# << [filename]
+                  ],
+                  encoding: encoding,
+                  lastModified: lastModified,
+                  cacheMaxAge: cacheMaxAge)
+    }
+
 }
 
