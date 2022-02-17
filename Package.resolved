@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/KittyMac/Hitch.git",
         "state": {
           "branch": null,
-          "revision": "c0b47bc1f1cb4bd2d777ab2be2b58e8df356e1dc",
-          "version": "0.4.8"
+          "revision": "4706e92e2845cb7e7b318132e9940374eb5353a4",
+          "version": "0.4.10"
         }
       },
       {
@@ -33,8 +33,8 @@
         "repositoryURL": "https://github.com/KittyMac/Sextant.git",
         "state": {
           "branch": null,
-          "revision": "5240744862be42299ba5849d4b608f344fede4b4",
-          "version": "0.4.6"
+          "revision": "73eab9e30c5eee8eb88672a26a9882910fcf80e0",
+          "version": "0.4.7"
         }
       },
       {
@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/KittyMac/Spanker.git",
         "state": {
           "branch": null,
-          "revision": "aa8fb3329160f6d013d4430d55e57818d863ad24",
-          "version": "0.2.4"
+          "revision": "42c52e8ee0c425cc8271de9778c8bbd5ee676a15",
+          "version": "0.2.5"
         }
       },
       {
