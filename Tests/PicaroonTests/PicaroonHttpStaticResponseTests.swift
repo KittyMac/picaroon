@@ -2,7 +2,7 @@ import XCTest
 import Hitch
 import Spanker
 
-@testable import PicaroonFramework
+@testable import Picaroon
 
 class TestSocket: SocketSendable {
     static let hackDateTime: Hitch = "2022-02-12 21:05:32 +0000"

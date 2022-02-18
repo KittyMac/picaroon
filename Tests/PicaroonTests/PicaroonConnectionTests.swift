@@ -1,7 +1,7 @@
 import XCTest
 import Hitch
 
-@testable import PicaroonFramework
+@testable import Picaroon
 
 final class picaroonConnectionTests: XCTestCase {
     

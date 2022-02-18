@@ -2,7 +2,7 @@ import XCTest
 import Hitch
 import Spanker
 
-@testable import PicaroonFramework
+@testable import Picaroon
 
 final class picaroonHttpResponseTests: XCTestCase {
         
