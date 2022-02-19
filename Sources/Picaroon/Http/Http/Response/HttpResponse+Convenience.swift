@@ -25,6 +25,12 @@ public extension HttpResponse {
 
 public extension HttpResponse {
     
+    convenience init(error: HalfHitch) {
+        self.init(status: .badRequest,
+                  type: .txt,
+                  payload: error)
+    }
+    
     convenience init(html: Payloadable,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
