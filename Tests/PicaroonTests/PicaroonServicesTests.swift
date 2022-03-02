@@ -7,7 +7,8 @@ import Hitch
 class HelloWorldService: ServiceActor {
     private let response = HttpResponse(text: "Hello World")
             
-    override func safeHandleRequest(jsonElement: JsonElement,
+    override func safeHandleRequest(userSession: UserServiceableSession,
+                                    jsonElement: JsonElement,
                                     httpRequest: HttpRequest,
                                     _ returnCallback: @escaping (JsonElement?, HttpResponse?) -> ()) {
         returnCallback(nil, response)
@@ -15,7 +16,8 @@ class HelloWorldService: ServiceActor {
 }
 
 class ToUpperService: ServiceActor {
-    override func safeHandleRequest(jsonElement: JsonElement,
+    override func safeHandleRequest(userSession: UserServiceableSession,
+                                    jsonElement: JsonElement,
                                     httpRequest: HttpRequest,
                                     _ returnCallback: @escaping (JsonElement?, HttpResponse?) -> ()) {
         guard let value = jsonElement[hitch: "value"] else {

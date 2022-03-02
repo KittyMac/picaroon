@@ -19,7 +19,8 @@ open class ServiceActor: Actor {
     }
     
     /// Overridden by subclass to handle requests
-    open func safeHandleRequest(jsonElement: JsonElement,
+    open func safeHandleRequest(userSession: UserServiceableSession,
+                                jsonElement: JsonElement,
                                 httpRequest: HttpRequest,
                                 _ returnCallback: @escaping (JsonElement?, HttpResponse?) -> ()) {
         returnCallback(JsonElement(unknown: [
@@ -27,10 +28,12 @@ open class ServiceActor: Actor {
         ]), HttpStaticResponse.internalServerError)
     }    
     
-    private func _beHandleRequest(jsonElement: JsonElement,
+    private func _beHandleRequest(userSession: UserServiceableSession,
+                                  jsonElement: JsonElement,
                                   httpRequest: HttpRequest,
                                   _ returnCallback: @escaping (JsonElement?, HttpResponse?) -> ()) {
-        safeHandleRequest(jsonElement: jsonElement,
+        safeHandleRequest(userSession: userSession,
+                          jsonElement: jsonElement,
                           httpRequest: httpRequest,
                           returnCallback)
     }
@@ -42,12 +45,13 @@ open class ServiceActor: Actor {
 extension ServiceActor {
 
     @discardableResult
-    public func beHandleRequest(jsonElement: JsonElement,
+    public func beHandleRequest(userSession: UserServiceableSession,
+                                jsonElement: JsonElement,
                                 httpRequest: HttpRequest,
                                 _ sender: Actor,
                                 _ callback: @escaping ((JsonElement?, HttpResponse?) -> Void)) -> Self {
         unsafeSend {
-            self._beHandleRequest(jsonElement: jsonElement, httpRequest: httpRequest) { arg0, arg1 in
+            self._beHandleRequest(userSession: userSession, jsonElement: jsonElement, httpRequest: httpRequest) { arg0, arg1 in
                 sender.unsafeSend {
                     callback(arg0, arg1)
                 }

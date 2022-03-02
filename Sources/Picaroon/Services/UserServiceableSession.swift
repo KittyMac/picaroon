@@ -26,6 +26,17 @@ public typealias ServiceResultCallback = (Bool) -> Void
 /// Note: The name of the service is name of the class as returned by
 /// String(describing: type(of: service))
 open class UserServiceableSession: UserSession {
+    private var values = [Hitch: Hitch]()
+    
+    private func _beSet(key: Hitch,
+                        value: Hitch) {
+        self.values[key] = value
+    }
+    
+    private func _beGet(key: Hitch) -> Hitch? {
+        return values[key]
+    }
+    
     private var services = [HalfHitch: ServiceActor]()
     
     private func _beAdd(service: ServiceActor) {
@@ -59,7 +70,8 @@ open class UserServiceableSession: UserSession {
                 let serviceIndex = servicesCalled
                 
                 servicesCalled += 1
-                serviceActor.beHandleRequest(jsonElement: service,
+                serviceActor.beHandleRequest(userSession: self,
+                                             jsonElement: service,
                                              httpRequest: httpRequest,
                                              self) { jsonResponse, httpResponse in
                     
@@ -123,6 +135,22 @@ open class UserServiceableSession: UserSession {
 
 extension UserServiceableSession {
 
+    @discardableResult
+    public func beSet(key: Hitch,
+                      value: Hitch) -> Self {
+        unsafeSend { self._beSet(key: key, value: value) }
+        return self
+    }
+    @discardableResult
+    public func beGet(key: Hitch,
+                      _ sender: Actor,
+                      _ callback: @escaping ((Hitch?) -> Void)) -> Self {
+        unsafeSend {
+            let result = self._beGet(key: key)
+            sender.unsafeSend { callback(result) }
+        }
+        return self
+    }
     @discardableResult
     public func beAdd(service: ServiceActor) -> Self {
         unsafeSend { self._beAdd(service: service) }
