@@ -43,8 +43,12 @@ open class UserServiceableSession: UserSession {
         self.services[service.unsafeServiceName.halfhitch()] = service
     }
     
-    private func _beRemove(service: ServiceActor) {
-        self.services.removeValue(forKey: service.unsafeServiceName.halfhitch())
+    private func _beRemove(name: Hitch) {
+        self.services.removeValue(forKey: name.halfhitch())
+    }
+    
+    private func _beRemoveAll() {
+        self.services.removeAll()
     }
     
             
@@ -157,8 +161,13 @@ extension UserServiceableSession {
         return self
     }
     @discardableResult
-    public func beRemove(service: ServiceActor) -> Self {
-        unsafeSend { self._beRemove(service: service) }
+    public func beRemove(name: Hitch) -> Self {
+        unsafeSend { self._beRemove(name: name) }
+        return self
+    }
+    @discardableResult
+    public func beRemoveAll() -> Self {
+        unsafeSend(_beRemoveAll)
         return self
     }
 
