@@ -24,15 +24,15 @@ public enum UserSessionPer: Int, Codable {
 }
 
 public struct ServerConfig: Codable {
-    let address: String
-    let port: Int
+    public let address: String
+    public let port: Int
 
-    let basePath: String
+    public let basePath: String
     
-    let requestTimeout: TimeInterval
-    let maxRequestInBytes: Int
+    public let requestTimeout: TimeInterval
+    public let maxRequestInBytes: Int
 
-    let sessionPer: UserSessionPer
+    public let sessionPer: UserSessionPer
 
     public init(address: String,
                 port: Int,
