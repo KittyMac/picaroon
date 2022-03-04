@@ -199,7 +199,7 @@ public class Connection: Actor, AnyConnection {
         // critical because only the one call will have the sid reassociation parameter, and that one call
         // will need to ensure the return passes back the correct session UUIDs
         if  let staticStorageHandler = self.staticStorageHandler,
-            let httpResponse = staticStorageHandler(httpRequest) {
+            let httpResponse = staticStorageHandler(config, httpRequest) {
             _beSendIfModified(httpRequest: httpRequest,
                               httpResponse: httpResponse)
             return

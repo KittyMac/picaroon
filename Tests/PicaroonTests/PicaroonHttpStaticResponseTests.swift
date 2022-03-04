@@ -48,7 +48,7 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
         
         let helloWorldResponse = HttpStaticResponse(text: "Hello World")
         
-        let server = Server(config: config) { _ in
+        let server = Server(config: config) { _, _ in
             return helloWorldResponse
         }
         server.listen()

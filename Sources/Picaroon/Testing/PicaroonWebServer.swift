@@ -5,9 +5,8 @@ import Hitch
 import FoundationNetworking
 #endif
 
-private func handleStaticRequest(_ httpRequest: HttpRequest) -> HttpResponse? {
-    print(httpRequest.url)
-    
+private func handleStaticRequest(config: ServerConfig,
+                                 httpRequest: HttpRequest) -> HttpResponse? {    
     if httpRequest.url?[0] == .forwardSlash {
         return nil
     }

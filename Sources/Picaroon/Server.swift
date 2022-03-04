@@ -1,7 +1,7 @@
 import Foundation
 import Flynn
 
-public typealias StaticStorageHandler = (HttpRequest) -> HttpResponse?
+public typealias StaticStorageHandler = (ServerConfig, HttpRequest) -> HttpResponse?
 
 /// Three different mechanisms for allowing session persistance, in order from most complicated to
 /// least complicated.
