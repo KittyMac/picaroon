@@ -15,6 +15,7 @@ public enum HttpMethod {
 
 public enum HttpStatus: Int {
     case ok = 200
+    case movedPermanently = 301
     case notModified = 304
     case badRequest = 400
     case notFound = 404
@@ -26,6 +27,7 @@ public enum HttpStatus: Int {
     public var hitch: HalfHitch {
         switch self {
         case .ok: return "HTTP/1.1 200 OK"
+        case .movedPermanently: return "HTTP/1.1 301 Moved Permanently"
         case .notModified: return "HTTP/1.1 304 Not Modified"
         case .badRequest: return "HTTP/1.1 400 Bad Request"
         case .notFound: return "HTTP/1.1 404 Not Found"
