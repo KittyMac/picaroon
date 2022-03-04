@@ -73,10 +73,11 @@ final class picaroonHttpResponseTests: XCTestCase {
         
         let response = HttpResponse(status: .internalServerError, type: .txt)
         let socket = TestSocket()
-        
+        let config = ServerConfig(address: "127.0.0.1", port: 8080)
         measure {
             for _ in 0..<100000 {
-                response.send(socket: socket,
+                response.send(config: config,
+                              socket: socket,
                               userSession: nil)
                 
                 socket.clear()
@@ -90,12 +91,13 @@ final class picaroonHttpResponseTests: XCTestCase {
         // 0.278
         
         let socket = TestSocket()
-        
+        let config = ServerConfig(address: "127.0.0.1", port: 8080)
         measure {
             for _ in 0..<100000 {
                 let response = HttpResponse(javascript: compressedScriptCombinedJs,
                                             encoding: HttpEncoding.gzip.rawValue)
-                response.send(socket: socket,
+                response.send(config: config,
+                              socket: socket,
                               userSession: nil)
                 
                 socket.clear()
@@ -107,8 +109,10 @@ final class picaroonHttpResponseTests: XCTestCase {
         let json = JsonElement(unknown: ["1", 2, "3", 4])
         let response = HttpResponse(json: json)
         let socket = TestSocket()
+        let config = ServerConfig(address: "127.0.0.1", port: 8080)
         
-        response.send(socket: socket,
+        response.send(config: config,
+                      socket: socket,
                       userSession: nil)
         
         XCTAssertEqual(socket.result(), """
@@ -124,8 +128,10 @@ final class picaroonHttpResponseTests: XCTestCase {
     func testSimpleText() {
         let response = HttpResponse(text: "Hello World")
         let socket = TestSocket()
+        let config = ServerConfig(address: "127.0.0.1", port: 8080)
         
-        response.send(socket: socket,
+        response.send(config: config,
+                      socket: socket,
                       userSession: nil)
         
         XCTAssertEqual(socket.result(), """

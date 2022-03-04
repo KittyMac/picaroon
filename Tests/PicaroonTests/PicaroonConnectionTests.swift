@@ -54,7 +54,7 @@ final class picaroonConnectionTests: XCTestCase {
         
         wait(for: [expectation], timeout: 2)
     }
-    
+        
     func testSimpleConnectionPersistance() {
         let expectation = XCTestExpectation(description: "success")
         

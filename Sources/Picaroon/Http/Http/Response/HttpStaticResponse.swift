@@ -16,13 +16,15 @@ public final class HttpStaticResponse: HttpResponse {
     let baked = Hitch()
     
     override func postInit() {
-        process(hitch: baked,
+        process(config: nil,
+                hitch: baked,
                 socket: nil,
                 userSession: nil)
     }
     
-    override func send(socket: SocketSendable,
-              userSession: UserSession?) {
+    override func send(config: ServerConfig,
+                       socket: SocketSendable,
+                       userSession: UserSession?) {
         socket.send(hitch: baked)
     }
 }

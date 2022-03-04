@@ -39,6 +39,8 @@ public class Connection: Actor, AnyConnection {
     private let userSessionManager: AnyUserSessionManager
 
     private let staticStorageHandler: StaticStorageHandler?
+    
+    private let config: ServerConfig
 
     @usableFromInline
     var safeCheckForMoreDataScheduled = false
@@ -50,9 +52,10 @@ public class Connection: Actor, AnyConnection {
         self.socket = socket
         self.userSessionManager = userSessionManager
         self.staticStorageHandler = staticStorageHandler
-
-        socket.setReadTimeout(milliseconds: 5)
+        self.config = config
         
+        socket.setReadTimeout(milliseconds: 5)
+
         timeout = config.requestTimeout
         bufferSize = config.maxRequestInBytes
 
@@ -78,7 +81,8 @@ public class Connection: Actor, AnyConnection {
     }
     
     private func _beSend(httpResponse: HttpResponse) {
-        httpResponse.send(socket: socket,
+        httpResponse.send(config: config,
+                          socket: socket,
                           userSession: userSession)
 
         // If we write data, then we should expect to read data
@@ -91,7 +95,8 @@ public class Connection: Actor, AnyConnection {
         _beSend(httpResponse: httpResponse)
 #else
         if httpResponse.isNew(httpRequest) {
-            httpResponse.send(socket: socket,
+            httpResponse.send(config: config,
+                              socket: socket,
                               userSession: userSession)
             safeCheckForMoreDataIfNeeded()
         } else {

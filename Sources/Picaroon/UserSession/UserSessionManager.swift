@@ -100,16 +100,24 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         let localCookieSessionUUID = cookieSessionUUID ?? UUID().uuidHitch
         let combinedSessionUUID = Self.combined(localCookieSessionUUID, localJavascriptSessionUUID)
 
-        // happy path: we have both cookies, and we have a user session which matches that unique session UUID
+        // happy path 1: we have a session UUID match and that's all we care about
+        if config.sessionPer == .api {
+            if let userSession = sessionsByJavascriptSessionUUID[localCookieSessionUUID] {
+                // print("HAPPY PATH 1: \(userSession.unsafeSessionUUID)")
+                return userSession
+            }
+        }
+        
+        // happy path 2: we have both cookies, and we have a user session which matches that unique session UUID
         if let userSession = sessionsByCombinedSessionUUID[combinedSessionUUID] {
-            // print("HAPPY PATH 1: \(userSession.unsafeSessionUUID)")
+            // print("HAPPY PATH 2: \(userSession.unsafeSessionUUID)")
             return userSession
         }
 
-        // Second happy path: we have a cookie session UUID match
+        // happy path 3: we have a cookie session UUID match
         if config.sessionPer == .browser {
             if let userSession = sessionsByCookieSessionUUID[localCookieSessionUUID] {
-                // print("HAPPY PATH 2: \(userSession.unsafeSessionUUID)")
+                // print("HAPPY PATH 3: \(userSession.unsafeSessionUUID)")
                 return userSession
             }
         }

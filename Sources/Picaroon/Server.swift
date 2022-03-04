@@ -3,9 +3,24 @@ import Flynn
 
 public typealias StaticStorageHandler = (HttpRequest) -> HttpResponse?
 
+/// Three different mechanisms for allowing session persistance, in order from most complicated to
+/// least complicated.
+///
+/// window:     a two UUID system which uses one http-only cookie UUID and a separate
+///         Session-Id http header. The cookie uuid "painlessly" persists a session
+///         to the browser level, however is the same across all windows. Session-Id is
+///         expected to be received, stored in session storage, and sent back with future requests.
+///         This allows granularity at the window level. The combination of the two then provides
+///         the full, unique session UUID.
+///
+/// browser:    same as window above but it only uses the http-only cookie UUID.
+///
+/// api:            same as window above, but only uses Session-Id passes along in the http headers.
+///
 public enum UserSessionPer: Int, Codable {
     case window = 0
     case browser = 1
+    case api = 2
 }
 
 public struct ServerConfig: Codable {

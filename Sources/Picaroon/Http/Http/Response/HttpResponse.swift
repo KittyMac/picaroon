@@ -10,6 +10,8 @@ private let hitchCacheControl: Hitch = "Cache-Control:public, max-age="
 private let hitchSetCookie1: Hitch = "Set-Cookie:"
 private let hitchSetCookie2: Hitch = "; HttpOnly\r\n"
 
+private let hitchSessionId1: Hitch = "Session-Id:"
+
 private let hitchContentEncoding: Hitch = "Content-Encoding:"
 private let hitchLastModified: Hitch = "Last-Modified:"
 private let hitchKeepAlive: Hitch = "Connection:keep-alive\r\n"
@@ -134,13 +136,15 @@ public class HttpResponse {
         
     public var description: Hitch {
         let combined = Hitch()
-        process(hitch: combined,
+        process(config: nil,
+                hitch: combined,
                 socket: nil,
                 userSession: nil)
         return combined
     }
     
-    func process(hitch: Hitch?,
+    func process(config: ServerConfig?,
+                 hitch: Hitch?,
                  socket: SocketSendable?,
                  userSession: UserSession?) {
         // Multifunctional method. Can be to put the data directly to a socket, or can be used
@@ -168,6 +172,12 @@ public class HttpResponse {
             
             for header in userSession.unsafeSessionHeaders {
                 combined.append(header)
+                combined.append(hitchNewLine)
+            }
+            
+            if config?.sessionPer == .api {
+                combined.append(hitchSessionId1)
+                combined.append(userSession.unsafeJavascriptSessionUUID)
                 combined.append(hitchNewLine)
             }
         }
@@ -224,9 +234,11 @@ public class HttpResponse {
         }
     }
     
-    func send(socket: SocketSendable,
+    func send(config: ServerConfig,
+              socket: SocketSendable,
               userSession: UserSession?) {
-        process(hitch: nil,
+        process(config: config,
+                hitch: nil,
                 socket: socket,
                 userSession: userSession)
     }

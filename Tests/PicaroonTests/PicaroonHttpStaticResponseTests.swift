@@ -96,10 +96,12 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
         
         let response = HttpStaticResponse.internalServerError
         let socket = TestSocket()
+        let config = ServerConfig(address: "127.0.0.1", port: 8080)
         
         measure {
             for _ in 0..<100000 {
-                response.send(socket: socket,
+                response.send(config: config,
+                              socket: socket,
                               userSession: nil)
                 
                 socket.clear()
@@ -111,8 +113,10 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
         let json = JsonElement(unknown: ["1", 2, "3", 4])
         let response = HttpStaticResponse(json: json)
         let socket = TestSocket()
+        let config = ServerConfig(address: "127.0.0.1", port: 8080)
         
-        response.send(socket: socket,
+        response.send(config: config,
+                      socket: socket,
                       userSession: nil)
         
         XCTAssertEqual(socket.result(), """
@@ -128,8 +132,10 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
     func testSimpleText() {
         let response = HttpStaticResponse(text: "Hello World")
         let socket = TestSocket()
+        let config = ServerConfig(address: "127.0.0.1", port: 8080)
         
-        response.send(socket: socket,
+        response.send(config: config,
+                      socket: socket,
                       userSession: nil)
         
         XCTAssertEqual(socket.result(), """
@@ -145,8 +151,10 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
     func testInternalError() {
         let response = HttpStaticResponse.internalServerError
         let socket = TestSocket()
+        let config = ServerConfig(address: "127.0.0.1", port: 8080)
         
-        response.send(socket: socket,
+        response.send(config: config,
+                      socket: socket,
                       userSession: nil)
         
         XCTAssertEqual(socket.result(), """
