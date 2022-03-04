@@ -175,19 +175,22 @@ public class HttpRequest {
         }
         
         
-        url = HalfHitch(raw: buffer,
+        url = HalfHitch(sourceObject: nil,
+                        raw: buffer,
                         count: bufferSize,
                         from: urlStartPtr - buffer,
                         to: urlEndPtr - buffer)
         
         if sessionStartPtr < sessionEndPtr {
-            sid = HalfHitch(raw: buffer,
+            sid = HalfHitch(sourceObject: nil,
+                            raw: buffer,
                             count: bufferSize,
                             from: sessionStartPtr - buffer,
                             to: sessionEndPtr - buffer)
         }
         if urlParametersStartPtr < urlParametersEndPtr {
-            urlParameters = HalfHitch(raw: buffer,
+            urlParameters = HalfHitch(sourceObject: nil,
+                                      raw: buffer,
                                       count: bufferSize,
                                       from: urlParametersStartPtr - buffer,
                                       to: urlParametersEndPtr - buffer)
@@ -223,7 +226,8 @@ public class HttpRequest {
                         guard endPtr - ptr >= contentLengthBytes else {
                             return nil
                         }
-                        content = HalfHitch(raw: buffer,
+                        content = HalfHitch(sourceObject: nil,
+                                            raw: buffer,
                                             count: bufferSize,
                                             from: ptr - buffer,
                                             to: (ptr - buffer) + contentLengthBytes)
@@ -305,7 +309,8 @@ public class HttpRequest {
                     
                     // If we reach here, the rest of the content is the payload
                     if endPtr - ptr >= 0 {
-                        content = HalfHitch(raw: buffer,
+                        content = HalfHitch(sourceObject: nil,
+                                            raw: buffer,
                                             count: bufferSize,
                                             from: ptr - buffer,
                                             to: (ptr - buffer) + (endPtr - ptr))
@@ -365,11 +370,13 @@ public class HttpRequest {
               using: HalfHitch?) -> HalfHitch? {
         guard let halfhitch = using else { return nil }
         guard let oldRaw = halfhitch.raw() else { return nil }
-        guard let newRaw = description?.raw() else { return nil }
+        guard let description = description else { return nil }
+        guard let newRaw = description.raw() else { return nil }
         
         let startIndex = oldRaw - buffer
         
-        return HalfHitch(raw: newRaw,
+        return HalfHitch(sourceObject: description,
+                         raw: newRaw,
                          count: bufferSize,
                          from: startIndex,
                          to: startIndex + halfhitch.count)
@@ -422,7 +429,8 @@ public class HttpRequest {
             //(keyEnd-3).pointee == .o &&
             (keyEnd-2).pointee == .s &&
             (keyEnd-1).pointee == .t {
-            host = HalfHitch(raw: buffer,
+            host = HalfHitch(sourceObject: nil,
+                             raw: buffer,
                              count: bufferSize,
                              from: valueStart - buffer,
                              to: ptr - buffer)
@@ -440,7 +448,8 @@ public class HttpRequest {
             //(keyEnd-3).pointee == .e &&
             (keyEnd-2).pointee == .n &&
             (keyEnd-1).pointee == .t {
-            userAgent = HalfHitch(raw: buffer,
+            userAgent = HalfHitch(sourceObject: nil,
+                                  raw: buffer,
                                   count: bufferSize,
                                   from: valueStart - buffer,
                                   to: ptr - buffer)
@@ -454,7 +463,8 @@ public class HttpRequest {
             //(keyEnd-3).pointee == .e &&
             (keyEnd-2).pointee == .p &&
             (keyEnd-1).pointee == .t {
-            accept = HalfHitch(raw: buffer,
+            accept = HalfHitch(sourceObject: nil,
+                               raw: buffer,
                                count: bufferSize,
                                from: valueStart - buffer,
                                to: ptr - buffer)
@@ -477,7 +487,8 @@ public class HttpRequest {
             (keyEnd-3).pointee == .i &&
             //(keyEnd-2).pointee == .n &&
             (keyEnd-1).pointee == .g {
-            acceptEncoding = HalfHitch(raw: buffer,
+            acceptEncoding = HalfHitch(sourceObject: nil,
+                                       raw: buffer,
                                        count: bufferSize,
                                        from: valueStart - buffer,
                                        to: ptr - buffer)
@@ -499,7 +510,8 @@ public class HttpRequest {
             //(keyEnd-3).pointee == .s &&
             (keyEnd-2).pointee == .e &&
             (keyEnd-1).pointee == .t {
-            acceptCharset = HalfHitch(raw: buffer,
+            acceptCharset = HalfHitch(sourceObject: nil,
+                                      raw: buffer,
                                       count: bufferSize,
                                       from: valueStart - buffer,
                                       to: ptr - buffer)
@@ -522,7 +534,8 @@ public class HttpRequest {
             (keyEnd-3).pointee == .a &&
             //(keyEnd-2).pointee == .g &&
             (keyEnd-1).pointee == .e {
-            acceptLanguage = HalfHitch(raw: buffer,
+            acceptLanguage = HalfHitch(sourceObject: nil,
+                                       raw: buffer,
                                        count: bufferSize,
                                        from: valueStart - buffer,
                                        to: ptr - buffer)
@@ -540,7 +553,8 @@ public class HttpRequest {
             //(keyEnd-3).pointee == .i &&
             (keyEnd-2).pointee == .o &&
             (keyEnd-1).pointee == .n {
-            connection = HalfHitch(raw: buffer,
+            connection = HalfHitch(sourceObject: nil,
+                                   raw: buffer,
                                    count: bufferSize,
                                    from: valueStart - buffer,
                                    to: ptr - buffer)
@@ -573,7 +587,8 @@ public class HttpRequest {
             (keyEnd-3).pointee == .s &&
             //(keyEnd-2).pointee == .t &&
             (keyEnd-1).pointee == .s {
-            upgradeInsecureRequests = HalfHitch(raw: buffer,
+            upgradeInsecureRequests = HalfHitch(sourceObject: nil,
+                                                raw: buffer,
                                                 count: bufferSize,
                                                 from: valueStart - buffer,
                                                 to: ptr - buffer)
@@ -595,7 +610,8 @@ public class HttpRequest {
             //(keyEnd-3).pointee == .g &&
             (keyEnd-2).pointee == .t &&
             (keyEnd-1).pointee == .h {
-            contentLength = HalfHitch(raw: buffer,
+            contentLength = HalfHitch(sourceObject: nil,
+                                      raw: buffer,
                                       count: bufferSize,
                                       from: valueStart - buffer,
                                       to: ptr - buffer)
@@ -615,7 +631,8 @@ public class HttpRequest {
             //(keyEnd-3).pointee == .y &&
             (keyEnd-2).pointee == .p &&
             (keyEnd-1).pointee == .e {
-            contentType = HalfHitch(raw: buffer,
+            contentType = HalfHitch(sourceObject: nil,
+                                    raw: buffer,
                                     count: bufferSize,
                                     from: valueStart - buffer,
                                     to: ptr - buffer)
@@ -642,7 +659,8 @@ public class HttpRequest {
             (keyEnd-3).pointee == .i &&
             //(keyEnd-2).pointee == .o &&
             (keyEnd-1).pointee == .n {
-            contentDisposition = HalfHitch(raw: buffer,
+            contentDisposition = HalfHitch(sourceObject: nil,
+                                           raw: buffer,
                                            count: bufferSize,
                                            from: valueStart - buffer,
                                            to: ptr - buffer)
@@ -667,7 +685,8 @@ public class HttpRequest {
             (keyEnd-3).pointee == .n &&
             //(keyEnd-2).pointee == .c &&
             (keyEnd-1).pointee == .e {
-            ifModifiedSince = HalfHitch(raw: buffer,
+            ifModifiedSince = HalfHitch(sourceObject: nil,
+                                        raw: buffer,
                                         count: bufferSize,
                                         from: valueStart - buffer,
                                         to: ptr - buffer)
@@ -681,7 +700,8 @@ public class HttpRequest {
             //(keyEnd-3).pointee == .k &&
             (keyEnd-2).pointee == .i &&
             (keyEnd-1).pointee == .e {
-            cookie = HalfHitch(raw: buffer,
+            cookie = HalfHitch(sourceObject: nil,
+                               raw: buffer,
                                count: bufferSize,
                                from: valueStart - buffer,
                                to: ptr - buffer)
@@ -695,7 +715,8 @@ public class HttpRequest {
             //(keyEnd-3).pointee == .e &&
             (keyEnd-2).pointee == .c &&
             (keyEnd-1).pointee == .t {
-            expect = HalfHitch(raw: buffer,
+            expect = HalfHitch(sourceObject: nil,
+                               raw: buffer,
                                count: bufferSize,
                                from: valueStart - buffer,
                                to: ptr - buffer)
@@ -712,7 +733,8 @@ public class HttpRequest {
             (keyEnd-3).pointee == .T &&
             //(keyEnd-2).pointee == .a &&
             (keyEnd-1).pointee == .g {
-            flynnTag = HalfHitch(raw: buffer,
+            flynnTag = HalfHitch(sourceObject: nil,
+                                 raw: buffer,
                                  count: bufferSize,
                                  from: valueStart - buffer,
                                  to: ptr - buffer)
@@ -730,7 +752,8 @@ public class HttpRequest {
             //(keyEnd-3).pointee == .minus &&
             (keyEnd-2).pointee == .I &&
             (keyEnd-1).pointee == .d {
-            sessionId = HalfHitch(raw: buffer,
+            sessionId = HalfHitch(sourceObject: nil,
+                                  raw: buffer,
                                   count: bufferSize,
                                   from: valueStart - buffer,
                                   to: ptr - buffer)
