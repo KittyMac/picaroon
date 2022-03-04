@@ -174,12 +174,7 @@ public class HttpRequest {
             
             ptr += 1
         }
-        
-        // adjust for the server's configured base path
-        if urlStartPtr + config.basePath.count < urlEndPtr {
-            urlStartPtr += config.basePath.count
-        }
-        
+                
         url = HalfHitch(sourceObject: nil,
                         raw: buffer,
                         count: bufferSize,
