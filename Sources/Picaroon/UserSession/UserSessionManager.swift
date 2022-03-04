@@ -71,7 +71,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
             let newCookieSessionUUID = cookieSessionUUID ?? userSession.unsafeCookieSessionUUID
 
             // let newSessionUUID = Self.combined(newCookieSessionUUID, newJavascriptSessionUUID)
-            // print("REASSOCIATING SESSION: \(userSession.unsafeSessionUUID) -> \(newSessionUUID)")
+            //print("REASSOCIATING SESSION: \(userSession.unsafeSessionUUID) -> \(newCookieSessionUUID)")
 
             sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
             sessionsByJavascriptSessionUUID.removeValue(forKey: oldJavascriptSessionUUID)
@@ -102,22 +102,22 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
 
         // happy path 1: we have a session UUID match and that's all we care about
         if config.sessionPer == .api {
-            if let userSession = sessionsByJavascriptSessionUUID[localCookieSessionUUID] {
-                // print("HAPPY PATH 1: \(userSession.unsafeSessionUUID)")
+            if let userSession = sessionsByJavascriptSessionUUID[localJavascriptSessionUUID] {
+                //print("HAPPY PATH 1: \(userSession.unsafeSessionUUID)")
                 return userSession
             }
         }
         
         // happy path 2: we have both cookies, and we have a user session which matches that unique session UUID
         if let userSession = sessionsByCombinedSessionUUID[combinedSessionUUID] {
-            // print("HAPPY PATH 2: \(userSession.unsafeSessionUUID)")
+            //print("HAPPY PATH 2: \(userSession.unsafeSessionUUID)")
             return userSession
         }
 
         // happy path 3: we have a cookie session UUID match
         if config.sessionPer == .browser {
             if let userSession = sessionsByCookieSessionUUID[localCookieSessionUUID] {
-                // print("HAPPY PATH 3: \(userSession.unsafeSessionUUID)")
+                //print("HAPPY PATH 3: \(userSession.unsafeSessionUUID)")
                 return userSession
             }
         }
@@ -135,7 +135,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         // Otherwise, this must be a new incoming session
         let userSession = T(cookieSessionUUID: localCookieSessionUUID,
                             javascriptSessionUUID: localJavascriptSessionUUID)
-        // print("CREATING NEW USER SESSION: \(userSession.unsafeSessionUUID)")
+        //print("CREATING NEW USER SESSION: \(userSession.unsafeSessionUUID)")
         sessionsByCombinedSessionUUID[userSession.unsafeSessionUUID] = userSession
         sessionsByCookieSessionUUID[userSession.unsafeCookieSessionUUID] = userSession
         sessionsByJavascriptSessionUUID[userSession.unsafeJavascriptSessionUUID] = userSession
