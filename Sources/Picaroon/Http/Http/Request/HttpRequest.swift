@@ -54,7 +54,8 @@ public class HttpRequest {
         return _cookies
     }
     
-    public init?(request buffer: UnsafePointer<UInt8>,
+    public init?(config: ServerConfig,
+                 request buffer: UnsafePointer<UInt8>,
                  size bufferSize: Int) {
         guard bufferSize > 6 else { return nil }
                 
@@ -117,7 +118,7 @@ public class HttpRequest {
         var urlParametersEndPtr = defaultPtr
         var sessionStartPtr = defaultPtr
         var sessionEndPtr = defaultPtr
-        let urlStartPtr = defaultPtr
+        var urlStartPtr = defaultPtr
         var urlEndPtr = defaultPtr
         
         ptr += 1
@@ -174,6 +175,10 @@ public class HttpRequest {
             ptr += 1
         }
         
+        // adjust for the server's configured base path
+        if urlStartPtr + config.basePath.count < urlEndPtr {
+            urlStartPtr += config.basePath.count
+        }
         
         url = HalfHitch(sourceObject: nil,
                         raw: buffer,

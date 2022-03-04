@@ -61,6 +61,8 @@ public class TestConnection: AnyConnection {
 
 final class picaroonServicesTests: XCTestCase {
     
+    let serverConfig = ServerConfig(address: "127.0.0.1", port: 8080)
+    
     func testHelloWorldService0() {
         let userSession = TestServicesSession()
         let connection = TestConnection()
@@ -73,7 +75,9 @@ final class picaroonServicesTests: XCTestCase {
         Hello World
         """
         
-        guard let request = HttpRequest(request: content.raw()!, size: content.count) else {
+        guard let request = HttpRequest(config: serverConfig,
+                                        request: content.raw()!,
+                                        size: content.count) else {
             return XCTFail()
         }
         

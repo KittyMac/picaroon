@@ -5,15 +5,21 @@ import Hitch
 
 final class picaroonBadClientTests: XCTestCase {
     
+    let serverConfig = ServerConfig(address: "127.0.0.1", port: 8080)
+    
     func testBadClient0() {
         let content: HalfHitch = ""
         
-        XCTAssertNil(HttpRequest(request: content.raw()!, size: content.count))
+        XCTAssertNil(HttpRequest(config: serverConfig,
+                                 request: content.raw()!,
+                                 size: content.count))
     }
     
     func testBadClient1() {
         let content: HalfHitch = "this is not a valid request"
-        XCTAssertNil(HttpRequest(request: content.raw()!, size: content.count))
+        XCTAssertNil(HttpRequest(config: serverConfig,
+                                 request: content.raw()!,
+                                 size: content.count))
     }
     
     func testBadClient2() {
@@ -25,7 +31,9 @@ final class picaroonBadClientTests: XCTestCase {
         Hello World
         """
         
-        XCTAssertNil(HttpRequest(request: content.raw()!, size: content.count))
+        XCTAssertNil(HttpRequest(config: serverConfig,
+                                 request: content.raw()!,
+                                 size: content.count))
     }
     
     func testBadClient3() {
@@ -37,7 +45,9 @@ final class picaroonBadClientTests: XCTestCase {
         Hello World
         """
         
-        XCTAssertNil(HttpRequest(request: content.raw()!, size: content.count))
+        XCTAssertNil(HttpRequest(config: serverConfig,
+                                 request: content.raw()!,
+                                 size: content.count))
     }
     
     func testBadClient4() {
@@ -49,7 +59,7 @@ final class picaroonBadClientTests: XCTestCase {
         Hello World
         """
         
-        XCTAssertNil(HttpRequest(request: content.raw()!, size: content.count))
+        XCTAssertNil(HttpRequest(config: serverConfig, request: content.raw()!, size: content.count))
     }
     
     static var allTests = [

@@ -6,6 +6,8 @@ import FoundationNetworking
 #endif
 
 private func handleStaticRequest(_ httpRequest: HttpRequest) -> HttpResponse? {
+    print(httpRequest.url)
+    
     if httpRequest.url?[0] == .forwardSlash {
         return nil
     }
@@ -38,8 +40,10 @@ extension PicaroonTesting {
     public class WebServer<T:UserSession> {
         let config: ServerConfig
         let server: Server<T>
-        public init(port: Int) {
-            config = ServerConfig(address: "0.0.0.0", port: port)
+        public init(port: Int, basePath: String = "/") {
+            config = ServerConfig(address: "0.0.0.0",
+                                  port: port,
+                                  basePath: basePath)
 
             server = Server<T>(config: config,
                                staticStorageHandler: handleStaticRequest)

@@ -27,6 +27,8 @@ public struct ServerConfig: Codable {
     let address: String
     let port: Int
 
+    let basePath: String
+    
     let requestTimeout: TimeInterval
     let maxRequestInBytes: Int
 
@@ -34,6 +36,7 @@ public struct ServerConfig: Codable {
 
     public init(address: String,
                 port: Int,
+                basePath: String = "/",
                 sessionPer: UserSessionPer = .window,
                 requestTimeout: TimeInterval = 30.0,
                 maxRequestInBytes: Int = 1024 * 1024 * 8) {
@@ -42,6 +45,12 @@ public struct ServerConfig: Codable {
         self.sessionPer = sessionPer
         self.requestTimeout = requestTimeout
         self.maxRequestInBytes = maxRequestInBytes
+        
+        if basePath.hasSuffix("/") {
+            self.basePath = String(basePath.dropLast())
+        } else {
+            self.basePath = basePath
+        }
     }
 }
 

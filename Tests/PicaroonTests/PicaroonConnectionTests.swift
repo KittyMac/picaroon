@@ -54,6 +54,26 @@ final class picaroonConnectionTests: XCTestCase {
         
         wait(for: [expectation], timeout: 2)
     }
+    
+    func testSimpleStaticResponseCustomBasePath() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+                
+        let _ = PicaroonTesting.WebServer<PicaroonTesting.WebUserSession>(port: port, basePath: "/chibley")
+        
+        let webview = PicaroonTesting.WebView()
+        let baseUrl = "http://127.0.0.1:\(port)/chibley/"
+        
+        // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
+        webview.load(url: baseUrl) { data, response, error in
+            XCTAssertNil(error)
+            XCTAssertNotNil(data)
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 2)
+    }
         
     func testSimpleConnectionPersistance() {
         let expectation = XCTestExpectation(description: "success")

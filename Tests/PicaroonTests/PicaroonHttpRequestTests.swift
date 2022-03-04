@@ -5,6 +5,8 @@ import Hitch
 
 final class picaroonHttpRequestTests: XCTestCase {
     
+    let serverConfig = ServerConfig(address: "127.0.0.1", port: 8080)
+    
     func testCookies() {
         let content: HalfHitch = """
         POST /? HTTP/1.1\r
@@ -19,7 +21,9 @@ final class picaroonHttpRequestTests: XCTestCase {
         Accept-Encoding: gzip, deflate\r\n\r\n
         """
         
-        let request = HttpRequest(request: content.raw()!, size: content.count)!
+        let request = HttpRequest(config: serverConfig,
+                                  request: content.raw()!,
+                                  size: content.count)!
         
         XCTAssertEqual(request.method, HttpMethod.POST)
         XCTAssertEqual(request.url, "/")
@@ -42,7 +46,9 @@ final class picaroonHttpRequestTests: XCTestCase {
         Hello World
         """
         
-        let request = HttpRequest(request: content.raw()!, size: content.count)!
+        let request = HttpRequest(config: serverConfig,
+                                  request: content.raw()!,
+                                  size: content.count)!
         
         XCTAssertEqual(request.method, HttpMethod.GET)
         XCTAssertEqual(request.contentType, "text/plain")
@@ -62,7 +68,9 @@ final class picaroonHttpRequestTests: XCTestCase {
         Hello World
         """
         
-        let request = HttpRequest(request: content.raw()!, size: content.count)!
+        let request = HttpRequest(config: serverConfig,
+                                  request: content.raw()!,
+                                  size: content.count)!
 
         XCTAssertEqual(request.method, HttpMethod.GET)
         XCTAssertEqual(request.contentType, "text/plain")
@@ -92,7 +100,9 @@ final class picaroonHttpRequestTests: XCTestCase {
         ------WebKitFormBoundaryd9xBKq96rap8J36e--\r
         """
         
-        let request = HttpRequest(request: content.raw()!, size: content.count)!
+        let request = HttpRequest(config: serverConfig,
+                                  request: content.raw()!,
+                                  size: content.count)!
 
         XCTAssertEqual(request.method, HttpMethod.GET)
         XCTAssertEqual(request.contentType, "multipart/form-data")
