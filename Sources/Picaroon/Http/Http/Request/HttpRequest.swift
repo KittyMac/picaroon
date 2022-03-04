@@ -118,7 +118,7 @@ public class HttpRequest {
         var urlParametersEndPtr = defaultPtr
         var sessionStartPtr = defaultPtr
         var sessionEndPtr = defaultPtr
-        var urlStartPtr = defaultPtr
+        let urlStartPtr = defaultPtr
         var urlEndPtr = defaultPtr
         
         ptr += 1
