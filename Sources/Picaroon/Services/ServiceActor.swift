@@ -26,7 +26,7 @@ open class ServiceActor: Actor {
         returnCallback(JsonElement(unknown: [
             "error": "service actor not properly configured"
         ]), HttpStaticResponse.internalServerError)
-    }    
+    }
     
     private func _beHandleRequest(userSession: UserServiceableSession,
                                   jsonElement: JsonElement,
@@ -36,6 +36,15 @@ open class ServiceActor: Actor {
                           jsonElement: jsonElement,
                           httpRequest: httpRequest,
                           returnCallback)
+    }
+    
+    /// Overridden by subclass to handle requests
+    open func safeHandleShutdown(_ returnCallback: @escaping () -> ()) {
+        returnCallback()
+    }
+    
+    private func _beHandleShutdown(_ returnCallback: @escaping () -> ()) {
+        safeHandleShutdown(returnCallback)
     }
 }
 
@@ -54,6 +63,18 @@ extension ServiceActor {
             self._beHandleRequest(userSession: userSession, jsonElement: jsonElement, httpRequest: httpRequest) { arg0, arg1 in
                 sender.unsafeSend {
                     callback(arg0, arg1)
+                }
+            }
+        }
+        return self
+    }
+    @discardableResult
+    public func beHandleShutdown(_ sender: Actor,
+                                 _ callback: @escaping (() -> Void)) -> Self {
+        unsafeSend {
+            self._beHandleShutdown() { 
+                sender.unsafeSend {
+                    callback()
                 }
             }
         }

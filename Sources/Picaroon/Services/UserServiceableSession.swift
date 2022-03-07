@@ -43,12 +43,21 @@ open class UserServiceableSession: UserSession {
         self.services[service.unsafeServiceName.halfhitch()] = service
     }
     
+    private func remove(serviceKey: HalfHitch) {
+        guard let service = services[serviceKey] else { return }
+        service.beHandleShutdown(self) {
+            self.services[serviceKey] = nil
+        }
+    }
+    
     private func _beRemove(name: Hitch) {
-        self.services.removeValue(forKey: name.halfhitch())
+        remove(serviceKey: name.halfhitch())
     }
     
     private func _beRemoveAll() {
-        self.services.removeAll()
+        for serviceKey in services.keys {
+            remove(serviceKey: serviceKey)
+        }
     }
     
             
