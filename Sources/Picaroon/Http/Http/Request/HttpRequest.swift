@@ -3,6 +3,7 @@ import Foundation
 import Hitch
 import Spanker
 
+
 // swiftlint:disable function_body_length
 // swiftlint:disable cyclomatic_complexity
 // swiftlint:disable identifier_name
@@ -52,6 +53,28 @@ public class HttpRequest {
             }
         }
         return _cookies
+    }
+    
+    private var parameters: [String: String]?
+    public func parameter(name: String) -> String? {
+        if let parameters = parameters {
+            return parameters[name]
+        }
+
+        guard let urlParameters = urlParameters else { return nil }
+        guard let url = URL(string: "https://www.a.com/b?\(urlParameters)") else { return nil }
+
+        parameters = [:]
+
+        if let components = URLComponents(url: url,
+                                          resolvingAgainstBaseURL: false),
+           let items = components.queryItems {
+            for item in items {
+                parameters?[item.name] = item.value
+            }
+            return parameters?[name]
+        }
+        return nil
     }
     
     public init?(config: ServerConfig,
