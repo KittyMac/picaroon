@@ -62,11 +62,12 @@ public extension PicaroonTesting {
         public func load(url: String, _ callback: kWebViewResponse?) {
             print("load: \(url)")
             
-            client.beUrlRequest(url: url,
+            Picaroon.urlRequest(url: url,
                                 httpMethod: "GET",
                                 params: [:],
                                 headers: handleHeaders(),
-                                body: nil, client) { data, httpResponse, error in
+                                body: nil,
+                                client) { data, httpResponse, error in
                 
                 if let data = data,
                    let content = String(data: data, encoding: .utf8) {
@@ -90,11 +91,12 @@ public extension PicaroonTesting {
             guard let lastUrl = lastUrl else { fatalError() }
             
             print("ajax: \(payload)")
-            client.beUrlRequest(url: lastUrl,
+            Picaroon.urlRequest(url: lastUrl,
                                 httpMethod: "POST",
                                 params: [:],
                                 headers: handleHeaders(),
-                                body: payload.data(using: .utf8), client) { data, httpResponse, error in
+                                body: payload.data(using: .utf8),
+                                client) { data, httpResponse, error in
                 self.handleResponse(data: data, httpResponse: httpResponse, error: error)
                 if let callback = callback {
                     callback(data, httpResponse, error)

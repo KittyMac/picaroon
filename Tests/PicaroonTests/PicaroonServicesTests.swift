@@ -100,7 +100,7 @@ final class picaroonServicesTests: XCTestCase {
         for _ in 0..<1 {
             let baseUrl = "http://127.0.0.1:\(port)/"
             let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"ToUpperService","value":"test b"}]"#
-            client.beUrlRequest(url: baseUrl,
+            Picaroon.urlRequest(url: baseUrl,
                                 httpMethod: "POST",
                                 params: [:],
                                 headers: [:],
@@ -138,7 +138,7 @@ final class picaroonServicesTests: XCTestCase {
         for _ in 0..<1 {
             let baseUrl = "http://127.0.0.1:\(port)/"
             let jsonRequest = #"{"service":"HelloWorldService"}"#
-            client.beUrlRequest(url: baseUrl,
+            Picaroon.urlRequest(url: baseUrl,
                                 httpMethod: "POST",
                                 params: [:],
                                 headers: [:],
@@ -176,7 +176,7 @@ final class picaroonServicesTests: XCTestCase {
         for _ in 0..<1 {
             let baseUrl = "http://127.0.0.1:\(port)/"
             let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"ToUpperService","value":"test b"},{"service":"HelloWorldService"}]"#
-            client.beUrlRequest(url: baseUrl,
+            Picaroon.urlRequest(url: baseUrl,
                                 httpMethod: "POST",
                                 params: [:],
                                 headers: [:],
@@ -214,7 +214,7 @@ final class picaroonServicesTests: XCTestCase {
         for _ in 0..<1 {
             let baseUrl = "http://127.0.0.1:\(port)/"
             let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"HelloWorldService"},{"service":"HelloWorldService"}]"#
-            client.beUrlRequest(url: baseUrl,
+            Picaroon.urlRequest(url: baseUrl,
                                 httpMethod: "POST",
                                 params: [:],
                                 headers: [:],
