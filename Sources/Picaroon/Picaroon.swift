@@ -31,13 +31,13 @@ extension String {
 public enum Picaroon {
     static let userSessionCookie: Hitch = UUID().uuidHitch
     
-    static func urlRequest(url: String,
-                           httpMethod: String,
-                           params: [String: String],
-                           headers: [String: String],
-                           body: Data?,
-                           _ sender: Actor,
-                           _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+    public static func urlRequest(url: String,
+                                  httpMethod: String,
+                                  params: [String: String],
+                                  headers: [String: String],
+                                  body: Data?,
+                                  _ sender: Actor,
+                                  _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         
         guard var components = URLComponents(string: url) else {
             sender.unsafeSend {
