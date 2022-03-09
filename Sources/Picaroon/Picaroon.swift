@@ -2,6 +2,10 @@ import Foundation
 import Flynn
 import Hitch
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 extension String {
     private func substring(with nsrange: NSRange) -> Substring? {
         guard let range = Range(nsrange, in: self) else { return nil }
