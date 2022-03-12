@@ -45,9 +45,8 @@ open class UserServiceableSession: UserSession {
     
     private func remove(serviceKey: HalfHitch) {
         guard let service = services[serviceKey] else { return }
-        service.beHandleShutdown(self) {
-            self.services[serviceKey] = nil
-        }
+        self.services[serviceKey] = nil
+        service.beHandleShutdown(self) { }
     }
     
     private func _beRemove(name: Hitch) {
