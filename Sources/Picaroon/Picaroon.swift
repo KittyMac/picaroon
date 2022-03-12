@@ -79,10 +79,10 @@ public enum Picaroon {
         }
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let response = response as? HTTPURLResponse else {
+            guard let httpResponse = response as? HTTPURLResponse else {
                 sender.unsafeSend {
-                    if let response0 = response {
-                        returnCallback(nil, nil, "response is not an http url response ( \(response0) ) ")
+                    if let response = response {
+                        returnCallback(nil, nil, "response is not an http url response ( \(response) ) ")
                     }   else {
                         returnCallback(nil, nil, "response is not an http url response ( nil ) ")
                     }
@@ -91,24 +91,24 @@ public enum Picaroon {
             }
             guard let data = data else {
                 sender.unsafeSend {
-                    returnCallback(nil, response, "response data is nil")
+                    returnCallback(nil, httpResponse, "httpResponse data is nil")
                 }
                 return
             }
             guard error == nil else {
                 sender.unsafeSend {
-                    returnCallback(nil, response, "\(error!)")
+                    returnCallback(nil, httpResponse, "\(error!)")
                 }
                 return
             }
             
-            if response.statusCode >= 200 && response.statusCode <= 299 {
+            if httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299 {
                 sender.unsafeSend {
-                    returnCallback(data, response, nil)
+                    returnCallback(data, httpResponse, nil)
                 }
             } else {
                 sender.unsafeSend {
-                    returnCallback(data, response, "http \(response.statusCode)")
+                    returnCallback(data, httpResponse, "http \(httpResponse.statusCode)")
                 }
             }
         }

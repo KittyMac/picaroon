@@ -1,7 +1,7 @@
 import XCTest
 
-import PicaroonFrameworkTests
+import PicaroonTests
 
 var tests = [XCTestCaseEntry]()
-tests += PicaroonFrameworkTests.allTests()
+tests += PicaroonTests.allTests()
 XCTMain(tests)
