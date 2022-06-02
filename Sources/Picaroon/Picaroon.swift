@@ -33,7 +33,7 @@ extension String {
 }
 
 public enum Picaroon {
-    static let userSessionCookie: Hitch = UUID().uuidHitch
+    public static var userSessionCookie: Hitch = UUID().uuidHitch
     
     public static func urlRequest(url: String,
                                   httpMethod: String,
