@@ -228,8 +228,6 @@ public class HttpResponse {
             combined.append(.zero)
             combined.append(hitchNewLine)
             combined.append(hitchNewLine)
-            
-            combined.append(hitchNewLine)
             socket?.send(hitch: combined)
         }
     }
