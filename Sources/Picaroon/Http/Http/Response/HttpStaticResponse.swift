@@ -5,6 +5,8 @@ import Spanker
 
 public final class HttpStaticResponse: HttpResponse {
     
+    public static let success = HttpStaticResponse(status: .ok, type: .txt)
+    
     public static let notModified = HttpStaticResponse(status: .notModified, type: .txt)
     public static let badRequest = HttpStaticResponse(status: .badRequest, type: .txt)
     public static let notFound = HttpStaticResponse(status: .notFound, type: .txt)
