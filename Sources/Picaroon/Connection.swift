@@ -17,6 +17,11 @@ public protocol AnyConnection {
     @discardableResult func beSendResult(_ message: Hitch?) -> Self
     @discardableResult func beSendSuccess(_ message: Hitch) -> Self
     @discardableResult func beSendError(_ error: Hitch) -> Self
+    
+    @discardableResult func beSendResult(_ message: String?) -> Self
+    @discardableResult func beSendSuccess(_ message: String) -> Self
+    @discardableResult func beSendError(_ error: String) -> Self
+    
     @discardableResult func beSendNotModified() -> Self
 }
 
@@ -126,6 +131,16 @@ public class Connection: Actor, AnyConnection {
         guard let error = error else {
             return _beSend(httpResponse: HttpResponse(text: "success"))
         }
+        _beSend(httpResponse: HttpResponse(status: .badRequest,
+                                           type: .txt,
+                                           payload: error))
+    }
+    
+    private func _beSendSuccess(_ message: String = "success") {
+        _beSend(httpResponse: HttpResponse(text: message))
+    }
+
+    private func _beSendError(_ error: String) {
         _beSend(httpResponse: HttpResponse(status: .badRequest,
                                            type: .txt,
                                            payload: error))
@@ -324,6 +339,16 @@ extension Connection {
     @discardableResult
     public func beSendResult(_ error: String?) -> Self {
         unsafeSend { self._beSendResult(error) }
+        return self
+    }
+    @discardableResult
+    public func beSendSuccess(_ message: String) -> Self {
+        unsafeSend { self._beSendSuccess(message) }
+        return self
+    }
+    @discardableResult
+    public func beSendError(_ error: String) -> Self {
+        unsafeSend { self._beSendError(error) }
         return self
     }
     @discardableResult
