@@ -14,6 +14,7 @@ public protocol AnyConnection {
     @discardableResult func beEndUserSession() -> Self
     @discardableResult func beSendInternalError() -> Self
     @discardableResult func beSendServiceUnavailable() -> Self
+    @discardableResult func beSendResult(_ message: Hitch?) -> Self
     @discardableResult func beSendSuccess(_ message: Hitch) -> Self
     @discardableResult func beSendError(_ error: Hitch) -> Self
     @discardableResult func beSendNotModified() -> Self
@@ -118,6 +119,16 @@ public class Connection: Actor, AnyConnection {
 
     private func _beSendServiceUnavailable() {
         _beSend(httpResponse: HttpStaticResponse.serviceUnavailable)
+    }
+    
+    private func _beSendResult(_ error: Hitch?) {
+        // combines beSendSuccess and beSendError in a single call
+        guard let error = error else {
+            return _beSend(httpResponse: HttpResponse(text: "success"))
+        }
+        _beSend(httpResponse: HttpResponse(status: .badRequest,
+                                           type: .txt,
+                                           payload: error))
     }
 
     private func _beSendSuccess(_ message: Hitch = "success") {
@@ -298,6 +309,11 @@ extension Connection {
     @discardableResult
     public func beSendServiceUnavailable() -> Self {
         unsafeSend(_beSendServiceUnavailable)
+        return self
+    }
+    @discardableResult
+    public func beSendResult(_ error: Hitch?) -> Self {
+        unsafeSend { self._beSendResult(error) }
         return self
     }
     @discardableResult
