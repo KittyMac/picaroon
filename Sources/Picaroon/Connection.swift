@@ -121,6 +121,16 @@ public class Connection: Actor, AnyConnection {
         _beSend(httpResponse: HttpStaticResponse.serviceUnavailable)
     }
     
+    private func _beSendResult(_ error: String?) {
+        // combines beSendSuccess and beSendError in a single call
+        guard let error = error else {
+            return _beSend(httpResponse: HttpResponse(text: "success"))
+        }
+        _beSend(httpResponse: HttpResponse(status: .badRequest,
+                                           type: .txt,
+                                           payload: error))
+    }
+    
     private func _beSendResult(_ error: Hitch?) {
         // combines beSendSuccess and beSendError in a single call
         guard let error = error else {
@@ -309,6 +319,11 @@ extension Connection {
     @discardableResult
     public func beSendServiceUnavailable() -> Self {
         unsafeSend(_beSendServiceUnavailable)
+        return self
+    }
+    @discardableResult
+    public func beSendResult(_ error: String?) -> Self {
+        unsafeSend { self._beSendResult(error) }
         return self
     }
     @discardableResult
