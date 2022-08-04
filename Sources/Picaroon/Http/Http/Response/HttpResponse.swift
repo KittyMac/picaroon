@@ -3,19 +3,19 @@ import Foundation
 import Hitch
 import Spanker
 
-private let hitchContentLength: Hitch = "Content-Length:"
+private let hitchContentLength: Hitch = "Content-Length: "
 private let hitchNewLine: Hitch = "\r\n"
-private let hitchCacheControl: Hitch = "Cache-Control:public, max-age="
+private let hitchCacheControl: Hitch = "Cache-Control: public, max-age="
 
-private let hitchSetCookie1: Hitch = "Set-Cookie:"
+private let hitchSetCookie1: Hitch = "Set-Cookie: "
 private let hitchSetCookie2: Hitch = "; HttpOnly\r\n"
 
-private let hitchSessionId1: Hitch = "Session-Id:"
+private let hitchSessionId1: Hitch = "Session-Id: "
 
-private let hitchContentEncoding: Hitch = "Content-Encoding:"
-private let hitchLastModified: Hitch = "Last-Modified:"
-private let hitchKeepAlive: Hitch = "Connection:keep-alive\r\n"
-private let hitchContentType: Hitch = "Content-Type:"
+private let hitchContentEncoding: Hitch = "Content-Encoding: "
+private let hitchLastModified: Hitch = "Last-Modified: "
+private let hitchKeepAlive: Hitch = "Connection: keep-alive\r\n"
+private let hitchContentType: Hitch = "Content-Type: "
 
 protocol SocketSendable {
     @discardableResult func send(hitch: Hitch) -> Int

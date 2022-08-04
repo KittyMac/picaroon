@@ -54,8 +54,12 @@ public class TestConnection: AnyConnection {
     public func beEndUserSession() -> Self { return self }
     public func beSendInternalError() -> Self { return self }
     public func beSendServiceUnavailable() -> Self { return self }
+    public func beSendResult(_ message: Hitch?) -> Self { return self }
     public func beSendSuccess(_ message: Hitch) -> Self { return self }
     public func beSendError(_ error: Hitch) -> Self { return self }
+    public func beSendResult(_ message: String?) -> Self { return self }
+    public func beSendSuccess(_ message: String) -> Self { return self }
+    public func beSendError(_ error: String) -> Self { return self }
     public func beSendNotModified() -> Self { return self }
 }
 
