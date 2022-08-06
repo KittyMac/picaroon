@@ -4,13 +4,9 @@
 
 SWIFT_BUILD_FLAGS=--configuration release
 
-all: fix_bad_header_files build
+all: build
 	
-fix_bad_header_files:
-	-@find  . -name '._*.h' -exec rm {} \;
-
 build:
-	./meta/CombinedBuildPhases.sh
 	swift build -v $(SWIFT_BUILD_FLAGS)
 
 clean:
@@ -22,14 +18,8 @@ test:
 update:
 	swift package update
 
-xcode:
-	swift package generate-xcodeproj
-	meta/addBuildPhase picaroon.xcodeproj/project.pbxproj 'Picaroon::Picaroon' 'cd $${SRCROOT}; ./meta/CombinedBuildPhases.sh'
-	sleep 2
-	open picaroon.xcodeproj
-
 benchmark:
-	/usr/local/bin/wrk -t 4 -c 100 http://localhost:8080/hello/world
+	/opt/homebrew/bin/wrk -t 4 -c 100 http://localhost:8080/hello/world
 
 docker:
 	-DOCKER_HOST=tcp://192.168.1.209:2376 docker buildx create --name cluster --platform linux/arm64/v8 --append

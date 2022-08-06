@@ -1,52 +1,86 @@
 {
-  "object": {
-    "pins": [
-      {
-        "package": "Chronometer",
-        "repositoryURL": "https://github.com/KittyMac/Chronometer.git",
-        "state": {
-          "branch": null,
-          "revision": "35289a90ee0bb4a76f8acd647b773aeacf4d8856",
-          "version": "0.1.2"
-        }
-      },
-      {
-        "package": "Flynn",
-        "repositoryURL": "https://github.com/KittyMac/Flynn.git",
-        "state": {
-          "branch": null,
-          "revision": "bef6eb1bc963eb3b55a8e0a7c98ddc8a44a8a90c",
-          "version": "0.2.2"
-        }
-      },
-      {
-        "package": "Hitch",
-        "repositoryURL": "https://github.com/KittyMac/Hitch.git",
-        "state": {
-          "branch": null,
-          "revision": "1f7a37b10af1e185513049ab66e128a997f05856",
-          "version": "0.4.18"
-        }
-      },
-      {
-        "package": "Sextant",
-        "repositoryURL": "https://github.com/KittyMac/Sextant.git",
-        "state": {
-          "branch": null,
-          "revision": "73eab9e30c5eee8eb88672a26a9882910fcf80e0",
-          "version": "0.4.7"
-        }
-      },
-      {
-        "package": "Spanker",
-        "repositoryURL": "https://github.com/KittyMac/Spanker.git",
-        "state": {
-          "branch": null,
-          "revision": "ee2cf47aef376a8a50e79e1d4c4f9993f1fdf6dd",
-          "version": "0.2.6"
-        }
+  "pins" : [
+    {
+      "identity" : "chronometer",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/KittyMac/Chronometer.git",
+      "state" : {
+        "revision" : "bf49dace3be107ab11609ed428c1b7878a07be52",
+        "version" : "0.1.4"
       }
-    ]
-  },
-  "version": 1
+    },
+    {
+      "identity" : "flynn",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/KittyMac/Flynn.git",
+      "state" : {
+        "branch" : "SPM_Build_Tool",
+        "revision" : "1b8e02cdfd805aca77231e810a28447eca435ec8"
+      }
+    },
+    {
+      "identity" : "hitch",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/KittyMac/Hitch.git",
+      "state" : {
+        "revision" : "eec08edd53a0d433f707d241483e03e59becafe9",
+        "version" : "0.4.36"
+      }
+    },
+    {
+      "identity" : "sextant",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/KittyMac/Sextant.git",
+      "state" : {
+        "revision" : "ce0e5bd27b04c80de12d3729f028d01155d4b2a8",
+        "version" : "0.4.11"
+      }
+    },
+    {
+      "identity" : "sourcekitten",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jpsim/SourceKitten",
+      "state" : {
+        "revision" : "817dfa6f2e09b0476f3a6c9dbc035991f02f0241",
+        "version" : "0.32.0"
+      }
+    },
+    {
+      "identity" : "spanker",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/KittyMac/Spanker.git",
+      "state" : {
+        "revision" : "6becc7caf3e1648d2b9331652dc4809e91514cff",
+        "version" : "0.2.25"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser",
+      "state" : {
+        "revision" : "df9ee6676cd5b3bf5b330ec7568a5644f547201b",
+        "version" : "1.1.3"
+      }
+    },
+    {
+      "identity" : "swxmlhash",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/drmohundro/SWXMLHash.git",
+      "state" : {
+        "revision" : "6469881a3f30417c5bb02404ea4b69207f297592",
+        "version" : "6.0.0"
+      }
+    },
+    {
+      "identity" : "yams",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jpsim/Yams.git",
+      "state" : {
+        "revision" : "9ff1cc9327586db4e0c8f46f064b6a82ec1566fa",
+        "version" : "4.0.6"
+      }
+    }
+  ],
+  "version" : 2
 }

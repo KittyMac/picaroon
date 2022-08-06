@@ -1,4 +1,4 @@
-// swift-tools-version:5.1.0
+// swift-tools-version: 5.6
 
 import PackageDescription
 
@@ -11,7 +11,7 @@ let package = Package(
         .library( name: "Picaroon", targets: ["Picaroon"] ),
     ],
     dependencies: [
-		.package(url: "https://github.com/KittyMac/Flynn.git", .upToNextMinor(from: "0.2.0")),
+        .package(url: "https://github.com/KittyMac/Flynn.git", branch: "SPM_Build_Tool"),
         .package(url: "https://github.com/KittyMac/Hitch.git", .upToNextMinor(from: "0.4.0")),
         .package(url: "https://github.com/KittyMac/Sextant.git", .upToNextMinor(from: "0.4.0"))
     ],
@@ -22,7 +22,11 @@ let package = Package(
                 "Flynn",
                 "Hitch",
                 "Sextant"				
-			]),
+			],
+            plugins: [
+                .plugin(name: "FlynnPlugin", package: "Flynn")
+            ]
+        ),
         .testTarget(
             name: "PicaroonTests",
             dependencies: ["Picaroon"]),

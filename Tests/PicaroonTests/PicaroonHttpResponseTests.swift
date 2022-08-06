@@ -5,7 +5,7 @@ import Spanker
 @testable import Picaroon
 
 final class picaroonHttpResponseTests: XCTestCase {
-        
+    /*
     func testPerformance1() {
         
         let port = Int.random(in: 8000..<65500)
@@ -22,15 +22,15 @@ final class picaroonHttpResponseTests: XCTestCase {
         sleep(1)
         
         let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/local/bin/wrk")
+        task.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/wrk")
         task.arguments = [
             "-t", "4",
             "-c", "100",
             "http://localhost:\(port)/hello/world"
         ]
         
-        //     /usr/local/bin/wrk -t 4 -c 100 http://192.168.1.200:8080/bench
-        // /usr/local/bin/wrk -t 4 -c 100 http://localhost:8080/
+        //     /opt/homebrew/bin/wrk -t 4 -c 100 http://192.168.1.200:8080/bench
+        // /opt/homebrew/bin/wrk -t 4 -c 100 http://localhost:8080/
         
         let outputPipe = Pipe()
         task.standardOutput = outputPipe
@@ -56,12 +56,12 @@ final class picaroonHttpResponseTests: XCTestCase {
         
         XCTAssertTrue(requestsPerSecond > 90000)
     }
-    
+    */
     func testGzipDetection() {
         let compressedShellFontsHtml = Data(base64Encoded:"H4sIAAAAAAACA+WUy07DMBBF93yFlU1aQUjiPhChregDr2CDxAe4qZNauHZkp6oqxL8zsaOWVgQVEAuEF3Mzc+OxdRxnILh8RpqJoVdAVHThoaVmGaTrueBpmClZmlDQUl1uVJZhD1Ez9Kqqh8ptwdxzWHupVsYozXMuR2hwWm+t5uq3u6+UdCt8ZQFTbgUbnSEYt9VbQUZThl5soRp1bcXFNkH+PSDybw5N2yFBUukVFUfehvF8WSaoG0VHzoKbQlDoaTa02HtGpwlaa9FqOJk2zIZ1ypZvU7+9n7qWPFULFmgqc9jP03kEI4giQi6qJO7ETns4gNCxCZ5MAghTl0z7TmfjWm0dV21w1Ccuueo6HTszxtjpdVyr7YzBqLVXKblz2yCEzNyWX09l/mgP9zvUez+j/v6b/QfcP6KOHuBO7dA3g2/62Juhf4Z8d5EPqe+h/0nkLgxC98d5A8wWR3OUBQAA")!
         
         let response = HttpResponse(html: compressedShellFontsHtml)
-        XCTAssertTrue(response.description.contains("Content-Encoding:gzip"))
+        XCTAssertTrue(response.description.contains("Content-Encoding: gzip"))
     }
     
     func testProfile1() {
@@ -114,13 +114,13 @@ final class picaroonHttpResponseTests: XCTestCase {
         response.send(config: config,
                       socket: socket,
                       userSession: nil)
-        
+                
         XCTAssertEqual(socket.result(), """
         HTTP/1.1 200 OK\r
-        Last-Modified:2022-02-12 21:05:32 +0000\r
-        Connection:keep-alive\r
-        Content-Type:application/json\r
-        Content-Length:13\r\n\r
+        Last-Modified: 2022-02-12 21:05:32 +0000\r
+        Connection: keep-alive\r
+        Content-Type: application/json\r
+        Content-Length: 13\r\n\r
         ["1",2,"3",4]
         """)
     }
@@ -136,10 +136,10 @@ final class picaroonHttpResponseTests: XCTestCase {
         
         XCTAssertEqual(socket.result(), """
         HTTP/1.1 200 OK\r
-        Last-Modified:2022-02-12 21:05:32 +0000\r
-        Connection:keep-alive\r
-        Content-Type:text/plain\r
-        Content-Length:11\r\n\r
+        Last-Modified: 2022-02-12 21:05:32 +0000\r
+        Connection: keep-alive\r
+        Content-Type: text/plain\r
+        Content-Length: 11\r\n\r
         Hello World
         """)
     }
