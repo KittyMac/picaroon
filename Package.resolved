@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Flynn.git",
       "state" : {
-        "branch" : "SPM_Build_Tool",
-        "revision" : "1b8e02cdfd805aca77231e810a28447eca435ec8"
+        "revision" : "d063903b7baf4c986979c52f2cd19e3b1c6b5a19",
+        "version" : "0.3.0"
       }
     },
     {
