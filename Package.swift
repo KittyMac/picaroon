@@ -29,6 +29,13 @@ let package = Package(
         ),
         .testTarget(
             name: "PicaroonTests",
-            dependencies: ["Picaroon"]),
+            dependencies: [
+                "Flynn",
+                "Picaroon"
+            ],
+            plugins: [
+                .plugin(name: "FlynnPlugin", package: "Flynn")
+            ]
+        )
     ]
 )
