@@ -2,7 +2,7 @@ import XCTest
 import Hitch
 import Spanker
 
-@testable import Picaroon
+import Picaroon
 
 final class picaroonHttpResponseTests: XCTestCase {
     /*
@@ -63,7 +63,7 @@ final class picaroonHttpResponseTests: XCTestCase {
         let response = HttpResponse(html: compressedShellFontsHtml)
         XCTAssertTrue(response.description.contains("Content-Encoding: gzip"))
     }
-    
+    /*
     func testProfile1() {
         // 0.697
         // 0.693
@@ -143,10 +143,9 @@ final class picaroonHttpResponseTests: XCTestCase {
         Hello World
         """)
     }
-    
+    */
     static var allTests = [
-        ("testSimpleJson", testSimpleJson),
-        ("testSimpleText", testSimpleText)
+        ("testGzipDetection", testGzipDetection)
     ]
 }
 

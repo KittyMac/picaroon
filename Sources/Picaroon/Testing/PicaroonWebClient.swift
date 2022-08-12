@@ -12,9 +12,9 @@ public extension PicaroonTesting {
     class WebView<T:UserSession> {
         // Simple web browser simulator. Used for testing connection persistance with the UserSession manager
         let client = T()
-        var javascriptSessionUUID: String? = nil
         
-        var serverActorSessionUUID: String?
+        public var javascriptSessionUUID: String? = nil
+        public var serverActorSessionUUID: String?
         
         var cookies = [String:String]()
         

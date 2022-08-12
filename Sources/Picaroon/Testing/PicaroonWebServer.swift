@@ -5,8 +5,16 @@ import Hitch
 import FoundationNetworking
 #endif
 
+let largeData = Data(repeating: 55, count: 1024*1024*1024)
+
 private func handleStaticRequest(config: ServerConfig,
-                                 httpRequest: HttpRequest) -> HttpResponse? {    
+                                 httpRequest: HttpRequest) -> HttpResponse? {
+    // http://127.0.0.1:8080/data
+    
+    if httpRequest.method == .GET && httpRequest.url == "/data" {
+        return HttpResponse(status: .ok, type: .bin, payload: largeData)
+    }
+    
     if httpRequest.url?[0] == .forwardSlash {
         return nil
     }

@@ -1,7 +1,7 @@
 import XCTest
 import Hitch
 
-@testable import Picaroon
+import Picaroon
 
 final class picaroonBadClientTests: XCTestCase {
     

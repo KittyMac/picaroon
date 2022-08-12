@@ -2,7 +2,7 @@ import XCTest
 import Spanker
 import Hitch
 
-@testable import Picaroon
+import Picaroon
 
 class HelloWorldService: ServiceActor {
     private let response = HttpResponse(text: "Hello World")

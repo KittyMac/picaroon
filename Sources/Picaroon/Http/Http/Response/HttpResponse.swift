@@ -17,7 +17,7 @@ private let hitchLastModified: Hitch = "Last-Modified: "
 private let hitchKeepAlive: Hitch = "Connection: keep-alive\r\n"
 private let hitchContentType: Hitch = "Content-Type: "
 
-protocol SocketSendable {
+public protocol SocketSendable {
     @discardableResult func send(hitch: Hitch) -> Int
     @discardableResult func send(data: Data) -> Int
     @discardableResult func send(bytes: UnsafePointer<UInt8>?,

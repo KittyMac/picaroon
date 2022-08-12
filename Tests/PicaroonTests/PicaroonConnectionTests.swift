@@ -1,7 +1,7 @@
 import XCTest
 import Hitch
 
-@testable import Picaroon
+import Picaroon
 
 final class picaroonConnectionTests: XCTestCase {
     
@@ -221,6 +221,17 @@ final class picaroonConnectionTests: XCTestCase {
                 }
             })
         )
+    }
+    
+    func testLargeDownloadSpeeds() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = 8080
+        
+        let _ = PicaroonTesting.WebServer<PicaroonTesting.WebUserSession>(port: port)
+        
+        
+        wait(for: [expectation], timeout: 6000)
     }
 
     static var allTests = [
