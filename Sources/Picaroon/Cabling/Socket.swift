@@ -21,7 +21,13 @@ public class Socket {
     }
         
     public init?(blocking: Bool = true) {
-        #if os(Linux) || os(Android)
+        #if os(Android)
+        if blocking {
+            socketFd = socket(AF_INET, SOCK_STREAM, 0)
+        } else {
+            socketFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)
+        }
+        #elseif os(Linux)
         if blocking {
             socketFd = socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
         } else {
