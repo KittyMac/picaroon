@@ -6,7 +6,8 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && ap
     libpng-dev \
     libjpeg-dev \
     libjavascriptcoregtk-4.0-dev \
-    libatomic1
+    libatomic1 \
+    unzip
 
 RUN rm -rf /var/lib/apt/lists/*
 
@@ -18,6 +19,5 @@ COPY ./Package.swift ./Package.swift
 COPY ./Sources ./Sources
 COPY ./Tests ./Tests
 
-RUN swift package update
+RUN swift test
 RUN swift build --configuration release
-RUN swift test -v
