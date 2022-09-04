@@ -72,7 +72,11 @@ public class Socket {
             timeout.tv_usec = Int32(uSecs)
             #endif
         }
+        #if os(Android)
+        setsockopt (socketFd, SOL_SOCKET, SO_RCVTIMEO_NEW, &timeout, socklen_t(MemoryLayout<timeval>.stride))
+        #else
         setsockopt (socketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.stride))
+        #endif
     }
     
     public func setWriteTimeout(milliseconds: UInt = 0) {
@@ -86,7 +90,11 @@ public class Socket {
             timeout.tv_usec = Int32(uSecs)
             #endif
         }
+        #if os(Android)
+        setsockopt (socketFd, SOL_SOCKET, SO_SNDTIMEO_NEW, &timeout, socklen_t(MemoryLayout<timeval>.stride))
+        #else
         setsockopt (socketFd, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.stride))
+        #endif
     }
     
     public func close() {
