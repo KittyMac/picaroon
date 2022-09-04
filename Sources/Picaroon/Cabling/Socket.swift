@@ -21,7 +21,7 @@ public class Socket {
     }
         
     public init?(blocking: Bool = true) {
-        #if os(Linux)
+        #if os(Linux) || os(Android)
         if blocking {
             socketFd = socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
         } else {
@@ -41,7 +41,8 @@ public class Socket {
     }
     
     private func applyOptions(blocking: Bool) {
-        #if !os(Linux)
+        #if os(Linux) || os(Android)
+        #else
         var one: Int32 = 1
         setsockopt(socketFd, SOL_SOCKET, SO_NOSIGPIPE, &one, socklen_t(MemoryLayout<timeval>.stride))
         
@@ -59,7 +60,7 @@ public class Socket {
         if value > 0 {
             timeout.tv_sec = Int(Double(value / 1000))
             let uSecs = Int32(Double(value % 1000)) * 1000
-            #if os(Linux)
+            #if os(Linux) || os(Android)
             timeout.tv_usec = Int(uSecs)
             #else
             timeout.tv_usec = Int32(uSecs)
@@ -73,7 +74,7 @@ public class Socket {
         if milliseconds > 0 {
             timeout.tv_sec = Int(milliseconds / 1000)
             let uSecs = (milliseconds % 1000) * 1000
-            #if os(Linux)
+            #if os(Linux) || os(Android)
             timeout.tv_usec = Int(uSecs)
             #else
             timeout.tv_usec = Int32(uSecs)
@@ -84,7 +85,7 @@ public class Socket {
     
     public func close() {
         guard socketFd >= 0 else { return }
-        #if os(Linux)
+        #if os(Linux) || os(Android)
         Glibc.shutdown(socketFd, Int32(SHUT_RDWR))
         Glibc.close(socketFd)
         #else
@@ -131,7 +132,7 @@ public class Socket {
         let endPtr = startPtr + count
         
         while cptr < endPtr {
-            #if os(Linux)
+            #if os(Linux) || os(Android)
             let bytesWritten = Glibc.send(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
             #else
             let bytesWritten = Darwin.send(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
@@ -161,7 +162,7 @@ public class Socket {
         let startPtr = bytes
         let endPtr = startPtr + count
                             
-        #if os(Linux)
+        #if os(Linux) || os(Android)
         let bytesRead = Glibc.recv(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
         #else
         let bytesRead = Darwin.recv(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
@@ -200,7 +201,7 @@ public class Socket {
             return -1
         }
         
-        #if os(Linux)
+        #if os(Linux) || os(Android)
         let ret = Glibc.listen(socketFd, 128)
         #else
         let ret = Darwin.listen(socketFd, 128)
@@ -217,7 +218,7 @@ public class Socket {
     @discardableResult
     public func accept(blocking: Bool = true) -> Socket? {
         
-        #if os(Linux)
+        #if os(Linux) || os(Android)
         let clientFd = Glibc.accept(socketFd, nil, nil)
         #else
         let clientFd = Darwin.accept(socketFd, nil, nil)

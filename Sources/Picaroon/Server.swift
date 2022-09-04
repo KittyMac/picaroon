@@ -79,7 +79,7 @@ public class Server<T: UserSession> {
                             port: config.port)
 
         repeat {
-#if os(Linux)
+#if os(Linux) || os(Android)
             if let newSocket = serverSocket.accept(blocking: true) {
                 _ = Connection(socket: newSocket,
                                config: config,
