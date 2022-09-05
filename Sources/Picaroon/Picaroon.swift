@@ -81,11 +81,7 @@ public enum Picaroon {
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             guard let httpResponse = response as? HTTPURLResponse else {
                 sender.unsafeSend {
-                    if let response = response {
-                        returnCallback(nil, nil, "response is not an http url response ( \(response) ) ")
-                    }   else {
-                        returnCallback(nil, nil, "response is not an http url response ( nil ) ")
-                    }
+                    returnCallback(nil, nil, "response is not HTTPURLResponse ( \(data): \(response): \(error) )")
                 }
                 return
             }
