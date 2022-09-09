@@ -32,9 +32,6 @@ let package = Package(
             dependencies: [
                 "Flynn",
                 "Picaroon"
-            ],
-            plugins: [
-                .plugin(name: "FlynnPlugin", package: "Flynn")
             ]
         )
     ]
