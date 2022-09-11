@@ -22,13 +22,10 @@ import FoundationNetworking
 ///
 /// UserSessions are intented to be subclassed by the application code
 ///
-open class UserSession: Actor, Equatable {
+open class UserSession: Actor {
 
     public static func == (lhs: UserSession, rhs: UserSession) -> Bool {
-        if lhs.unsafeSessionUUID == rhs.unsafeSessionUUID {
-            return true
-        }
-        return false
+        return lhs.unsafeSessionUUID == rhs.unsafeSessionUUID
     }
     
     public var unsafeSessionUUID: Hitch {
