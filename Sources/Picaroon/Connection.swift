@@ -174,7 +174,7 @@ public class Connection: Actor, AnyConnection {
     internal func safeCheckForMoreDataIfNeeded() {
         if safeCheckForMoreDataScheduled == false {
             safeCheckForMoreDataScheduled = true
-            unsafeSend { self.safeCheckForMoreData() }
+            unsafeSend { _ in self.safeCheckForMoreData() }
         }
     }
 

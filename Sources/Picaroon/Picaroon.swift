@@ -44,7 +44,7 @@ public enum Picaroon {
                                   _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         
         guard var components = URLComponents(string: url) else {
-            sender.unsafeSend {
+            sender.unsafeSend { _ in
                 returnCallback(nil, nil, "failed to create url components")
             }
             return
@@ -60,7 +60,7 @@ public enum Picaroon {
         components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         
         guard let url = components.url else {
-            sender.unsafeSend {
+            sender.unsafeSend { _ in
                 returnCallback(nil, nil, "failed to get components url")
             }
             return
@@ -80,30 +80,30 @@ public enum Picaroon {
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             guard let httpResponse = response as? HTTPURLResponse else {
-                sender.unsafeSend {
+                sender.unsafeSend { _ in
                     returnCallback(nil, nil, "response is not HTTPURLResponse ( \(data): \(response): \(error) )")
                 }
                 return
             }
             guard let data = data else {
-                sender.unsafeSend {
+                sender.unsafeSend { _ in
                     returnCallback(nil, httpResponse, "httpResponse data is nil")
                 }
                 return
             }
             guard error == nil else {
-                sender.unsafeSend {
+                sender.unsafeSend { _ in
                     returnCallback(nil, httpResponse, "\(error!)")
                 }
                 return
             }
             
             if httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299 {
-                sender.unsafeSend {
+                sender.unsafeSend { _ in
                     returnCallback(data, httpResponse, nil)
                 }
             } else {
-                sender.unsafeSend {
+                sender.unsafeSend { _ in
                     returnCallback(data, httpResponse, "http \(httpResponse.statusCode)")
                 }
             }

@@ -11,7 +11,7 @@ let package = Package(
         .library( name: "Picaroon", targets: ["Picaroon"] ),
     ],
     dependencies: [
-        .package(url: "https://github.com/KittyMac/Flynn.git", from: "0.3.0"),
+        .package(url: "https://github.com/KittyMac/Flynn.git", from: "0.4.0"),
         .package(url: "https://github.com/KittyMac/Hitch.git", from: "0.4.0"),
         .package(url: "https://github.com/KittyMac/Sextant.git", from: "0.4.0")
     ],
