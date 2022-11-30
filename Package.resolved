@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Chronometer.git",
       "state" : {
-        "revision" : "1360b46bfa6eecbdedd24590b95f97d3e59dc027",
-        "version" : "0.1.6"
+        "revision" : "2bb103acaafa5099950cb6af9ed3b65e1ce14834",
+        "version" : "0.1.7"
       }
     },
     {
@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Flynn.git",
       "state" : {
-        "revision" : "d796a78217274e353f0fce965fef2f21f72da87b",
-        "version" : "0.4.13"
+        "revision" : "313fbfd27a2518081238a3d8037b9d606a6fa787",
+        "version" : "0.4.31"
       }
     },
     {
@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Hitch.git",
       "state" : {
-        "revision" : "444f36b1bd5308ea2982b54d77ae9e4abbac5034",
-        "version" : "0.4.58"
+        "revision" : "600ff22a394b7d86c00bbcada76a8d8dcf0574c9",
+        "version" : "0.4.93"
       }
     },
     {
@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Sextant.git",
       "state" : {
-        "revision" : "7080eaf2f5173fa97349d97aed73966387beb799",
-        "version" : "0.4.12"
+        "revision" : "888356d08d937661a7e99d17fc81a8b415743286",
+        "version" : "0.4.14"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Spanker.git",
       "state" : {
-        "revision" : "d394a89d1e898deeede17cb3e9fbf0f9e5a99a7a",
-        "version" : "0.2.28"
+        "revision" : "0f89ec839269f09c14e3ae722de23822815577bf",
+        "version" : "0.2.30"
       }
     }
   ],
