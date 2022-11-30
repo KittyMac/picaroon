@@ -8,7 +8,7 @@ let package = Package(
         .macOS(.v10_13), .iOS(.v11)
     ],
     products: [
-        .library( name: "Picaroon", targets: ["Picaroon"] ),
+        .library( name: "Picaroon", type: .dynamic, targets: ["Picaroon"] ),
     ],
     dependencies: [
         .package(url: "https://github.com/KittyMac/Flynn.git", from: "0.4.0"),
