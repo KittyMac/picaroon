@@ -12,14 +12,16 @@ public extension HttpResponse {
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
+                     cacheMaxAge: Int = 0,
+                     eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: .json,
                   payload: json.toHitch(),
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
+                  cacheMaxAge: cacheMaxAge,
+                  eTag: eTag)
     }
 }
 
@@ -35,56 +37,64 @@ public extension HttpResponse {
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
+                     cacheMaxAge: Int = 0,
+                     eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: .html,
                   payload: html,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
+                  cacheMaxAge: cacheMaxAge,
+                  eTag: eTag)
     }
     
     convenience init(text: Payloadable,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
+                     cacheMaxAge: Int = 0,
+                     eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: .txt,
                   payload: text,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
+                  cacheMaxAge: cacheMaxAge,
+                  eTag: eTag)
     }
     
     convenience init(javascript: Payloadable,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
+                     cacheMaxAge: Int = 0,
+                     eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: .js,
                   payload: javascript,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
+                  cacheMaxAge: cacheMaxAge,
+                  eTag: eTag)
     }
     
     convenience init(json: Payloadable,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
+                     cacheMaxAge: Int = 0,
+                     eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: .json,
                   payload: json,
                   headers: headers,
                   encoding: encoding,
                   lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
+                  cacheMaxAge: cacheMaxAge,
+                  eTag: eTag)
     }
     
     convenience init(filename: HalfHitch,
@@ -92,7 +102,8 @@ public extension HttpResponse {
                      payload: Payloadable,
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
-                     cacheMaxAge: Int = 0) {
+                     cacheMaxAge: Int = 0,
+                     eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: type,
                   payload: payload,
@@ -102,7 +113,8 @@ public extension HttpResponse {
                   ],
                   encoding: encoding,
                   lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge)
+                  cacheMaxAge: cacheMaxAge,
+                  eTag: eTag)
     }
 
 }
