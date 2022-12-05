@@ -28,6 +28,7 @@ public class HttpRequest {
     public var contentType: HalfHitch?
     public var contentDisposition: HalfHitch?
     public var ifModifiedSince: HalfHitch?
+    public var ifNoneMatch: HalfHitch?
     public var cookie: HalfHitch?
     public var expect: HalfHitch?
     public var flynnTag: HalfHitch?
@@ -425,6 +426,7 @@ public class HttpRequest {
         contentType = bake(buffer: buffer, bufferSize: bufferSize, using: contentType)
         contentDisposition = bake(buffer: buffer, bufferSize: bufferSize, using: contentDisposition)
         ifModifiedSince = bake(buffer: buffer, bufferSize: bufferSize, using: ifModifiedSince)
+        ifNoneMatch = bake(buffer: buffer, bufferSize: bufferSize, using: ifNoneMatch)
         cookie = bake(buffer: buffer, bufferSize: bufferSize, using: cookie)
         expect = bake(buffer: buffer, bufferSize: bufferSize, using: expect)
         flynnTag = bake(buffer: buffer, bufferSize: bufferSize, using: flynnTag)
@@ -713,6 +715,28 @@ public class HttpRequest {
                                         count: bufferSize,
                                         from: valueStart - buffer,
                                         to: ptr - buffer)
+        }
+        
+        if ifNoneMatch == nil &&
+            size >= 13 &&
+            (keyEnd-13).pointee == .I &&
+            //(keyEnd-12).pointee == .f &&
+            (keyEnd-11).pointee == .minus &&
+            //(keyEnd-10).pointee == .N &&
+            (keyEnd-9).pointee == .o &&
+            //(keyEnd-8).pointee == .n &&
+            (keyEnd-7).pointee == .e &&
+            //(keyEnd-6).pointee == .minus &&
+            (keyEnd-5).pointee == .M &&
+            //(keyEnd-4).pointee == .a &&
+            (keyEnd-3).pointee == .t &&
+            //(keyEnd-2).pointee == .c &&
+            (keyEnd-1).pointee == .h {
+            ifNoneMatch = HalfHitch(sourceObject: nil,
+                                    raw: buffer,
+                                    count: bufferSize,
+                                    from: valueStart - buffer,
+                                    to: ptr - buffer)
         }
         
         if cookie == nil &&

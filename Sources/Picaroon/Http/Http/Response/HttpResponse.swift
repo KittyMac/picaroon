@@ -7,6 +7,8 @@ private let hitchContentLength: Hitch = "Content-Length: "
 private let hitchNewLine: Hitch = "\r\n"
 private let hitchCacheControl: Hitch = "Cache-Control: public, max-age="
 
+private let hitchETag: Hitch = "ETag: "
+
 private let hitchSetCookie1: Hitch = "Set-Cookie: "
 private let hitchSetCookie2: Hitch = "; HttpOnly\r\n"
 
@@ -56,6 +58,7 @@ public class HttpResponse {
     private let encoding: HalfHitch?
     private let lastModified: Hitch
     private let cacheMaxAge: Int
+    private let eTag: HalfHitch?
     
     private let payload: Payloadable?
 
@@ -67,7 +70,8 @@ public class HttpResponse {
                 headers: [HalfHitch]? = nil,
                 encoding: HalfHitch? = nil,
                 lastModified: Date? = nil,
-                cacheMaxAge: Int? = nil) {
+                cacheMaxAge: Int? = nil,
+                eTag: HalfHitch? = nil) {
         self.status = httpResponse.status
         self.type = httpResponse.type
         self.headers = headers ?? httpResponse.headers
@@ -78,6 +82,7 @@ public class HttpResponse {
             self.lastModified = httpResponse.lastModified
         }
         self.cacheMaxAge = cacheMaxAge ?? httpResponse.cacheMaxAge
+        self.eTag = eTag
         self.payload = httpResponse.payload
         
         postInit()
@@ -88,7 +93,8 @@ public class HttpResponse {
                 headers: [HalfHitch]? = nil,
                 encoding: HalfHitch? = nil,
                 lastModified: Date? = nil,
-                cacheMaxAge: Int = 0) {
+                cacheMaxAge: Int = 0,
+                eTag: HalfHitch? = nil) {
         self.status = status
         self.type = type
         self.headers = headers
@@ -99,6 +105,7 @@ public class HttpResponse {
             self.lastModified = HttpResponse.sharedLastModifiedDateHitch
         }
         self.cacheMaxAge = cacheMaxAge
+        self.eTag = eTag
         self.payload = nil
         
         postInit()
@@ -110,7 +117,8 @@ public class HttpResponse {
                 headers: [HalfHitch]? = nil,
                 encoding: HalfHitch? = nil,
                 lastModified: Date? = nil,
-                cacheMaxAge: Int = 0) {
+                cacheMaxAge: Int = 0,
+                eTag: HalfHitch? = nil) {
         self.status = status
         self.type = type
         self.headers = headers
@@ -121,6 +129,7 @@ public class HttpResponse {
             self.lastModified = HttpResponse.sharedLastModifiedDateHitch
         }
         self.cacheMaxAge = cacheMaxAge
+        self.eTag = eTag
         self.payload = payload
         
         postInit()
@@ -162,6 +171,15 @@ public class HttpResponse {
             combined.append(number: cacheMaxAge)
             combined.append(hitchNewLine)
         }
+        
+        if let eTag = eTag {
+            combined.append(hitchETag)
+            combined.append(.doubleQuote)
+            combined.append(eTag)
+            combined.append(.doubleQuote)
+            combined.append(hitchNewLine)
+        }
+        
         if let userSession = userSession {
             
             combined.append(hitchSetCookie1)
