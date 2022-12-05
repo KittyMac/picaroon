@@ -58,7 +58,9 @@ public class HttpResponse {
     private let encoding: HalfHitch?
     private let lastModified: Hitch
     private let cacheMaxAge: Int
-    private let eTag: HalfHitch?
+    
+    @usableFromInline
+    let eTag: HalfHitch?
     
     private let payload: Payloadable?
 
@@ -139,6 +141,10 @@ public class HttpResponse {
     func isNew(_ request: HttpRequest) -> Bool {
         if let modifiedDate = request.ifModifiedSince {
             return HttpResponse.sharedLastModifiedDateHalfHitch != modifiedDate
+        }
+        if let eTag = eTag,
+           request.ifNoneMatch?.contains(eTag) == true {
+            return false
         }
         return true
     }
