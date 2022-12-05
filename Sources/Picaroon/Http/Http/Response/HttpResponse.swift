@@ -139,12 +139,12 @@ public class HttpResponse {
     
     @inlinable @inline(__always)
     func isNew(_ request: HttpRequest) -> Bool {
-        if let modifiedDate = request.ifModifiedSince {
-            return HttpResponse.sharedLastModifiedDateHalfHitch != modifiedDate
-        }
         if let eTag = eTag,
            request.ifNoneMatch?.contains(eTag) == true {
             return false
+        }
+        if let modifiedDate = request.ifModifiedSince {
+            return HttpResponse.sharedLastModifiedDateHalfHitch != modifiedDate
         }
         return true
     }
