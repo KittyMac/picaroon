@@ -7,6 +7,7 @@ private let hitchContentLength: Hitch = "Content-Length: "
 private let hitchNewLine: Hitch = "\r\n"
 private let hitchCacheControl: Hitch = "Cache-Control: public, max-age="
 
+private let hitchCacheControlNoCache: Hitch = "Cache-Control: no-cache"
 private let hitchETag: Hitch = "ETag: "
 
 private let hitchSetCookie1: Hitch = "Set-Cookie: "
@@ -171,19 +172,22 @@ public class HttpResponse {
 
         combined.append(status.hitch)
         combined.append(hitchNewLine)
-
-        if cacheMaxAge > 0 {
-            combined.append(hitchCacheControl)
-            combined.append(number: cacheMaxAge)
-            combined.append(hitchNewLine)
-        }
         
         if let eTag = eTag {
+            combined.append(hitchCacheControlNoCache)
+            combined.append(hitchNewLine)
+            
             combined.append(hitchETag)
             combined.append(.doubleQuote)
             combined.append(eTag)
             combined.append(.doubleQuote)
             combined.append(hitchNewLine)
+        } else {
+            if cacheMaxAge > 0 {
+                combined.append(hitchCacheControl)
+                combined.append(number: cacheMaxAge)
+                combined.append(hitchNewLine)
+            }
         }
         
         if let userSession = userSession {
