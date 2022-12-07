@@ -241,18 +241,22 @@ public class HttpResponse {
             }
         }
         
-        combined.append(hitchLastModified)
-        combined.append(lastModified)
-        combined.append(hitchNewLine)
+        if eTag == nil {
+            combined.append(hitchLastModified)
+            combined.append(lastModified)
+            combined.append(hitchNewLine)
+        }
 
         combined.append(hitchKeepAlive)
         
         if let payload = payload {
             payload.using { bytes, count in
                 
-                combined.append(hitchContentType)
-                combined.append(type.hitch)
-                combined.append(hitchNewLine)
+                if (type != .none) {
+                    combined.append(hitchContentType)
+                    combined.append(type.hitch)
+                    combined.append(hitchNewLine)
+                }
                 
                 combined.append(hitchContentLength)
                 combined.append(number: count)
@@ -267,9 +271,11 @@ public class HttpResponse {
             }
         } else {
             
-            combined.append(hitchContentType)
-            combined.append(HttpContentType.txt.rawValue)
-            combined.append(hitchNewLine)
+            if (type != .none) {
+                combined.append(hitchContentType)
+                combined.append(HttpContentType.txt.rawValue)
+                combined.append(hitchNewLine)
+            }
             
             combined.append(hitchContentLength)
             combined.append(.zero)
