@@ -13,6 +13,7 @@ public extension HttpResponse {
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
+                     cacheRevalidateAge: Int = 0,
                      eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: .json,
@@ -21,6 +22,7 @@ public extension HttpResponse {
                   encoding: encoding,
                   lastModified: lastModified,
                   cacheMaxAge: cacheMaxAge,
+                  cacheRevalidateAge: cacheRevalidateAge,
                   eTag: eTag)
     }
 }
@@ -38,6 +40,7 @@ public extension HttpResponse {
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
+                     cacheRevalidateAge: Int = 0,
                      eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: .html,
@@ -46,6 +49,7 @@ public extension HttpResponse {
                   encoding: encoding,
                   lastModified: lastModified,
                   cacheMaxAge: cacheMaxAge,
+                  cacheRevalidateAge: cacheRevalidateAge,
                   eTag: eTag)
     }
     
@@ -54,6 +58,7 @@ public extension HttpResponse {
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
+                     cacheRevalidateAge: Int = 0,
                      eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: .txt,
@@ -62,6 +67,7 @@ public extension HttpResponse {
                   encoding: encoding,
                   lastModified: lastModified,
                   cacheMaxAge: cacheMaxAge,
+                  cacheRevalidateAge: cacheRevalidateAge,
                   eTag: eTag)
     }
     
@@ -70,6 +76,7 @@ public extension HttpResponse {
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
+                     cacheRevalidateAge: Int = 0,
                      eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: .js,
@@ -78,6 +85,7 @@ public extension HttpResponse {
                   encoding: encoding,
                   lastModified: lastModified,
                   cacheMaxAge: cacheMaxAge,
+                  cacheRevalidateAge: cacheRevalidateAge,
                   eTag: eTag)
     }
     
@@ -86,6 +94,7 @@ public extension HttpResponse {
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
+                     cacheRevalidateAge: Int = 0,
                      eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: .json,
@@ -94,6 +103,7 @@ public extension HttpResponse {
                   encoding: encoding,
                   lastModified: lastModified,
                   cacheMaxAge: cacheMaxAge,
+                  cacheRevalidateAge: cacheRevalidateAge,
                   eTag: eTag)
     }
     
@@ -103,6 +113,7 @@ public extension HttpResponse {
                      encoding: HalfHitch? = nil,
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
+                     cacheRevalidateAge: Int = 0,
                      eTag: HalfHitch? = nil) {
         self.init(status: .ok,
                   type: type,
@@ -114,6 +125,7 @@ public extension HttpResponse {
                   encoding: encoding,
                   lastModified: lastModified,
                   cacheMaxAge: cacheMaxAge,
+                  cacheRevalidateAge: cacheRevalidateAge,
                   eTag: eTag)
     }
 

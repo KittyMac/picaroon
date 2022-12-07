@@ -5,7 +5,9 @@ import Spanker
 
 private let hitchContentLength: Hitch = "Content-Length: "
 private let hitchNewLine: Hitch = "\r\n"
-private let hitchCacheControl: Hitch = "Cache-Control: public, max-age="
+
+private let hitchCacheControlMaxAge: Hitch = "Cache-Control: public, max-age="
+private let hitchCacheControlStaleWhileRevalidate: Hitch = ", stale-while-revalidate="
 
 private let hitchCacheControlNoCache: Hitch = "Cache-Control: no-cache"
 private let hitchETag: Hitch = "ETag: "
@@ -59,6 +61,7 @@ public class HttpResponse {
     private let encoding: HalfHitch?
     private let lastModified: Hitch
     private let cacheMaxAge: Int
+    private let cacheRevalidateAge: Int
     
     @usableFromInline
     let eTag: HalfHitch?
@@ -74,6 +77,7 @@ public class HttpResponse {
                 encoding: HalfHitch? = nil,
                 lastModified: Date? = nil,
                 cacheMaxAge: Int? = nil,
+                cacheRevalidateAge: Int? = nil,
                 eTag: HalfHitch? = nil) {
         self.status = httpResponse.status
         self.type = httpResponse.type
@@ -85,6 +89,7 @@ public class HttpResponse {
             self.lastModified = httpResponse.lastModified
         }
         self.cacheMaxAge = cacheMaxAge ?? httpResponse.cacheMaxAge
+        self.cacheRevalidateAge = cacheRevalidateAge ?? httpResponse.cacheRevalidateAge
         self.eTag = eTag
         self.payload = httpResponse.payload
         
@@ -97,6 +102,7 @@ public class HttpResponse {
                 encoding: HalfHitch? = nil,
                 lastModified: Date? = nil,
                 cacheMaxAge: Int = 0,
+                cacheRevalidateAge: Int = 0,
                 eTag: HalfHitch? = nil) {
         self.status = status
         self.type = type
@@ -108,6 +114,7 @@ public class HttpResponse {
             self.lastModified = HttpResponse.sharedLastModifiedDateHitch
         }
         self.cacheMaxAge = cacheMaxAge
+        self.cacheRevalidateAge = cacheRevalidateAge
         self.eTag = eTag
         self.payload = nil
         
@@ -121,6 +128,7 @@ public class HttpResponse {
                 encoding: HalfHitch? = nil,
                 lastModified: Date? = nil,
                 cacheMaxAge: Int = 0,
+                cacheRevalidateAge: Int = 0,
                 eTag: HalfHitch? = nil) {
         self.status = status
         self.type = type
@@ -132,6 +140,7 @@ public class HttpResponse {
             self.lastModified = HttpResponse.sharedLastModifiedDateHitch
         }
         self.cacheMaxAge = cacheMaxAge
+        self.cacheRevalidateAge = cacheRevalidateAge
         self.eTag = eTag
         self.payload = payload
         
@@ -174,8 +183,18 @@ public class HttpResponse {
         combined.append(hitchNewLine)
         
         if let eTag = eTag {
-            combined.append(hitchCacheControlNoCache)
-            combined.append(hitchNewLine)
+            if cacheMaxAge > 0 {
+                combined.append(hitchCacheControlMaxAge)
+                combined.append(number: cacheMaxAge)
+                if cacheRevalidateAge > 0 {
+                    combined.append(hitchCacheControlStaleWhileRevalidate)
+                    combined.append(number: cacheRevalidateAge)
+                }
+                combined.append(hitchNewLine)
+            } else {
+                combined.append(hitchCacheControlNoCache)
+                combined.append(hitchNewLine)
+            }
             
             combined.append(hitchETag)
             combined.append(.doubleQuote)
@@ -184,7 +203,7 @@ public class HttpResponse {
             combined.append(hitchNewLine)
         } else {
             if cacheMaxAge > 0 {
-                combined.append(hitchCacheControl)
+                combined.append(hitchCacheControlMaxAge)
                 combined.append(number: cacheMaxAge)
                 combined.append(hitchNewLine)
             }
