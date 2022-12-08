@@ -28,6 +28,7 @@ extension Hitch: Payloadable {
 
 extension Data: Payloadable {
     public func gzipped(level: CompressionLevel) throws -> Data {
+        guard isGzipped == false else { return self }
         return try gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
     }
     
