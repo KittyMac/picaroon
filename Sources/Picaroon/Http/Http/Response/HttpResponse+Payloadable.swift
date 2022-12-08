@@ -3,10 +3,16 @@ import Foundation
 import Hitch
 import Gzip
 
-extension String: Error {}
+struct GzipError: Error {
+    let message: String
 
-extension String: LocalizedError {
-    public var errorDescription: String? { return self }
+    init(_ message: String) {
+        self.message = message
+    }
+
+    public var localizedDescription: String {
+        return message
+    }
 }
 
 public protocol Payloadable {
@@ -56,7 +62,7 @@ extension StaticString: Payloadable {
 
 extension String: Payloadable {
     public func gzipped(level: CompressionLevel) throws -> Data {
-        guard let data = data(using: .utf8) else { throw "failed to convert string to data" }
+        guard let data = data(using: .utf8) else { throw GzipError("failed to convert string to data") }
         return try data.gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
     }
     
