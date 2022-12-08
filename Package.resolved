@@ -19,6 +19,15 @@
       }
     },
     {
+      "identity" : "gzipswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/KittyMac/GzipSwift.git",
+      "state" : {
+        "revision" : "a9bbc39238e197e3e20b4346c45bfed767a817fe",
+        "version" : "5.3.3"
+      }
+    },
+    {
       "identity" : "hitch",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Hitch.git",

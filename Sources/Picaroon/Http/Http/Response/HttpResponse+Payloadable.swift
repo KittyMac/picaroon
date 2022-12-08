@@ -1,20 +1,36 @@
 import Flynn
 import Foundation
 import Hitch
+import Gzip
+
+extension String: Error {}
+
+extension String: LocalizedError {
+    public var errorDescription: String? { return self }
+}
 
 public protocol Payloadable {
+    func gzipped(level: CompressionLevel) throws -> Data
     func using<T>(_ block: (UnsafePointer<UInt8>?, Int) -> T?) -> T?
 }
 
 extension HalfHitch: Payloadable {
-    
+    public func gzipped(level: CompressionLevel) throws -> Data {
+        return try dataNoCopy().gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
+    }
 }
 
 extension Hitch: Payloadable {
-    
+    public func gzipped(level: CompressionLevel) throws -> Data {
+        return try dataNoCopy().gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
+    }
 }
 
 extension Data: Payloadable {
+    public func gzipped(level: CompressionLevel) throws -> Data {
+        return try gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
+    }
+    
     public func using<T>(_ block: (UnsafePointer<UInt8>?, Int) -> T?) -> T? {
         return withUnsafeBytes { unsafeRawBufferPointer in
             let unsafeBufferPointer = unsafeRawBufferPointer.bindMemory(to: UInt8.self)
@@ -25,12 +41,24 @@ extension Data: Payloadable {
 }
 
 extension StaticString: Payloadable {
+    public func gzipped(level: CompressionLevel) throws -> Data {
+        let data = Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: self.utf8Start),
+                        count: self.utf8CodeUnitCount,
+                        deallocator: .none)
+        return try data.gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
+    }
+    
     public func using<T>(_ block: (UnsafePointer<UInt8>?, Int) -> T?) -> T? {
         return block(utf8Start, utf8CodeUnitCount)
     }
 }
 
 extension String: Payloadable {
+    public func gzipped(level: CompressionLevel) throws -> Data {
+        guard let data = data(using: .utf8) else { throw "failed to convert string to data" }
+        return try data.gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
+    }
+    
     public func using<T>(_ block: (UnsafePointer<UInt8>?, Int) -> T?) -> T? {
         return withCString { bytes in
             var ptr = bytes

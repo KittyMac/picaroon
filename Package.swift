@@ -14,7 +14,8 @@ let package = Package(
         .package(url: "https://github.com/KittyMac/Flynn.git", from: "0.4.0"),
         .package(url: "https://github.com/KittyMac/Hitch.git", from: "0.4.0"),
         .package(url: "https://github.com/KittyMac/Spanker.git", from: "0.2.0"),
-        .package(url: "https://github.com/KittyMac/Sextant.git", from: "0.4.0")
+        .package(url: "https://github.com/KittyMac/Sextant.git", from: "0.4.0"),
+        .package(url: "https://github.com/KittyMac/GzipSwift.git", from: "5.3.0"),
     ],
     targets: [
         .target(
@@ -23,7 +24,8 @@ let package = Package(
                 "Flynn",
                 "Hitch",
                 "Spanker",
-                "Sextant"				
+                "Sextant",
+                .product(name: "Gzip", package: "GzipSwift"),
 			],
             plugins: [
                 .plugin(name: "FlynnPlugin", package: "Flynn")

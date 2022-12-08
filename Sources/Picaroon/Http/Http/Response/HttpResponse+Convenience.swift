@@ -2,6 +2,7 @@ import Flynn
 import Foundation
 import Hitch
 import Spanker
+import Gzip
 
 let hitchContentTransferEncodingBinary: HalfHitch = "Content-Transfer-Encoding: binary"
 let hitchContentDispositionFormat: HalfHitch = #"Content-Disposition: attachment; filename="{0}""#
@@ -14,16 +15,30 @@ public extension HttpResponse {
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
                      cacheRevalidateAge: Int = 0,
-                     eTag: HalfHitch? = nil) {
-        self.init(status: .ok,
-                  type: .json,
-                  payload: json.toHitch(),
-                  headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge,
-                  cacheRevalidateAge: cacheRevalidateAge,
-                  eTag: eTag)
+                     eTag: HalfHitch? = nil,
+                     request: HttpRequest? = nil) {
+        let payload = json.toHitch()
+        if request?.supportsGzip == true {
+            self.init(status: .ok,
+                      type: .json,
+                      payload: (try? payload.dataNoCopy().gzipped(level: .bestSpeed)) ?? payload,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        } else {
+            self.init(status: .ok,
+                      type: .json,
+                      payload: payload,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        }
     }
 }
 
@@ -41,16 +56,29 @@ public extension HttpResponse {
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
                      cacheRevalidateAge: Int = 0,
-                     eTag: HalfHitch? = nil) {
-        self.init(status: .ok,
-                  type: .html,
-                  payload: html,
-                  headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge,
-                  cacheRevalidateAge: cacheRevalidateAge,
-                  eTag: eTag)
+                     eTag: HalfHitch? = nil,
+                     request: HttpRequest? = nil) {
+        if request?.supportsGzip == true {
+            self.init(status: .ok,
+                      type: .html,
+                      payload: (try? html.gzipped(level: .bestSpeed)) ?? html,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        } else {
+            self.init(status: .ok,
+                      type: .html,
+                      payload: html,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        }
     }
     
     convenience init(text: Payloadable,
@@ -59,16 +87,29 @@ public extension HttpResponse {
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
                      cacheRevalidateAge: Int = 0,
-                     eTag: HalfHitch? = nil) {
-        self.init(status: .ok,
-                  type: .txt,
-                  payload: text,
-                  headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge,
-                  cacheRevalidateAge: cacheRevalidateAge,
-                  eTag: eTag)
+                     eTag: HalfHitch? = nil,
+                     request: HttpRequest? = nil) {
+        if request?.supportsGzip == true {
+            self.init(status: .ok,
+                      type: .txt,
+                      payload: (try? text.gzipped(level: .bestSpeed)) ?? text,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        } else {
+            self.init(status: .ok,
+                      type: .txt,
+                      payload: text,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        }
     }
     
     convenience init(javascript: Payloadable,
@@ -77,16 +118,29 @@ public extension HttpResponse {
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
                      cacheRevalidateAge: Int = 0,
-                     eTag: HalfHitch? = nil) {
-        self.init(status: .ok,
-                  type: .js,
-                  payload: javascript,
-                  headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge,
-                  cacheRevalidateAge: cacheRevalidateAge,
-                  eTag: eTag)
+                     eTag: HalfHitch? = nil,
+                     request: HttpRequest? = nil) {
+        if request?.supportsGzip == true {
+            self.init(status: .ok,
+                      type: .js,
+                      payload: (try? javascript.gzipped(level: .bestSpeed)) ?? javascript,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        } else {
+            self.init(status: .ok,
+                      type: .js,
+                      payload: javascript,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        }
     }
     
     convenience init(json: Payloadable,
@@ -95,16 +149,29 @@ public extension HttpResponse {
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
                      cacheRevalidateAge: Int = 0,
-                     eTag: HalfHitch? = nil) {
-        self.init(status: .ok,
-                  type: .json,
-                  payload: json,
-                  headers: headers,
-                  encoding: encoding,
-                  lastModified: lastModified,
-                  cacheMaxAge: cacheMaxAge,
-                  cacheRevalidateAge: cacheRevalidateAge,
-                  eTag: eTag)
+                     eTag: HalfHitch? = nil,
+                     request: HttpRequest? = nil) {
+        if request?.supportsGzip == true {
+            self.init(status: .ok,
+                      type: .json,
+                      payload: (try? json.gzipped(level: .bestSpeed)) ?? json,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        } else {
+            self.init(status: .ok,
+                      type: .json,
+                      payload: json,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        }
     }
     
     convenience init(filename: HalfHitch,
@@ -114,7 +181,8 @@ public extension HttpResponse {
                      lastModified: Date? = nil,
                      cacheMaxAge: Int = 0,
                      cacheRevalidateAge: Int = 0,
-                     eTag: HalfHitch? = nil) {
+                     eTag: HalfHitch? = nil,
+                     request: HttpRequest? = nil) {
         self.init(status: .ok,
                   type: type,
                   payload: payload,
