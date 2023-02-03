@@ -34,13 +34,16 @@ public struct ServerConfig: Codable {
     public let maxRequestInBytes: Int
 
     public let sessionPer: UserSessionPer
+    
+    public let crashReports: Bool
 
     public init(address: String,
                 port: Int,
                 basePath: String = "/",
                 sessionPer: UserSessionPer = .window,
                 requestTimeout: TimeInterval = 30.0,
-                maxRequestInBytes: Int = 1024 * 1024 * 8) {
+                maxRequestInBytes: Int = 1024 * 1024 * 8,
+                crashReports: Bool = true) {
         self.address = Hitch(string: address)
         self.port = port
         self.sessionPer = sessionPer
@@ -51,8 +54,12 @@ public struct ServerConfig: Codable {
         if self.basePath.ends(with: "/") {
             self.basePath.count = self.basePath.count - 1
         }
+        
+        self.crashReports = crashReports
     }
 }
+
+fileprivate var initCrashReports = false
 
 public class Server<T: UserSession> {
     // A server which listens on an address and a port
@@ -69,6 +76,20 @@ public class Server<T: UserSession> {
         self.config = config
         self.staticStorageHandler = staticStorageHandler
         self.userSessionManager = UserSessionManager<T>(config: config)
+        
+        if config.crashReports == true && initCrashReports == false {
+            signal(SIGSEGV) { code in
+                
+                var stackTrace = ""
+                Thread.callStackSymbols.forEach {
+                    stackTrace += "\($0)\n"
+                }
+                
+                try? stackTrace.write(toFile: "/tmp/picaroon_crash_\(UUID().uuidString).txt", atomically: false, encoding: .utf8)
+                
+                exit(code)
+            }
+        }
     }
 
     @discardableResult
