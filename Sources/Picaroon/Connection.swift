@@ -223,9 +223,12 @@ public class Connection: Actor, AnyConnection {
                                             request: buffer,
                                             size: currentPtr - buffer + 1) else {
             // We have an incomplete https request, wait for more data and try again
+            self.unsafePriority = 99
             safeCheckForMoreDataIfNeeded()
             return
         }
+        
+        self.unsafePriority = -1
 
         // reset current pointer to be read for the next http request
         currentPtr = buffer
