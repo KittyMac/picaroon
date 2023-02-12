@@ -18,6 +18,15 @@ let package = Package(
         .package(url: "https://github.com/KittyMac/GzipSwift.git", from: "5.3.0"),
     ],
     targets: [
+        .executableTarget(
+            name: "PicaroonTestTool",
+            dependencies: [
+                "Picaroon",
+            ],
+            plugins: [
+                .plugin(name: "FlynnPlugin", package: "Flynn")
+            ]
+        ),
         .target(
             name: "Picaroon",
             dependencies: [

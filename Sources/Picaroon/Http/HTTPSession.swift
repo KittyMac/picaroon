@@ -20,6 +20,7 @@ public class HTTPSession: Actor {
     
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
+    private var deinitCallback: (() -> ())?
     
     private var outstandingRequests = 0
     
@@ -34,25 +35,28 @@ public class HTTPSession: Actor {
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
         config.httpCookieStorage = nil
-        urlSession = URLSession(configuration: config)
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
     }
     
     deinit {
-        HTTPSessionManager.shared.beSessionFinished()
-        guard urlSession != URLSession.shared else { return }
-        urlSession.invalidateAndCancel()
+        guard let deinitCallback = deinitCallback else { return }
+        HTTPSessionManager.shared.unsafeSend { _ in
+            deinitCallback()
+        }
     }
     
-    internal func _beBegin() {
-        guard let beginCallback = beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
-        self.beginCallback = nil
-        
-        let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 10.0
-        config.httpMaximumConnectionsPerHost = 1024
-        urlSession = URLSession(configuration: config)
-        
-        beginCallback(self)
+    // Note: we define the behavior this way because we don't want it exposed outside of the module
+    internal func beBegin(urlSession: URLSession,
+                          _ deinitCallback: @escaping () -> ()) {
+        unsafeSend { _ in
+            guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
+            self.beginCallback = nil
+            self.urlSession = urlSession
+            self.deinitCallback = deinitCallback
+            beginCallback(self)
+        }
     }
     
     internal func _beCancel() {
