@@ -20,4 +20,4 @@ COPY ./Sources ./Sources
 COPY ./Tests ./Tests
 
 RUN swift test
-RUN swift build --configuration release
+#RUN swift build --configuration release

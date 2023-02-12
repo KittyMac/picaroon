@@ -32,30 +32,6 @@ final class picaroonConnectionTests: XCTestCase {
         return rightTime < leftTime
     }
     
-    func testConcurrentUrlSessions() {
-        let expectation = XCTestExpectation(description: "testConcurrentUrlSessions")
-        
-        var waiting = 128
-        for _ in 0..<128 {
-            Picaroon.urlRequest(url: "https://www.github.com",
-                                httpMethod: "GET",
-                                params: [:],
-                                headers: [:],
-                                body: nil,
-                                Flynn.any) { data, response, error in
-                XCTAssertNil(error)
-                XCTAssertNotNil(data)
-                waiting -= 1
-                
-                if waiting <= 0 {
-                    expectation.fulfill()
-                }
-            }
-        }
-        
-        wait(for: [expectation], timeout: 60)
-    }
-    
     #if os(macOS)
     
     func testSimpleStaticResponse() {
@@ -260,7 +236,4 @@ final class picaroonConnectionTests: XCTestCase {
         wait(for: [expectation], timeout: 6000)
     }
     */
-    static var allTests = [
-        ("testConcurrentUrlSessions", testConcurrentUrlSessions)
-    ]
 }

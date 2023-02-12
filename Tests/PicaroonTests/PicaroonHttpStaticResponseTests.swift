@@ -172,7 +172,4 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
         """)
     }
     */
-    static var allTests = [
-        ("testEmpty", testEmpty)
-    ]
 }

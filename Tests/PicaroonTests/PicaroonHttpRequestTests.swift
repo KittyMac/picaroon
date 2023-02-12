@@ -119,10 +119,4 @@ final class picaroonHttpRequestTests: XCTestCase {
         XCTAssertEqual(parts[1].contentType, #"text/plain"#)
         XCTAssertEqual(parts[1].content, "test 1\n")
     }
-    
-    static var allTests = [
-        ("testSessionIdParameter1", testSessionIdParameter1),
-        ("testSessionIdParameter2", testSessionIdParameter2),
-        ("testMultipartRequest", testMultipartRequest),
-    ]
 }

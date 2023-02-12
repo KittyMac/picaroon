@@ -1,0 +1,162 @@
+import Foundation
+import Flynn
+import Hitch
+
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
+// Note: we cannot have too many concurrent URLSession (or we will get "No space left on device")
+// https://stackoverflow.com/questions/67318867/error-domain-nsposixerrordomain-code-28-no-space-left-on-device-userinfo-kcf
+
+// Note: On linux, we get "-1001" errors if we have too many concurrent connections (regardess of the number of sessions)
+// Note: On linux, using just URLSession.shared "works" since max connections per host defaults to 6
+
+// Note: WE MUST BE ABLE TO SUPPORT MULTIPLE CONCURRENT URLSESSIONS, as that is the only way we have separated cookie storage
+// Note: We also want to support "one shot" url tasks which are ephemeral, have cookies disabled, and can share a single url session
+
+public class HTTPSession: Actor {
+    public static let oneshot: HTTPSession = HTTPSession(oneshot: true)
+    
+    private var urlSession: URLSession = URLSession.shared
+    private var beginCallback: ((HTTPSession) -> ())?
+    
+    private var outstandingRequests = 0
+    
+    public init(_ returnCallback: @escaping (HTTPSession) -> ()) {
+        beginCallback = returnCallback
+    }
+    
+    fileprivate init(oneshot: Bool) {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 10.0
+        config.httpMaximumConnectionsPerHost = 1024
+        config.httpShouldSetCookies = false
+        config.httpCookieAcceptPolicy = .never
+        config.httpCookieStorage = nil
+        urlSession = URLSession(configuration: config)
+    }
+    
+    deinit {
+        HTTPSessionManager.shared.beSessionFinished()
+        guard urlSession != URLSession.shared else { return }
+        urlSession.invalidateAndCancel()
+    }
+    
+    internal func _beBegin() {
+        guard let beginCallback = beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
+        self.beginCallback = nil
+        
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 10.0
+        config.httpMaximumConnectionsPerHost = 1024
+        urlSession = URLSession(configuration: config)
+        
+        beginCallback(self)
+    }
+    
+    internal func _beCancel() {
+        guard self != HTTPSession.oneshot else { fatalError("You cannot cancel the oneshot HTTPSession") }
+        urlSession.invalidateAndCancel()
+        urlSession = URLSession.shared
+    }
+        
+    internal func _beRequest(request: URLRequest,
+                             _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
+        outstandingRequests += 1
+        
+        HTTPTaskManager.shared.beResume(session: urlSession,
+                                        request: request,
+                                        self) { data, response, error in
+            self.handleTaskResponse(data: data,
+                                    response: response,
+                                    error: error,
+                                    returnCallback: returnCallback)
+        }
+    }
+    
+    internal func _beRequest(url: String,
+                             httpMethod: String,
+                             params: [String: String],
+                             headers: [String: String],
+                             cookies: HTTPCookieStorage? = nil,
+                             body: Data?,
+                             _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+        guard urlSession != URLSession.shared else { fatalError("HTTPSession is not allowed to use URLSession.shared") }
+        
+        guard var components = URLComponents(string: url) else {
+            returnCallback(nil, nil, "failed to create url components")
+            return
+        }
+        
+        if components.queryItems == nil {
+            components.queryItems = []
+        }
+        
+        params.forEach { (key, value) in
+            components.queryItems?.append(URLQueryItem(name: key, value: value))
+        }
+        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        
+        guard let url = components.url else {
+            returnCallback(nil, nil, "failed to get components url")
+            return
+        }
+        
+        var request = URLRequest(url: url,
+                                 cachePolicy: .reloadIgnoringLocalAndRemoteCacheData,
+                                 timeoutInterval: 30.0)
+        
+        request.httpMethod = httpMethod
+        request.httpBody = body
+        request.httpShouldHandleCookies = false
+        
+        for (header, value) in headers {
+            request.addValue(value, forHTTPHeaderField: header)
+        }
+        
+        if let cookies = cookies?.cookies {
+            for (header, value) in HTTPCookie.requestHeaderFields(with: cookies) {
+                request.addValue(value, forHTTPHeaderField: header)
+            }
+        }
+        
+        outstandingRequests += 1
+        
+        HTTPTaskManager.shared.beResume(session: urlSession,
+                                        request: request,
+                                        self) { data, response, error in
+            self.handleTaskResponse(data: data,
+                                    response: response,
+                                    error: error,
+                                    returnCallback: returnCallback)
+        }
+    }
+    
+    private func handleTaskResponse(data: Data?,
+                                    response: URLResponse?,
+                                    error: Error?,
+                                    returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+        outstandingRequests -= 1
+                
+        guard let httpResponse = response as? HTTPURLResponse else {
+            returnCallback(nil, nil, "response is not HTTPURLResponse ( \(data): \(response): \(error) )")
+            return
+        }
+        guard let data = data else {
+            returnCallback(nil, httpResponse, "httpResponse data is nil")
+            return
+        }
+        guard error == nil else {
+            returnCallback(nil, httpResponse, "\(error!)")
+            return
+        }
+        
+        if httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299 {
+            returnCallback(data, httpResponse, nil)
+        } else {
+            returnCallback(data, httpResponse, "http \(httpResponse.statusCode)")
+        }
+        
+    }
+}

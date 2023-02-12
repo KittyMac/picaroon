@@ -34,21 +34,4 @@ extension String {
 
 public enum Picaroon {
     public static var userSessionCookie: Hitch = UUID().uuidHitch
-    
-    public static func urlRequest(url: String,
-                                  httpMethod: String,
-                                  params: [String: String],
-                                  headers: [String: String],
-                                  body: Data?,
-                                  _ sender: Actor,
-                                  _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        // Note: this functionality has been moved to URLTask
-        URLTask.shared.beRequest(url: url,
-                                 httpMethod: httpMethod,
-                                 params: params,
-                                 headers: headers,
-                                 body: body,
-                                 sender,
-                                 returnCallback)
-    }
 }

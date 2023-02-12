@@ -61,12 +61,4 @@ final class picaroonBadClientTests: XCTestCase {
         
         XCTAssertNil(HttpRequest(config: serverConfig, request: content.raw()!, size: content.count))
     }
-    
-    static var allTests = [
-        ("testBadClient0", testBadClient0),
-        ("testBadClient1", testBadClient1),
-        ("testBadClient2", testBadClient2),
-        ("testBadClient3", testBadClient3),
-        ("testBadClient4", testBadClient4),
-    ]
 }

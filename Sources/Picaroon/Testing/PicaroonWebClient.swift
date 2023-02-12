@@ -1,4 +1,5 @@
 import Foundation
+import Flynn
 
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -61,28 +62,35 @@ public extension PicaroonTesting {
         
         public func load(url: String, _ callback: kWebViewResponse?) {
             print("load: \(url)")
-            
-            Picaroon.urlRequest(url: url,
-                                httpMethod: "GET",
-                                params: [:],
-                                headers: handleHeaders(),
-                                body: nil,
-                                client) { data, httpResponse, error in
+                        
+            HTTPSessionManager.shared.beNew(Flynn.any) { session in
                 
-                if let data = data,
-                   let content = String(data: data, encoding: .utf8) {
-                    print(content)
-                    if content.contains("Session-Id")  {
-                        let sessionUUID = content.suffix(39).prefix(36)
-                        self.javascriptSessionUUID = String(sessionUUID)
+                session.beRequest(url: url,
+                                  httpMethod: "GET",
+                                  params: [:],
+                                  headers: self.handleHeaders(),
+                                  cookies: nil,
+                                  body: nil,
+                                  self.client) { data, httpResponse, error in
+                    
+                    if let data = data,
+                       let content = String(data: data, encoding: .utf8) {
+                        print(content)
+                        if content.contains("Session-Id")  {
+                            let sessionUUID = content.suffix(39).prefix(36)
+                            self.javascriptSessionUUID = String(sessionUUID)
+                        }
+                    }
+                    
+                    self.handleResponse(data: data, httpResponse: httpResponse, error: error)
+                    if let callback = callback {
+                        callback(data, httpResponse, error)
                     }
                 }
                 
-                self.handleResponse(data: data, httpResponse: httpResponse, error: error)
-                if let callback = callback {
-                    callback(data, httpResponse, error)
-                }
             }
+            
+            
             
             lastUrl = url
         }
@@ -91,15 +99,18 @@ public extension PicaroonTesting {
             guard let lastUrl = lastUrl else { fatalError() }
             
             print("ajax: \(payload)")
-            Picaroon.urlRequest(url: lastUrl,
-                                httpMethod: "POST",
-                                params: [:],
-                                headers: handleHeaders(),
-                                body: payload.data(using: .utf8),
-                                client) { data, httpResponse, error in
-                self.handleResponse(data: data, httpResponse: httpResponse, error: error)
-                if let callback = callback {
-                    callback(data, httpResponse, error)
+            HTTPSessionManager.shared.beNew(Flynn.any) { session in
+                session.beRequest(url: lastUrl,
+                                  httpMethod: "POST",
+                                  params: [:],
+                                  headers: self.handleHeaders(),
+                                  cookies: nil,
+                                  body: payload.data(using: .utf8),
+                                  self.client) { data, httpResponse, error in
+                    self.handleResponse(data: data, httpResponse: httpResponse, error: error)
+                    if let callback = callback {
+                        callback(data, httpResponse, error)
+                    }
                 }
             }
         }

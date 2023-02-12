@@ -144,9 +144,6 @@ final class picaroonHttpResponseTests: XCTestCase {
         """)
     }
     */
-    static var allTests = [
-        ("testGzipDetection", testGzipDetection)
-    ]
 }
 
 

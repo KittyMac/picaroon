@@ -1,6 +1,7 @@
 import XCTest
 import Spanker
 import Hitch
+import Flynn
 
 import Picaroon
 
@@ -103,26 +104,29 @@ final class picaroonServicesTests: XCTestCase {
         
         server.listen()
         
-        for _ in 0..<1 {
-            let baseUrl = "http://127.0.0.1:\(port)/"
-            let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"ToUpperService","value":"test b"}]"#
-            Picaroon.urlRequest(url: baseUrl,
-                                httpMethod: "POST",
-                                params: [:],
-                                headers: [:],
-                                body: jsonRequest.data(using: .utf8),
-                                client) { data, response, error in
-                XCTAssertNil(error)
-                
-                guard let data = data else { return XCTFail() }
-                guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
-                
-                guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
-
-                XCTAssertEqual(serviceResponse, #"["TEST A","TEST B"]"#)
-                XCTAssertEqual(dataAsString, "")
-
-                expectation.fulfill()
+        HTTPSessionManager.shared.beNew(Flynn.any) { session in
+            for _ in 0..<1 {
+                let baseUrl = "http://127.0.0.1:\(port)/"
+                let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"ToUpperService","value":"test b"}]"#
+                session.beRequest(url: baseUrl,
+                                  httpMethod: "POST",
+                                  params: [:],
+                                  headers: [:],
+                                  cookies: nil,
+                                  body: jsonRequest.data(using: .utf8),
+                                  client) { data, response, error in
+                    XCTAssertNil(error)
+                    
+                    guard let data = data else { return XCTFail() }
+                    guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
+                    
+                    guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
+                    
+                    XCTAssertEqual(serviceResponse, #"["TEST A","TEST B"]"#)
+                    XCTAssertEqual(dataAsString, "")
+                    
+                    expectation.fulfill()
+                }
             }
         }
         
@@ -141,26 +145,29 @@ final class picaroonServicesTests: XCTestCase {
         
         server.listen()
         
-        for _ in 0..<1 {
-            let baseUrl = "http://127.0.0.1:\(port)/"
-            let jsonRequest = #"{"service":"HelloWorldService"}"#
-            Picaroon.urlRequest(url: baseUrl,
-                                httpMethod: "POST",
-                                params: [:],
-                                headers: [:],
-                                body: jsonRequest.data(using: .utf8),
-                                client) { data, response, error in
-                XCTAssertNil(error)
-                
-                guard let data = data else { return XCTFail() }
-                guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
-                
-                guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
-
-                XCTAssertEqual(serviceResponse, #"null"#)
-                XCTAssertEqual(dataAsString, "Hello World")
-
-                expectation.fulfill()
+        HTTPSessionManager.shared.beNew(Flynn.any) { session in
+            for _ in 0..<1 {
+                let baseUrl = "http://127.0.0.1:\(port)/"
+                let jsonRequest = #"{"service":"HelloWorldService"}"#
+                session.beRequest(url: baseUrl,
+                                  httpMethod: "POST",
+                                  params: [:],
+                                  headers: [:],
+                                  cookies: nil,
+                                  body: jsonRequest.data(using: .utf8),
+                                  client) { data, response, error in
+                    XCTAssertNil(error)
+                    
+                    guard let data = data else { return XCTFail() }
+                    guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
+                    
+                    guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
+                    
+                    XCTAssertEqual(serviceResponse, #"null"#)
+                    XCTAssertEqual(dataAsString, "Hello World")
+                    
+                    expectation.fulfill()
+                }
             }
         }
         
@@ -179,26 +186,29 @@ final class picaroonServicesTests: XCTestCase {
         
         server.listen()
         
-        for _ in 0..<1 {
-            let baseUrl = "http://127.0.0.1:\(port)/"
-            let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"ToUpperService","value":"test b"},{"service":"HelloWorldService"}]"#
-            Picaroon.urlRequest(url: baseUrl,
-                                httpMethod: "POST",
-                                params: [:],
-                                headers: [:],
-                                body: jsonRequest.data(using: .utf8),
-                                client) { data, response, error in
-                XCTAssertNil(error)
-                
-                guard let data = data else { return XCTFail() }
-                guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
-                
-                guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
-
-                XCTAssertEqual(serviceResponse, #"["TEST A","TEST B",null]"#)
-                XCTAssertEqual(dataAsString, "Hello World")
-
-                expectation.fulfill()
+        HTTPSessionManager.shared.beNew(Flynn.any) { session in
+            for _ in 0..<1 {
+                let baseUrl = "http://127.0.0.1:\(port)/"
+                let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"ToUpperService","value":"test b"},{"service":"HelloWorldService"}]"#
+                session.beRequest(url: baseUrl,
+                                  httpMethod: "POST",
+                                  params: [:],
+                                  headers: [:],
+                                  cookies: nil,
+                                  body: jsonRequest.data(using: .utf8),
+                                  client) { data, response, error in
+                    XCTAssertNil(error)
+                    
+                    guard let data = data else { return XCTFail() }
+                    guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
+                    
+                    guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
+                    
+                    XCTAssertEqual(serviceResponse, #"["TEST A","TEST B",null]"#)
+                    XCTAssertEqual(dataAsString, "Hello World")
+                    
+                    expectation.fulfill()
+                }
             }
         }
         
@@ -217,35 +227,34 @@ final class picaroonServicesTests: XCTestCase {
         
         server.listen()
         
-        for _ in 0..<1 {
-            let baseUrl = "http://127.0.0.1:\(port)/"
-            let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"HelloWorldService"},{"service":"HelloWorldService"}]"#
-            Picaroon.urlRequest(url: baseUrl,
-                                httpMethod: "POST",
-                                params: [:],
-                                headers: [:],
-                                body: jsonRequest.data(using: .utf8),
-                                client) { data, response, error in
-                XCTAssertNotNil(error)
-                
-                guard let data = data else { return XCTFail() }
-                guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
-                
-                guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
-
-                XCTAssertEqual(serviceResponse, #"["TEST A",null,null]"#)
-                XCTAssertEqual(dataAsString, "HTTP/1.1 500 Internal Server Error")
-                
-                expectation.fulfill()
+        HTTPSessionManager.shared.beNew(Flynn.any) { session in
+            for _ in 0..<1 {
+                let baseUrl = "http://127.0.0.1:\(port)/"
+                let jsonRequest = #"[{"service":"ToUpperService","value":"test a"},{"service":"EchoService"},{"service":"HelloWorldService"},{"service":"HelloWorldService"}]"#
+                session.beRequest(url: baseUrl,
+                                  httpMethod: "POST",
+                                  params: [:],
+                                  headers: [:],
+                                  cookies: nil,
+                                  body: jsonRequest.data(using: .utf8),
+                                  client) { data, response, error in
+                    XCTAssertNotNil(error)
+                    
+                    guard let data = data else { return XCTFail() }
+                    guard let dataAsString = String(data: data, encoding: .utf8) else { return XCTFail() }
+                    
+                    guard let serviceResponse: String = response?.allHeaderFields["Service-Response"] as? String else { return XCTFail() }
+                    
+                    XCTAssertEqual(serviceResponse, #"["TEST A",null,null]"#)
+                    XCTAssertEqual(dataAsString, "HTTP/1.1 500 Internal Server Error")
+                    
+                    expectation.fulfill()
+                }
             }
         }
         
         wait(for: [expectation], timeout: 30)
     }
-    
-    static var allTests = [
-        ("testHelloWorldService0", testHelloWorldService0),
-    ]
 }
 
 #endif
