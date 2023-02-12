@@ -30,7 +30,11 @@ public class HTTPSessionManager: Actor {
         }
     }
     
+    #if os(macOS) || os(Linux)
     private let maxConcurrentSessions = 256
+    #else
+    private let maxConcurrentSessions = 16
+    #endif
     
     private var waitingURLSessions: [URLSession] = []
     private var waitingSessions: [HTTPSession] = []
