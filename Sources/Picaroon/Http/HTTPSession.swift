@@ -21,8 +21,11 @@ public class HTTPSession: Actor {
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
     private var deinitCallback: (() -> ())?
+    private var sessionCookies: HTTPCookieStorage?
     
-    public init(_ returnCallback: @escaping (HTTPSession) -> ()) {
+    public init(cookies: HTTPCookieStorage?,
+                _ returnCallback: @escaping (HTTPSession) -> ()) {
+        sessionCookies = cookies
         beginCallback = returnCallback
     }
     
@@ -53,6 +56,9 @@ public class HTTPSession: Actor {
             self.beginCallback = nil
             self.urlSession = urlSession
             self.deinitCallback = deinitCallback
+            
+            urlSession.configuration.httpCookieStorage = self.sessionCookies
+            
             beginCallback(self)
         }
     }

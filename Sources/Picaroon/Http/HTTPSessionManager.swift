@@ -47,6 +47,8 @@ public class HTTPSessionManager: Actor {
         let httpSession = waitingSessions.removeFirst()
         
         httpSession.beBegin(urlSession: urlSession) {
+            urlSession.configuration.httpCookieStorage = nil
+            
             urlSession.reset {
                 self.unsafeSend { _ in
                     self.waitingURLSessions.append(urlSession)
@@ -57,7 +59,15 @@ public class HTTPSessionManager: Actor {
     }
     
     internal func _beNew(_ returnCallback: @escaping (HTTPSession) -> ()) {
-        waitingSessions.append(HTTPSession(returnCallback))
+        waitingSessions.append(HTTPSession(cookies: nil,
+                                           returnCallback))
+        checkForMoreSessions()
+    }
+    
+    internal func _beNew(cookies: HTTPCookieStorage?,
+                         _ returnCallback: @escaping (HTTPSession) -> ()) {
+        waitingSessions.append(HTTPSession(cookies: cookies,
+                                           returnCallback))
         checkForMoreSessions()
     }
     
