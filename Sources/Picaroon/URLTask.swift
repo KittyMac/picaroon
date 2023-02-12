@@ -12,8 +12,8 @@ import FoundationNetworking
 //
 // To help combat, we also hold a reference to all outstanding tasks
 
-class URLTask: Actor {
-    static let shared = URLTask()
+public class URLTask: Actor {
+    public static let shared = URLTask()
     private override init() { }
     
     private var tasks = Set<URLSessionDataTask>()
