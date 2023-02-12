@@ -42,73 +42,13 @@ public enum Picaroon {
                                   body: Data?,
                                   _ sender: Actor,
                                   _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        
-        guard var components = URLComponents(string: url) else {
-            sender.unsafeSend { _ in
-                returnCallback(nil, nil, "failed to create url components")
-            }
-            return
-        }
-        
-        if components.queryItems == nil {
-            components.queryItems = []
-        }
-        
-        params.forEach { (key, value) in
-            components.queryItems?.append(URLQueryItem(name: key, value: value))
-        }
-        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
-        
-        guard let url = components.url else {
-            sender.unsafeSend { _ in
-                returnCallback(nil, nil, "failed to get components url")
-            }
-            return
-        }
-        
-        var request = URLRequest(url: url,
-                                 cachePolicy: .reloadIgnoringLocalAndRemoteCacheData,
-                                 timeoutInterval: 30.0)
-        
-        request.httpMethod = httpMethod
-        request.httpBody = body
-        request.httpShouldHandleCookies = false
-        
-        for (header, value) in headers {
-            request.addValue(value, forHTTPHeaderField: header)
-        }
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let httpResponse = response as? HTTPURLResponse else {
-                sender.unsafeSend { _ in
-                    returnCallback(nil, nil, "response is not HTTPURLResponse ( \(data): \(response): \(error) )")
-                }
-                return
-            }
-            guard let data = data else {
-                sender.unsafeSend { _ in
-                    returnCallback(nil, httpResponse, "httpResponse data is nil")
-                }
-                return
-            }
-            guard error == nil else {
-                sender.unsafeSend { _ in
-                    returnCallback(nil, httpResponse, "\(error!)")
-                }
-                return
-            }
-            
-            if httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299 {
-                sender.unsafeSend { _ in
-                    returnCallback(data, httpResponse, nil)
-                }
-            } else {
-                sender.unsafeSend { _ in
-                    returnCallback(data, httpResponse, "http \(httpResponse.statusCode)")
-                }
-            }
-        }
-        task.resume()
-        
+        // Note: this functionality has been moved to URLTask
+        URLTask.shared.beRequest(url: url,
+                                 httpMethod: httpMethod,
+                                 params: params,
+                                 headers: headers,
+                                 body: body,
+                                 sender,
+                                 returnCallback)
     }
 }
