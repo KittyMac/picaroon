@@ -56,6 +56,8 @@ final class picaroonConnectionTests: XCTestCase {
         wait(for: [expectation], timeout: 60)
     }
     
+    #if os(macOS)
+    
     func testSimpleStaticResponse() {
         let expectation = XCTestExpectation(description: "success")
         
@@ -225,6 +227,8 @@ final class picaroonConnectionTests: XCTestCase {
         
         wait(for: [expectation], timeout: 2)
     }
+    
+    #endif
     
     /*
     func testArrayAccessPerformance() {

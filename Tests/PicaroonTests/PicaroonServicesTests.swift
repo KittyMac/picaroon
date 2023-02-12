@@ -4,6 +4,8 @@ import Hitch
 
 import Picaroon
 
+#if os(macOS)
+
 class HelloWorldService: ServiceActor {
     private let response = HttpResponse(text: "Hello World")
             
@@ -245,3 +247,5 @@ final class picaroonServicesTests: XCTestCase {
         ("testHelloWorldService0", testHelloWorldService0),
     ]
 }
+
+#endif
