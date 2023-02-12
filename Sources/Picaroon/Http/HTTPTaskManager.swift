@@ -26,6 +26,7 @@ internal class HTTPTaskManager: Actor {
         
     internal func _beResume(session: URLSession,
                             request: URLRequest,
+                            timeoutRetry: Int,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
         let task = session.dataTask(with: request) { data, response, error in
             self.unsafeSend { _ in
@@ -34,6 +35,36 @@ internal class HTTPTaskManager: Actor {
                     break
                 }
                 self.checkForMoreTasks()
+                
+                // If we timeout out, go ahead and retry it.
+                if let error = error as? URLError,
+                   error.code == .timedOut && timeoutRetry > 0 {
+                    #if DEBUG
+                    print("timeout detected, retrying \(timeoutRetry)...")
+                    #endif
+                    self._beResume(session: session,
+                                   request: request,
+                                   timeoutRetry: timeoutRetry - 1,
+                                   returnCallback)
+                    return
+                }
+                
+                // If we timeout out, go ahead and retry it.
+                if let error = error as? POSIXError,
+                   error.code == .ENOSPC && timeoutRetry > 0 {
+                    #if DEBUG
+                    print("no space detected, retrying \(timeoutRetry)...")
+                    #endif
+                    session.flush {
+                        self.unsafeSend { _ in
+                            self._beResume(session: session,
+                                           request: request,
+                                           timeoutRetry: timeoutRetry - 1,
+                                           returnCallback)
+                        }
+                    }
+                    return
+                }
                 
                 returnCallback(data, response, error)
             }

@@ -22,8 +22,6 @@ public class HTTPSession: Actor {
     private var beginCallback: ((HTTPSession) -> ())?
     private var deinitCallback: (() -> ())?
     
-    private var outstandingRequests = 0
-    
     public init(_ returnCallback: @escaping (HTTPSession) -> ()) {
         beginCallback = returnCallback
     }
@@ -67,10 +65,9 @@ public class HTTPSession: Actor {
         
     internal func _beRequest(request: URLRequest,
                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
-        outstandingRequests += 1
-        
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
+                                        timeoutRetry: 3,
                                         self) { data, response, error in
             self.handleTaskResponse(data: data,
                                     response: response,
@@ -125,10 +122,9 @@ public class HTTPSession: Actor {
             }
         }
         
-        outstandingRequests += 1
-        
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
+                                        timeoutRetry: 3,
                                         self) { data, response, error in
             self.handleTaskResponse(data: data,
                                     response: response,
@@ -141,8 +137,6 @@ public class HTTPSession: Actor {
                                     response: URLResponse?,
                                     error: Error?,
                                     returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        outstandingRequests -= 1
-                
         guard let httpResponse = response as? HTTPURLResponse else {
             returnCallback(nil, nil, "response is not HTTPURLResponse ( \(data): \(response): \(error) )")
             return
