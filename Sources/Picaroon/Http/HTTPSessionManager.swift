@@ -17,12 +17,7 @@ import FoundationNetworking
 
 public class HTTPSessionManager: Actor {
     public static let shared = HTTPSessionManager()
-    private override init() {
-        
-        // Forcing the same operation queue across all url sessions is probably overly aggressive to fix the linue issue
-        let operationQueue = OperationQueue()
-        operationQueue.maxConcurrentOperationCount = 1
-        
+    private override init() {        
         for _ in 0..<maxConcurrentSessions {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 10.0
@@ -30,14 +25,12 @@ public class HTTPSessionManager: Actor {
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             waitingURLSessions.append(
-                URLSession(configuration: config,
-                           delegate: nil,
-                           delegateQueue: operationQueue)
+                URLSession(configuration: config)
             )
         }
     }
     
-    private let maxConcurrentSessions = 512
+    private let maxConcurrentSessions = 256
     
     private var waitingURLSessions: [URLSession] = []
     private var waitingSessions: [HTTPSession] = []
@@ -51,8 +44,10 @@ public class HTTPSessionManager: Actor {
         
         httpSession.beBegin(urlSession: urlSession) {
             urlSession.reset {
-                self.waitingURLSessions.append(urlSession)
-                self.checkForMoreSessions()
+                self.unsafeSend { _ in
+                    self.waitingURLSessions.append(urlSession)
+                    self.checkForMoreSessions()
+                }
             }
         }
     }

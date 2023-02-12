@@ -10,7 +10,7 @@ internal class HTTPTaskManager: Actor {
     internal static let shared = HTTPTaskManager()
     private override init() { }
     
-    private let maxConcurrentTasks = 128
+    private let maxConcurrentTasks = 256
     
     private var waitingTasks: [URLSessionDataTask] = []
     private var activeTasks: [URLSessionDataTask] = []
