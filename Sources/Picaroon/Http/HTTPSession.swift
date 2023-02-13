@@ -57,8 +57,15 @@ public class HTTPSession: Actor {
             self.urlSession = urlSession
             self.deinitCallback = deinitCallback
             
-            urlSession.configuration.httpCookieStorage = self.sessionCookies
-            
+            if let httpCookieStorage = urlSession.configuration.httpCookieStorage {
+                httpCookieStorage.removeCookies(since: Date.distantPast)
+                if let sessionCookies = self.sessionCookies?.cookies {
+                    for cookie in sessionCookies {
+                        httpCookieStorage.setCookie(cookie)
+                    }
+                }
+            }
+
             beginCallback(self)
         }
     }
@@ -110,13 +117,10 @@ public class HTTPSession: Actor {
             return
         }
         
-        var request = URLRequest(url: url,
-                                 cachePolicy: .reloadIgnoringLocalAndRemoteCacheData,
-                                 timeoutInterval: 30.0)
+        var request = URLRequest(url: url)
         
         request.httpMethod = httpMethod
         request.httpBody = body
-        request.httpShouldHandleCookies = false
         
         for (header, value) in headers {
             request.addValue(value, forHTTPHeaderField: header)

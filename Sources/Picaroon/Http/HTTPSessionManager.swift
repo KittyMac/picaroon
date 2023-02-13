@@ -24,6 +24,8 @@ public class HTTPSessionManager: Actor {
             config.httpMaximumConnectionsPerHost = 1024
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            config.httpCookieAcceptPolicy = .always
+            
             waitingURLSessions.append(
                 URLSession(configuration: config)
             )
@@ -47,8 +49,6 @@ public class HTTPSessionManager: Actor {
         let httpSession = waitingSessions.removeFirst()
         
         httpSession.beBegin(urlSession: urlSession) {
-            urlSession.configuration.httpCookieStorage = nil
-            
             urlSession.reset {
                 self.unsafeSend { _ in
                     self.waitingURLSessions.append(urlSession)
