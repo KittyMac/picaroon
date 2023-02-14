@@ -29,6 +29,10 @@ internal class HTTPTaskManager: Actor {
                             timeoutRetry: Int,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
         let task = session.dataTask(with: request) { data, response, error in
+            #if os(Linux)
+            _ = signal(SIGPIPE, SIG_IGN)
+            #endif
+            
             self.unsafeSend { _ in
                 for task in self.activeTasks where task.response == response {
                     self.activeTasks.removeOne(task)

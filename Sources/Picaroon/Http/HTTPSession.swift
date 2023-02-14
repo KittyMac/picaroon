@@ -11,6 +11,8 @@ import FoundationNetworking
 
 // Note: On linux, we get "-1001" errors if we have too many concurrent connections (regardess of the number of sessions)
 // Note: On linux, using just URLSession.shared "works" since max connections per host defaults to 6
+// Note: On linux, URLSession does not ignore sigpipe ( https://github.com/apple/swift-corelibs-foundation/issues/4407 )
+//       we attempt to combat this by calling _ = signal(SIGPIPE, SIG_IGN) on all threads we have access to
 
 // Note: WE MUST BE ABLE TO SUPPORT MULTIPLE CONCURRENT URLSESSIONS, as that is the only way we have separated cookie storage
 // Note: We also want to support "one shot" url tasks which are ephemeral, have cookies disabled, and can share a single url session
@@ -56,6 +58,10 @@ public class HTTPSession: Actor {
             self.beginCallback = nil
             self.urlSession = urlSession
             self.deinitCallback = deinitCallback
+            
+            #if os(Linux)
+            _ = signal(SIGPIPE, SIG_IGN)
+            #endif
             
             if let httpCookieStorage = urlSession.configuration.httpCookieStorage {
                 httpCookieStorage.removeCookies(since: Date.distantPast)
