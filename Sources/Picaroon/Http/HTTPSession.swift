@@ -157,8 +157,18 @@ public class HTTPSession: Actor {
                                     response: URLResponse?,
                                     error: Error?,
                                     returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+        if let error = error {
+            returnCallback(nil, nil, "\(error.localizedDescription) [\(error)]")
+            return
+        }
         guard let httpResponse = response as? HTTPURLResponse else {
-            returnCallback(nil, nil, "response is not HTTPURLResponse ( \(data): \(response): \(error) )")
+            let dataDesc = data?.description ?? "nil"
+            let responseDesc = response?.description ?? "nil"
+            var errorDesc = "nil"
+            if let error = error {
+                errorDesc = "\(error.localizedDescription) [\(error)]"
+            }
+            returnCallback(nil, nil, "response is not HTTPURLResponse ( \(dataDesc): \(responseDesc): \(errorDesc) )")
             return
         }
         guard let data = data else {
