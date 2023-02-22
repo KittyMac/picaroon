@@ -221,7 +221,7 @@ public class Connection: Actor, AnyConnection {
         // See if it is complete http request; if it is incomplete, we wait until we get more data
         guard let httpRequest = HttpRequest(config: config,
                                             request: buffer,
-                                            size: currentPtr - buffer + 1) else {
+                                            size: currentPtr - buffer) else {
             // We have an incomplete https request, wait for more data and try again
             self.unsafePriority = 99
             safeCheckForMoreDataIfNeeded()
