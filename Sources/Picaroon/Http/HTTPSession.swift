@@ -83,9 +83,11 @@ public class HTTPSession: Actor {
     }
         
     internal func _beRequest(request: URLRequest,
+                             proxy: String?,
                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
+                                        proxy: proxy,
                                         timeoutRetry: 3,
                                         self) { data, response, error in
             self.handleTaskResponse(data: data,
@@ -100,6 +102,7 @@ public class HTTPSession: Actor {
                              params: [String: String],
                              headers: [String: String],
                              cookies: HTTPCookieStorage? = nil,
+                             proxy: String?,
                              body: Data?,
                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         guard urlSession != URLSession.shared else { fatalError("HTTPSession is not allowed to use URLSession.shared") }
@@ -140,6 +143,7 @@ public class HTTPSession: Actor {
         
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
+                                        proxy: proxy,
                                         timeoutRetry: 3,
                                         self) { data, response, error in
             self.handleTaskResponse(data: data,

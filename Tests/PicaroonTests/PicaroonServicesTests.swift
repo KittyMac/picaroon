@@ -113,6 +113,7 @@ final class picaroonServicesTests: XCTestCase {
                                   params: [:],
                                   headers: [:],
                                   cookies: nil,
+                                  proxy: nil,
                                   body: jsonRequest.data(using: .utf8),
                                   client) { data, response, error in
                     XCTAssertNil(error)
@@ -154,6 +155,7 @@ final class picaroonServicesTests: XCTestCase {
                                   params: [:],
                                   headers: [:],
                                   cookies: nil,
+                                  proxy: nil,
                                   body: jsonRequest.data(using: .utf8),
                                   client) { data, response, error in
                     XCTAssertNil(error)
@@ -195,6 +197,7 @@ final class picaroonServicesTests: XCTestCase {
                                   params: [:],
                                   headers: [:],
                                   cookies: nil,
+                                  proxy: nil,
                                   body: jsonRequest.data(using: .utf8),
                                   client) { data, response, error in
                     XCTAssertNil(error)
@@ -236,6 +239,7 @@ final class picaroonServicesTests: XCTestCase {
                                   params: [:],
                                   headers: [:],
                                   cookies: nil,
+                                  proxy: nil,
                                   body: jsonRequest.data(using: .utf8),
                                   client) { data, response, error in
                     XCTAssertNotNil(error)

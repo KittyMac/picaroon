@@ -11,6 +11,7 @@ for _ in 0..<2048 {
                           params: [:],
                           headers: [:],
                           cookies: nil,
+                          proxy: nil,
                           body: nil,
                           Flynn.any) { data, response, error in
             if let error = error { fatalError(error) }

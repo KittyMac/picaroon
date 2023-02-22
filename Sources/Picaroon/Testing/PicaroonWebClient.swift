@@ -70,6 +70,7 @@ public extension PicaroonTesting {
                                   params: [:],
                                   headers: self.handleHeaders(),
                                   cookies: nil,
+                                  proxy: nil,
                                   body: nil,
                                   self.client) { data, httpResponse, error in
                     
@@ -105,6 +106,7 @@ public extension PicaroonTesting {
                                   params: [:],
                                   headers: self.handleHeaders(),
                                   cookies: nil,
+                                  proxy: nil,
                                   body: payload.data(using: .utf8),
                                   self.client) { data, httpResponse, error in
                     self.handleResponse(data: data, httpResponse: httpResponse, error: error)
