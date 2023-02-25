@@ -12,6 +12,7 @@ final class picaroonHttpRequestTests: XCTestCase {
         POST /? HTTP/1.1\r
         Host: 127.0.0.1:49509\r
         Accept: */*\r
+        Authorization: Bearer HelloWorld\r
         Cache-Control: no-cache\r
         User-Agent: xctest/18143 CFNetwork/1237 Darwin/20.4.0\r
         Connection: keep-alive\r
@@ -28,6 +29,7 @@ final class picaroonHttpRequestTests: XCTestCase {
         XCTAssertEqual(request.method, HttpMethod.POST)
         XCTAssertEqual(request.url, "/")
         XCTAssertEqual(request.userAgent, "xctest/18143 CFNetwork/1237 Darwin/20.4.0")
+        XCTAssertEqual(request.authorization, "Bearer HelloWorld")
         XCTAssertEqual(request.connection, "keep-alive")
         XCTAssertEqual(request.cookie, "FABE1A47-B2FD-4CC3-AB92-D1F570002158=6AF73CB5-4D6A-4CBD-A893-89074F1F51CF")
         XCTAssertEqual(request.cookies["FABE1A47-B2FD-4CC3-AB92-D1F570002158"], "6AF73CB5-4D6A-4CBD-A893-89074F1F51CF")

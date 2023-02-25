@@ -18,6 +18,7 @@ public class HttpRequest {
     public var urlParameters: HalfHitch?
     public var host: HalfHitch?
     public var userAgent: HalfHitch?
+    public var authorization: HalfHitch?
     public var accept: HalfHitch?
     public var acceptEncoding: HalfHitch?
     public var acceptCharset: HalfHitch?
@@ -416,6 +417,7 @@ public class HttpRequest {
         urlParameters = bake(buffer: buffer, bufferSize: bufferSize, using: urlParameters)
         host = bake(buffer: buffer, bufferSize: bufferSize, using: host)
         userAgent = bake(buffer: buffer, bufferSize: bufferSize, using: userAgent)
+        authorization = bake(buffer: buffer, bufferSize: bufferSize, using: authorization)
         accept = bake(buffer: buffer, bufferSize: bufferSize, using: accept)
         acceptEncoding = bake(buffer: buffer, bufferSize: bufferSize, using: acceptEncoding)
         acceptCharset = bake(buffer: buffer, bufferSize: bufferSize, using: acceptCharset)
@@ -478,6 +480,28 @@ public class HttpRequest {
                                   count: bufferSize,
                                   from: valueStart - buffer,
                                   to: ptr - buffer)
+        }
+        
+        if authorization == nil &&
+            size >= 13 &&
+            (keyEnd-13).pointee == .A &&
+            //(keyEnd-12).pointee == .u &&
+            (keyEnd-11).pointee == .t &&
+            //(keyEnd-10).pointee == .h &&
+            (keyEnd-9).pointee == .o &&
+            //(keyEnd-8).pointee == .r &&
+            (keyEnd-7).pointee == .i &&
+            //(keyEnd-6).pointee == .z &&
+            (keyEnd-5).pointee == .a &&
+            //(keyEnd-4).pointee == .t &&
+            (keyEnd-3).pointee == .i &&
+            //(keyEnd-2).pointee == .o &&
+            (keyEnd-1).pointee == .n {
+            authorization = HalfHitch(sourceObject: nil,
+                                      raw: buffer,
+                                      count: bufferSize,
+                                      from: valueStart - buffer,
+                                      to: ptr - buffer)
         }
         
         if accept == nil &&
