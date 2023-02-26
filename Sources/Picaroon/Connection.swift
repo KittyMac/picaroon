@@ -13,6 +13,7 @@ public protocol AnyConnection {
                                              httpResponse: HttpResponse) -> Self
     @discardableResult func beEndUserSession() -> Self
     @discardableResult func beSendInternalError() -> Self
+    @discardableResult func beSendUnauthorized() -> Self
     @discardableResult func beSendServiceUnavailable() -> Self
     @discardableResult func beSendResult(_ message: Hitch?) -> Self
     @discardableResult func beSendSuccess(_ message: Hitch) -> Self

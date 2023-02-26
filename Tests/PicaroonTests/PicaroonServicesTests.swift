@@ -56,6 +56,7 @@ public class TestConnection: AnyConnection {
                                  httpResponse: HttpResponse) -> Self { return self }
     public func beEndUserSession() -> Self { return self }
     public func beSendInternalError() -> Self { return self }
+    public func beSendUnauthorized() -> Self { return self }
     public func beSendServiceUnavailable() -> Self { return self }
     public func beSendResult(_ message: Hitch?) -> Self { return self }
     public func beSendSuccess(_ message: Hitch) -> Self { return self }
