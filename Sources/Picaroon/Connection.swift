@@ -118,6 +118,10 @@ public class Connection: Actor, AnyConnection {
         userSession = nil
     }
 
+    internal func _beSendUnauthorized() {
+        _beSend(httpResponse: HttpStaticResponse.unauthorized)
+    }
+    
     internal func _beSendInternalError() {
         _beSend(httpResponse: HttpStaticResponse.internalServerError)
     }

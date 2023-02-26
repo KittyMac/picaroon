@@ -18,6 +18,7 @@ public enum HttpStatus: Int {
     case movedPermanently = 301
     case notModified = 304
     case badRequest = 400
+    case unauthorized = 401
     case notFound = 404
     case requestTimeout = 408
     case requestTooLarge = 413
@@ -30,6 +31,7 @@ public enum HttpStatus: Int {
         case .movedPermanently: return "HTTP/1.1 301 Moved Permanently"
         case .notModified: return "HTTP/1.1 304 Not Modified"
         case .badRequest: return "HTTP/1.1 400 Bad Request"
+        case .unauthorized: return "HTTP/1.1 401 Unauthorized"
         case .notFound: return "HTTP/1.1 404 Not Found"
         case .requestTimeout: return "HTTP/1.1 408 Request Timeout"
         case .requestTooLarge: return "HTTP/1.1 413 Request Too Large"
