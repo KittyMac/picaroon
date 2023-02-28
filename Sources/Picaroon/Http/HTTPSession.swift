@@ -59,7 +59,7 @@ public class HTTPSession: Actor {
             self.urlSession = urlSession
             self.deinitCallback = deinitCallback
             
-            #if os(Linux)
+            #if os(Linux) || os(Android)
             _ = signal(SIGPIPE, SIG_IGN)
             #endif
             

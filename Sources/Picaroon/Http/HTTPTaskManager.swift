@@ -64,7 +64,7 @@ internal class HTTPTaskManager: Actor {
                             timeoutRetry: Int,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
         let task = session.dataTask(with: request) { data, response, error in
-            #if os(Linux)
+            #if os(Linux) || os(Android)
             _ = signal(SIGPIPE, SIG_IGN)
             #endif
             
