@@ -21,10 +21,11 @@ public class HTTPSessionManager: Actor {
         for _ in 0..<maxConcurrentSessions {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 10.0
-            config.httpMaximumConnectionsPerHost = 1024
+            config.httpMaximumConnectionsPerHost = 512
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             config.httpCookieAcceptPolicy = .always
+            config.httpShouldUsePipelining = false
             
             waitingURLSessions.append(
                 URLSession(configuration: config)
