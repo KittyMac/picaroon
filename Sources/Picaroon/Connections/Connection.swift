@@ -49,8 +49,8 @@ public class Connection: Actor, AnyConnection {
     
     private let config: ServerConfig
 
-    @usableFromInline
-    var safeCheckForMoreDataScheduled = false
+    private var checkForMoreDataScheduled = false
+    private var checkForMoreBackoff = 0.0
 
     init(socket: Socket,
          config: ServerConfig,
@@ -76,7 +76,7 @@ public class Connection: Actor, AnyConnection {
 
         unsafeMessageBatchSize = 1
 
-        safeCheckForMoreDataIfNeeded()
+        safeCheckForMoreDataIfNeeded(backoff: true)
     }
 
     deinit {
@@ -93,7 +93,7 @@ public class Connection: Actor, AnyConnection {
                           userSession: userSession)
 
         // If we write data, then we should expect to read data
-        safeCheckForMoreDataIfNeeded()
+        safeCheckForMoreDataIfNeeded(backoff: false)
     }
 
     internal func _beSendIfModified(httpRequest: HttpRequest,
@@ -105,7 +105,7 @@ public class Connection: Actor, AnyConnection {
             httpResponse.send(config: config,
                               socket: socket,
                               userSession: userSession)
-            safeCheckForMoreDataIfNeeded()
+            safeCheckForMoreDataIfNeeded(backoff: false)
         } else {
             _beSendNotModified()
         }
@@ -175,23 +175,38 @@ public class Connection: Actor, AnyConnection {
         _beSend(httpResponse: HttpStaticResponse.notModified)
     }
 
-    @inlinable @inline(__always)
-    internal func safeCheckForMoreDataIfNeeded() {
-        if safeCheckForMoreDataScheduled == false {
-            safeCheckForMoreDataScheduled = true
-            unsafeSend { _ in self.safeCheckForMoreData() }
+    internal func safeCheckForMoreDataIfNeeded(backoff: Bool) {
+        if checkForMoreDataScheduled == false {
+            checkForMoreDataScheduled = true
+            
+            if backoff {
+                checkForMoreBackoff = checkForMoreBackoff * 2.0
+            } else {
+                checkForMoreBackoff = 0.0
+            }
+            
+            if checkForMoreBackoff < 0.01 {
+                checkForMoreBackoff = 0.01
+            }
+            if checkForMoreBackoff > 5.0 {
+                checkForMoreBackoff = 5.0
+            }
+            
+            Flynn.Timer(timeInterval: checkForMoreBackoff, repeats: false, self) { [weak self] _ in
+                self?.beCheckForMoreData()
+            }
         }
     }
 
-    @usableFromInline
-    func safeCheckForMoreData() {
+    internal func _beCheckForMoreData() {
 
-        safeCheckForMoreDataScheduled = false
+        checkForMoreDataScheduled = false
 
         // Checks the socket to see if there is an HTTP command ready to be processed.
         // Whether we process one or not, we call beNextCommand() to check again in
         // the future for another command.
         if socket.isClosed() {
+            ConnectionManager.shared.beClose(connection: self)
             return
         }
 
@@ -205,10 +220,11 @@ public class Connection: Actor, AnyConnection {
             if ProcessInfo.processInfo.systemUptime - lastCommunicationTime > timeout {
                 _beSendInternalError()
                 socket.close()
+                ConnectionManager.shared.beClose(connection: self)
                 return
             }
 
-            safeCheckForMoreDataIfNeeded()
+            safeCheckForMoreDataIfNeeded(backoff: true)
             return
         }
 
@@ -220,6 +236,7 @@ public class Connection: Actor, AnyConnection {
         if currentPtr >= endPtr {
             _beSendInternalError()
             socket.close()
+            ConnectionManager.shared.beClose(connection: self)
             return
         }
 
@@ -229,7 +246,7 @@ public class Connection: Actor, AnyConnection {
                                             size: currentPtr - buffer) else {
             // We have an incomplete https request, wait for more data and try again
             self.unsafePriority = 99
-            safeCheckForMoreDataIfNeeded()
+            safeCheckForMoreDataIfNeeded(backoff: false)
             return
         }
         

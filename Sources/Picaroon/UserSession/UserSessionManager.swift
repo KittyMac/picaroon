@@ -4,7 +4,7 @@ import Hitch
 
 public typealias GetUserSessionCallback = (UserSession?) -> Void
 
-protocol AnyUserSessionManager {
+public protocol AnyUserSessionManager {
     func reassociate(cookieSessionUUID: Hitch?,
                      _ oldJavascriptSessionUUID: Hitch,
                      _ newJavascriptSessionUUID: Hitch) -> UserSession?
@@ -41,9 +41,9 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         return sessionsByCombinedSessionUUID.count
     }
 
-    func reassociate(cookieSessionUUID: Hitch?,
-                     _ oldJavascriptSessionUUID: Hitch,
-                     _ newJavascriptSessionUUID: Hitch) -> UserSession? {
+    public func reassociate(cookieSessionUUID: Hitch?,
+                            _ oldJavascriptSessionUUID: Hitch,
+                            _ newJavascriptSessionUUID: Hitch) -> UserSession? {
         lock.lock()
         defer {
             lock.unlock()
@@ -89,7 +89,8 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         return nil
     }
 
-    func get(_ cookieSessionUUID: Hitch?, _ javascriptSessionUUID: Hitch?) -> UserSession? {
+    public func get(_ cookieSessionUUID: Hitch?,
+                    _ javascriptSessionUUID: Hitch?) -> UserSession? {
         lock.lock()
         defer {
             lock.unlock()
@@ -142,7 +143,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         return userSession
     }
 
-    func end(_ userSession: UserSession) {
+    public func end(_ userSession: UserSession) {
         lock.lock()
 
         sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)

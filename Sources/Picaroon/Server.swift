@@ -81,18 +81,18 @@ public class Server<T: UserSession> {
         repeat {
 #if os(Linux) || os(Android)
             if let newSocket = serverSocket.accept(blocking: true) {
-                _ = Connection(socket: newSocket,
-                               config: config,
-                               staticStorageHandler: staticStorageHandler,
-                               userSessionManager: userSessionManager)
+                ConnectionManager.shared.beOpen(socket: newSocket,
+                                                config: config,
+                                                staticStorageHandler: staticStorageHandler,
+                                                userSessionManager: userSessionManager)
             }
 #else
             autoreleasepool {
                 if let newSocket = serverSocket.accept(blocking: true) {
-                    _ = Connection(socket: newSocket,
-                                   config: config,
-                                   staticStorageHandler: self.staticStorageHandler,
-                                   userSessionManager: self.userSessionManager)
+                    ConnectionManager.shared.beOpen(socket: newSocket,
+                                                    config: config,
+                                                    staticStorageHandler: self.staticStorageHandler,
+                                                    userSessionManager: self.userSessionManager)
                 }
             }
 #endif
