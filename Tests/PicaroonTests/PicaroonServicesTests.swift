@@ -50,7 +50,6 @@ class TestServicesSession: UserServiceableSession {
 }
 
 public class TestConnection: AnyConnection {
-    public func beSetTimeout(_ timeout: TimeInterval) -> Self { return self }
     public func beSend(httpResponse: HttpResponse) -> Self { return self }
     public func beSendIfModified(httpRequest: HttpRequest,
                                  httpResponse: HttpResponse) -> Self { return self }

@@ -7,7 +7,6 @@ import Hitch
 // swiftlint:disable cyclomatic_complexity
 
 public protocol AnyConnection {
-    @discardableResult func beSetTimeout(_ timeout: TimeInterval) -> Self
     @discardableResult func beSend(httpResponse: HttpResponse) -> Self
     @discardableResult func beSendIfModified(httpRequest: HttpRequest,
                                              httpResponse: HttpResponse) -> Self
@@ -33,7 +32,10 @@ public class Connection: Actor, AnyConnection {
 
     private let socket: Socket
 
-    private var timeout: TimeInterval = 30.0
+    private var isProcessingRequest: Bool = false
+    
+    private var clientTimeout: TimeInterval = 5.0
+    private var serverTimeout: TimeInterval = 30.0
 
     private var lastCommunicationTime: TimeInterval = ProcessInfo.processInfo.systemUptime
 
@@ -62,9 +64,11 @@ public class Connection: Actor, AnyConnection {
         self.staticStorageHandler = staticStorageHandler
         self.config = config
         
-        socket.setReadTimeout(milliseconds: 5)
+        socket.setReadTimeout(milliseconds: 50)
 
-        timeout = config.requestTimeout
+        clientTimeout = config.clientTimeout
+        serverTimeout = config.serverTimeout
+        
         bufferSize = config.maxRequestInBytes
         connectionMaxBackoff = config.connectionMaxBackoff
 
@@ -84,16 +88,11 @@ public class Connection: Actor, AnyConnection {
     deinit {
         buffer.deallocate()
     }
-
-    internal func _beSetTimeout(_ timeout: TimeInterval) {
-        self.timeout = timeout
-    }
     
     internal func _beSend(httpResponse: HttpResponse) {
         httpResponse.send(config: config,
                           socket: socket,
                           userSession: userSession)
-
         resetCheckForMoreBackoff()
     }
 
@@ -103,13 +102,13 @@ public class Connection: Actor, AnyConnection {
         _beSend(httpResponse: httpResponse)
 #else
         if httpResponse.isNew(httpRequest) {
+            resetCheckForMoreBackoff()
             httpResponse.send(config: config,
                               socket: socket,
                               userSession: userSession)
         } else {
             _beSendNotModified()
         }
-        resetCheckForMoreBackoff()
 #endif
     }
 
@@ -177,34 +176,35 @@ public class Connection: Actor, AnyConnection {
     }
     
     private func resetCheckForMoreBackoff() {
+        isProcessingRequest = false
         checkForMoreBackoff = 0.0
+        checkForMoreDataIfNeeded()
     }
 
     private func checkForMoreDataIfNeeded() {
-        if checkForMoreDataScheduled == false {
-            checkForMoreDataScheduled = true
+        guard isProcessingRequest == false else { return }
+        guard checkForMoreDataScheduled == false else { return }
+        
+        checkForMoreDataScheduled = true
+        
+        checkForMoreBackoff = checkForMoreBackoff * 2.0
+        if checkForMoreBackoff < 0.01 {
+            checkForMoreBackoff = 0.01
+        }
+        if checkForMoreBackoff > connectionMaxBackoff {
+            checkForMoreBackoff = connectionMaxBackoff
+        }
+        
+        Flynn.Timer(timeInterval: checkForMoreBackoff, repeats: false, self) { [weak self] _ in
+            guard let self = self else { return }
+            self.checkForMoreData()
             
-            checkForMoreBackoff = checkForMoreBackoff * 2.0
-            if checkForMoreBackoff < 0.01 {
-                checkForMoreBackoff = 0.01
-            }
-            if checkForMoreBackoff > connectionMaxBackoff {
-                checkForMoreBackoff = connectionMaxBackoff
-            }
-            
-            Flynn.Timer(timeInterval: checkForMoreBackoff, repeats: false, self) { [weak self] _ in
-                guard let self = self else { return }
-                
-                self.checkForMoreData()
-                
-                self.checkForMoreDataScheduled = false
-                self.checkForMoreDataIfNeeded()
-            }
+            self.checkForMoreDataScheduled = false
+            self.checkForMoreDataIfNeeded()
         }
     }
 
     private func checkForMoreData() {
-
         // Checks the socket to see if there is an HTTP command ready to be processed.
         // Whether we process one or not, we call beNextCommand() to check again in
         // the future for another command.
@@ -220,7 +220,8 @@ public class Connection: Actor, AnyConnection {
             return
         }
         if bytesRead == 0 {
-            if ProcessInfo.processInfo.systemUptime - lastCommunicationTime > timeout {
+            if (isProcessingRequest == true && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > serverTimeout) ||
+                (isProcessingRequest == false && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > clientTimeout) {
                 _beSendInternalError()
                 socket.close()
                 ConnectionManager.shared.beClose(connection: self)
@@ -251,6 +252,7 @@ public class Connection: Actor, AnyConnection {
             return
         }
         
+        self.isProcessingRequest = true
         self.unsafePriority = -1
 
         // reset current pointer to be read for the next http request
