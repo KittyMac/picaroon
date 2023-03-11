@@ -32,6 +32,7 @@ public struct ServerConfig: Codable {
     
     public let requestTimeout: TimeInterval
     public let maxRequestInBytes: Int
+    public let connectionMaxBackoff: Double
 
     public let sessionPer: UserSessionPer
 
@@ -40,12 +41,14 @@ public struct ServerConfig: Codable {
                 basePath: String = "/",
                 sessionPer: UserSessionPer = .window,
                 requestTimeout: TimeInterval = 30.0,
-                maxRequestInBytes: Int = 1024 * 1024 * 8) {
+                maxRequestInBytes: Int = 1024 * 1024 * 8,
+                connectionMaxBackoff: Double = 2.0) {
         self.address = Hitch(string: address)
         self.port = port
         self.sessionPer = sessionPer
         self.requestTimeout = requestTimeout
         self.maxRequestInBytes = maxRequestInBytes
+        self.connectionMaxBackoff = connectionMaxBackoff
         self.basePath = Hitch(string: basePath)
         
         if self.basePath.ends(with: "/") {

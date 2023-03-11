@@ -51,6 +51,7 @@ public class Connection: Actor, AnyConnection {
 
     private var checkForMoreDataScheduled = false
     private var checkForMoreBackoff = 0.0
+    private let connectionMaxBackoff: Double
 
     init(socket: Socket,
          config: ServerConfig,
@@ -65,6 +66,7 @@ public class Connection: Actor, AnyConnection {
 
         timeout = config.requestTimeout
         bufferSize = config.maxRequestInBytes
+        connectionMaxBackoff = config.connectionMaxBackoff
 
         buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize + 32)
         buffer.initialize(to: 0)
@@ -76,7 +78,7 @@ public class Connection: Actor, AnyConnection {
 
         unsafeMessageBatchSize = 1
 
-        safeCheckForMoreDataIfNeeded(backoff: true)
+        checkForMoreDataIfNeeded()
     }
 
     deinit {
@@ -92,8 +94,7 @@ public class Connection: Actor, AnyConnection {
                           socket: socket,
                           userSession: userSession)
 
-        // If we write data, then we should expect to read data
-        safeCheckForMoreDataIfNeeded(backoff: false)
+        resetCheckForMoreBackoff()
     }
 
     internal func _beSendIfModified(httpRequest: HttpRequest,
@@ -105,10 +106,10 @@ public class Connection: Actor, AnyConnection {
             httpResponse.send(config: config,
                               socket: socket,
                               userSession: userSession)
-            safeCheckForMoreDataIfNeeded(backoff: false)
         } else {
             _beSendNotModified()
         }
+        resetCheckForMoreBackoff()
 #endif
     }
 
@@ -174,33 +175,35 @@ public class Connection: Actor, AnyConnection {
     internal func _beSendNotModified() {
         _beSend(httpResponse: HttpStaticResponse.notModified)
     }
+    
+    private func resetCheckForMoreBackoff() {
+        checkForMoreBackoff = 0.0
+    }
 
-    internal func safeCheckForMoreDataIfNeeded(backoff: Bool) {
+    private func checkForMoreDataIfNeeded() {
         if checkForMoreDataScheduled == false {
             checkForMoreDataScheduled = true
             
-            if backoff {
-                checkForMoreBackoff = checkForMoreBackoff * 2.0
-            } else {
-                checkForMoreBackoff = 0.0
-            }
-            
+            checkForMoreBackoff = checkForMoreBackoff * 2.0
             if checkForMoreBackoff < 0.01 {
                 checkForMoreBackoff = 0.01
             }
-            if checkForMoreBackoff > 5.0 {
-                checkForMoreBackoff = 5.0
+            if checkForMoreBackoff > connectionMaxBackoff {
+                checkForMoreBackoff = connectionMaxBackoff
             }
             
             Flynn.Timer(timeInterval: checkForMoreBackoff, repeats: false, self) { [weak self] _ in
-                self?.beCheckForMoreData()
+                guard let self = self else { return }
+                
+                self.checkForMoreData()
+                
+                self.checkForMoreDataScheduled = false
+                self.checkForMoreDataIfNeeded()
             }
         }
     }
 
-    internal func _beCheckForMoreData() {
-
-        checkForMoreDataScheduled = false
+    private func checkForMoreData() {
 
         // Checks the socket to see if there is an HTTP command ready to be processed.
         // Whether we process one or not, we call beNextCommand() to check again in
@@ -223,8 +226,6 @@ public class Connection: Actor, AnyConnection {
                 ConnectionManager.shared.beClose(connection: self)
                 return
             }
-
-            safeCheckForMoreDataIfNeeded(backoff: true)
             return
         }
 
@@ -246,7 +247,7 @@ public class Connection: Actor, AnyConnection {
                                             size: currentPtr - buffer) else {
             // We have an incomplete https request, wait for more data and try again
             self.unsafePriority = 99
-            safeCheckForMoreDataIfNeeded(backoff: false)
+            resetCheckForMoreBackoff()
             return
         }
         
