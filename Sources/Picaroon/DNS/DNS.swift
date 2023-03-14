@@ -13,13 +13,10 @@ private let gethostbyname = Darwin.gethostbyname
 private let inet_ntop = Darwin.inet_ntop
 #endif
 
-public class DNS: Actor {
-    public static let shared = DNS()
-    private override init() {
-        super.init()
-    }
 
-    internal func _beResolve(domain: String) -> [String] {
+
+public class DNS: Actor {
+    public static func resolve(domain: String) -> [String] {
         guard let hp = gethostbyname(domain) else { return [] }
         
         var addresses: [String] = []
@@ -55,6 +52,26 @@ public class DNS: Actor {
         }
         
         return addresses
+    }
+    
+    public static func resolve(url: URL) -> [String] {
+        guard let host = url.host else { return [] }
+        return Self.resolve(domain: host)
+    }
+    
+    
+    public static let shared = DNS()
+    private override init() {
+        super.init()
+    }
+
+    internal func _beResolve(domain: String) -> [String] {
+        return Self.resolve(domain: domain)
+    }
+    
+    internal func _beResolve(url: URL) -> [String] {
+        guard let host = url.host else { return [] }
+        return Self.resolve(domain: host)
     }
     
     
