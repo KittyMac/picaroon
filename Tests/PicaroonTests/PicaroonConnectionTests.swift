@@ -34,6 +34,28 @@ final class picaroonConnectionTests: XCTestCase {
     
     #if os(macOS)
     
+    func testDNSResolver0() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        DNS.shared.beResolve(domain: "www.swift-linux.com", Flynn.any) { addresses in
+            XCTAssertEqual(addresses.joined(), "108.236.194.50")
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 2)
+    }
+    
+    func testDNSResolver1() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        DNS.shared.beResolve(domain: "www.smallplanet.com", Flynn.any) { addresses in
+            XCTAssertEqual(addresses.joined(separator: ","), "69.164.218.110")
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 2)
+    }
+    
     func testSimpleStaticResponse() {
         let expectation = XCTestExpectation(description: "success")
         
