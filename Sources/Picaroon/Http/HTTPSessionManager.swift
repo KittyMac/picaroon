@@ -51,7 +51,7 @@ public class HTTPSessionManager: Actor {
         
         httpSession.beBegin(urlSession: urlSession) {
             urlSession.reset {
-                self.unsafeSend { _ in
+                self.unsafeSend {
                     self.waitingURLSessions.append(urlSession)
                     self.checkForMoreSessions()
                 }
