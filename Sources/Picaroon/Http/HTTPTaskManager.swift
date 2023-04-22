@@ -68,7 +68,7 @@ internal class HTTPTaskManager: Actor {
             _ = signal(SIGPIPE, SIG_IGN)
             #endif
             
-            self.unsafeSend {
+            self.unsafeSend { _ in
                 for task in self.activeTasks where task.task.response == response {
                     self.activeTasks.removeOne(task)
                     break
@@ -96,7 +96,7 @@ internal class HTTPTaskManager: Actor {
                     print("no space detected, retrying \(timeoutRetry)...")
                     #endif
                     session.flush {
-                        self.unsafeSend {
+                        self.unsafeSend { _ in
                             self._beResume(session: session,
                                            request: request,
                                            proxy: proxy,
