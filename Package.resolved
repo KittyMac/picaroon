@@ -10,12 +10,21 @@
       }
     },
     {
+      "identity" : "cryptoswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/krzyzanowskim/CryptoSwift.git",
+      "state" : {
+        "revision" : "eee9ad754926c40a0f7e73f152357d37b119b7fa",
+        "version" : "1.7.1"
+      }
+    },
+    {
       "identity" : "flynn",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Flynn.git",
       "state" : {
-        "revision" : "51e60c047ac01be70cde34c06299ee33f68635fe",
-        "version" : "0.4.40"
+        "revision" : "ac8d74a8e5e8289949533c9014d28900556a481c",
+        "version" : "0.4.41"
       }
     },
     {

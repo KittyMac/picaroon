@@ -5,7 +5,7 @@ import Hitch
 import FoundationNetworking
 #endif
 
-let data = Data(repeating: 55, count: 1024*1024*1024)
+fileprivate let data = Data(repeating: 55, count: 1024*1024*1024)
 
 private func handleStaticRequest(config: ServerConfig,
                                  httpRequest: HttpRequest) -> HttpResponse? {

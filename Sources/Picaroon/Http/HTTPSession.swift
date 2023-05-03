@@ -25,6 +25,9 @@ public class HTTPSession: Actor {
     private var deinitCallback: (() -> ())?
     private var sessionCookies: HTTPCookieStorage?
     
+    internal var safeS3Key: String?
+    internal var safeS3Secret: String?
+    
     public init(cookies: HTTPCookieStorage?,
                 _ returnCallback: @escaping (HTTPSession) -> ()) {
         sessionCookies = cookies
