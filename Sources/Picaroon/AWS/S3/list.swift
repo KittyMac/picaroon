@@ -14,13 +14,9 @@ extension HTTPSession {
                                 region: String,
                                 bucket: String,
                                 path: String,
-                                contentType: HttpContentType,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         guard path.hasPrefix("/") else {
             return returnCallback(nil, nil, "path does not start at root")
-        }
-        guard path.hasSuffix("/") else {
-            return returnCallback(nil, nil, "path does not end at a directory")
         }
         guard let key = key ?? self.safeS3Key else {
             return returnCallback(nil, nil, "S3 key is nil")
@@ -29,9 +25,29 @@ extension HTTPSession {
             return returnCallback(nil, nil, "S3 secret is nil")
         }
         
-        let url = "https://{0}.{1}-{2}.amazonaws.com{3}" << [bucket, "s3", region, path]
-        guard let url = URL(string: url.description) else {
-            return returnCallback(nil, nil, "failed to generate url")
+        
+        // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
+        let url = "https://{0}.{1}-{2}.amazonaws.com/" << [bucket, "s3", region]
+        
+        guard var components = URLComponents(string: url.description) else {
+            returnCallback(nil, nil, "failed to create url components")
+            return
+        }
+        
+        if components.queryItems == nil {
+            components.queryItems = []
+        }
+        
+        if path != "/" {
+            components.queryItems?.append(URLQueryItem(name: "prefix", value: path.dropFirst(1).description))
+        }
+        //components.queryItems?.append(URLQueryItem(name: "delimiter", value: "/"))
+        
+        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        
+        guard let url = components.url else {
+            returnCallback(nil, nil, "failed to get components url")
+            return
         }
         
         var request = URLRequest(url: url)
@@ -53,22 +69,6 @@ extension HTTPSession {
                        self) { data, response, error in
             returnCallback(data, response, error)
         }
-                                    
-        /*
-        self.beRequest(url: url.toString(),
-                       httpMethod: "GET",
-                       params: [:],
-                       headers: [
-                        "Authorization": "AWS4-HMAC-SHA256 Credential=\(key)/\(scope), SignedHeaders=\(signedHeaders), Signature=\(signature)",
-                        "x-amz-content-sha256": signedEmptyContent.toString(),
-                        "x-amz-date": date.toString(),
-                       ],
-                       cookies: nil,
-                       proxy: nil,
-                       body: nil,
-                       self) { data, response, error in
-            returnCallback(data, response, error)
-        }*/
     }
     
 }
@@ -89,7 +89,8 @@ extension URLRequest {
         guard let host = url.host else { return "host is empty" }
         
         let query = url.query?.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? ""
-        let path = url.path + "/"
+        //let path = url.path.hasSuffix("/") ? url.path : url.path + "/"
+        let path = url.path
         
         // *** Step 1: Create a canonical request
         // Header names must use lowercase characters, must appear in alphabetical order, and must be followed by a colon (:)
@@ -160,11 +161,11 @@ extension URLRequest {
         print("--------------------------")
         
         print("--------------------------")
-        print("AWS4\(key)")
+        print("AWS4\(secret)")
         print("--------------------------")
 
         // *** Step 4: Calculate the signature
-        guard let kDate = hash("AWS4\(key)".bytes, dateShort.description.bytes) else { return "failed to hash key" }
+        guard let kDate = hash("AWS4\(secret)".bytes, dateShort.description.bytes) else { return "failed to hash key" }
         guard let kRegion = hash(kDate, region.bytes) else { return "failed to hash region" }
         guard let kService = hash(kRegion, service.bytes) else { return "failed to hash service" }
         guard let kSigning = hash(kService, "aws4_request".bytes) else { return "failed to hash aws4_request" }

@@ -52,7 +52,6 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                               region: region,
                               bucket: bucket,
                               path: "/v1/errorlogs/",
-                              contentType: .json,
                               Flynn.any) { data, response, error in
             print(Hitch(data: data!))
             
