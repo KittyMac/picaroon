@@ -14,6 +14,7 @@ extension HTTPSession {
                                 region: String,
                                 bucket: String,
                                 path: String,
+                                marker: String?,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         guard path.hasPrefix("/") else {
             return returnCallback(nil, nil, "path does not start at root")
@@ -41,7 +42,9 @@ extension HTTPSession {
         if path != "/" {
             components.queryItems?.append(URLQueryItem(name: "prefix", value: path.dropFirst(1).description))
         }
-        //components.queryItems?.append(URLQueryItem(name: "delimiter", value: "/"))
+        if let marker = marker {
+            components.queryItems?.append(URLQueryItem(name: "marker", value: marker))
+        }
         
         components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         
