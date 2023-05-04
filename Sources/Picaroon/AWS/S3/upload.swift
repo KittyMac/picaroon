@@ -17,14 +17,17 @@ extension HTTPSession {
     
     internal func _beUploadToS3(key: String?,
                                 secret: String?,
-                                domain: String?,
                                 acl: String?,
                                 storageType: String?,
+                                region: String,
                                 bucket: String,
                                 path: String,
                                 contentType: HttpContentType,
                                 body: Data,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+        guard path.hasPrefix("/") else {
+            return returnCallback(nil, nil, "path does not start at root")
+        }
         guard let key = key ?? self.safeS3Key else {
             return returnCallback(nil, nil, "S3 key is nil")
         }
@@ -32,32 +35,25 @@ extension HTTPSession {
             return returnCallback(nil, nil, "S3 secret is nil")
         }
         
-        let domain = domain ?? "s3.amazonaws.com"
         let acl = acl ?? "private"
         let storageType = storageType ?? "STANDARD"
         
         let date = Date().toRFC2822()
         
-        let url = "https://{0}.{1}/{2}" << [bucket, domain, path]
-        
+        let url = "https://{0}.s3-{1}.amazonaws.com{2}" << [bucket, region, path]
+
         let auth: Hitch = Hitch("{0}\n\n{1}\n{2}\nx-amz-acl:{3}\nx-amz-storage-class:{4}\n{5}",
                                 "PUT",
                                 contentType.hitch,
                                 date,
                                 acl,
                                 storageType,
-                                "/{0}/{1}" << [bucket, path])
+                                "/{0}{1}" << [bucket, path])
         
         guard let signature = try? HMAC(key: secret, variant: .sha1).authenticate(auth.dataNoCopy().bytes).toBase64() else {
             return returnCallback(nil, nil, "Failed to generate authorization token")
         }
-        
-        print("key: \(key)")
-        print("secret: \(secret)")
-        print("url: \(url)")
-        print("auth: \(auth)")
-        print("signature: \(signature)")
-                    
+                            
         self.beRequest(url: url.toString(),
                        httpMethod: "PUT",
                        params: [:],

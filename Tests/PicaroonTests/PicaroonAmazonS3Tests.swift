@@ -9,8 +9,8 @@ final class PicaroonAmazonS3Tests: XCTestCase {
     let secret = try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_secret.txt")
     
     let bucket = "sp-rover-unittest-west"
-    let domain = "s3-us-west-2.amazonaws.com"
-    let path = "v1/errorlogs/test.txt"
+    let region = "us-west-2"
+    let path = "/v1/errorlogs/test.txt"
     
     func testUploadAndDownloadS3() {
         let expectation = XCTestExpectation(description: #function)
@@ -19,9 +19,9 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         
         HTTPSession.oneshot.beUploadToS3(key: key,
                                          secret: secret,
-                                         domain: domain,
                                          acl: nil,
                                          storageType: nil,
+                                         region: region,
                                          bucket: bucket,
                                          path: path,
                                          contentType: .txt,
@@ -32,7 +32,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             XCTAssertNotNil(data)
         }.then().doDownloadFromS3(key: key,
                                   secret: secret,
-                                  domain: domain,
+                                  region: region,
                                   bucket: bucket,
                                   path: path,
                                   contentType: .txt,
@@ -47,8 +47,21 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             XCTAssertTrue(
                 abs(date.timeIntervalSinceNow) < 10.0
             )
+        }.then().doListFromS3(key: key,
+                              secret: secret,
+                              region: region,
+                              bucket: bucket,
+                              path: "/v1/errorlogs/",
+                              contentType: .json,
+                              Flynn.any) { data, response, error in
+            print(Hitch(data: data!))
+            
+            XCTAssertNil(error)
+            XCTAssertNotNil(data)
+
             
             expectation.fulfill()
+
         }
         
         wait(for: [expectation], timeout: 600)
