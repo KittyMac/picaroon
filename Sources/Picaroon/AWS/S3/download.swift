@@ -7,29 +7,45 @@ import CryptoSwift
 import FoundationNetworking
 #endif
 
+public struct S3Credentials {
+    let url: String?
+    
+    let accessKey: String
+    let secretKey: String
+    let region: String
+    let service: String
+    
+    public init(url: String?,
+                accessKey: String,
+                secretKey: String,
+                region: String,
+                service: String) {
+        self.url = url
+        self.accessKey = accessKey
+        self.secretKey = secretKey
+        self.region = region
+        self.service = service
+    }
+}
+
 extension HTTPSession {
-        
-    internal func _beDownloadFromS3(url overrideUrl: String?,
-                                    accessKey: String?,
-                                    secretKey: String?,
-                                    region: String,
+            
+    internal func _beDownloadFromS3(credentials: S3Credentials,
                                     bucket: String,
                                     key: String,
                                     contentType: HttpContentType,
                                     _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        guard let accessKey = accessKey ?? self.safeS3Key else {
-            return returnCallback(nil, nil, "S3 key is nil")
-        }
-        guard let secretKey = secretKey ?? self.safeS3Secret else {
-            return returnCallback(nil, nil, "S3 secret is nil")
-        }
+        let accessKey = credentials.accessKey
+        let secretKey = credentials.secretKey
+        let region = credentials.region
+        let service = credentials.service
         
         let path = key.hasPrefix("/") ? key : "/" + key
                 
         let date = Date().toRFC2822()
         
-        var url = "https://{0}.s3.{1}.amazonaws.com{2}" << [bucket, region, path]
-        if let overrideUrl = overrideUrl {
+        var url = "https://{0}.{1}.{2}.amazonaws.com{3}" << [bucket, service, region, path]
+        if let overrideUrl = credentials.url {
             url = "{0}{1}" << [overrideUrl, path]
         }
         

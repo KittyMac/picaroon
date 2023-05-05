@@ -6,27 +6,24 @@ import Studding
 import Picaroon
 
 final class PicaroonAmazonS3Tests: XCTestCase {
-    let accessKey = try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_key.txt")
-    let secretKey = try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_secret.txt")
-    
     let bucket = "sp-rover-unittest-west"
-    let region = "us-west-2"
     let goodPath = "/v1/errorlogs/test.txt"
     let badPath = "/test.txt"
+    
+    let credentials = S3Credentials(url: nil,
+                                    accessKey: try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_key.txt"),
+                                    secretKey: try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_secret.txt"),
+                                    region: "us-west-2",
+                                    service: "s3")
     
     func testUploadAndDownloadS3() {
         let expectation = XCTestExpectation(description: #function)
         
         let data = Date().toISO8601Hitch().dataCopy()
-        
-        let url = "https://\(bucket).s3.\(region).amazonaws.com"
                 
-        HTTPSession.oneshot.beUploadToS3(url: url,
-                                         accessKey: accessKey,
-                                         secretKey: secretKey,
+        HTTPSession.oneshot.beUploadToS3(credentials: credentials,
                                          acl: nil,
                                          storageType: nil,
-                                         region: region,
                                          bucket: bucket,
                                          key: goodPath,
                                          contentType: .txt,
@@ -35,10 +32,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             
             XCTAssertNil(error)
             XCTAssertNotNil(data)
-        }.then().doDownloadFromS3(url: url,
-                                  accessKey: accessKey,
-                                  secretKey: secretKey,
-                                  region: region,
+        }.then().doDownloadFromS3(credentials: credentials,
                                   bucket: bucket,
                                   key: goodPath,
                                   contentType: .txt,
@@ -53,10 +47,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             XCTAssertTrue(
                 abs(date.timeIntervalSinceNow) < 10.0
             )
-        }.then().doListFromS3(url: url,
-                              accessKey: accessKey,
-                              secretKey: secretKey,
-                              region: region,
+        }.then().doListFromS3(credentials: credentials,
                               bucket: bucket,
                               keyPrefix: "v1/errorlogs/",
                               marker: nil,
@@ -67,31 +58,22 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                 guard let xml = xml else { XCTFail(); return }
                 XCTAssertEqual(xml["Contents"]?["Key"]?.text, "v1/errorlogs/test.txt")
             }
-        }.then().doUploadToS3(url: url,
-                              accessKey: accessKey,
-                              secretKey: secretKey,
+        }.then().doUploadToS3(credentials: credentials,
                               acl: nil,
                               storageType: nil,
-                              region: region,
                               bucket: bucket,
                               key: badPath,
                               contentType: .txt,
                               body: data,
                               Flynn.any) { data, response, error in
             XCTAssertNotNil(error)
-        }.then().doDownloadFromS3(url: url,
-                                  accessKey: accessKey,
-                                  secretKey: secretKey,
-                                  region: region,
+        }.then().doDownloadFromS3(credentials: credentials,
                                   bucket: bucket,
                                   key: badPath,
                                   contentType: .txt,
                                   Flynn.any) { data, response, error in
             XCTAssertNotNil(error)
-        }.then().doListFromS3(url: url,
-                              accessKey: accessKey,
-                              secretKey: secretKey,
-                              region: region,
+        }.then().doListFromS3(credentials: credentials,
                               bucket: bucket,
                               keyPrefix: "/",
                               marker: nil,

@@ -9,29 +9,24 @@ import FoundationNetworking
 
 extension HTTPSession {
         
-    internal func _beListFromS3(url overrideUrl: String?,
-                                accessKey: String?,
-                                secretKey: String?,
-                                region: String,
+    internal func _beListFromS3(credentials: S3Credentials,
                                 bucket: String,
                                 keyPrefix: String,
                                 marker: String?,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        guard let accessKey = accessKey ?? self.safeS3Key else {
-            return returnCallback(nil, nil, "S3 key is nil")
-        }
-        guard let secretKey = secretKey ?? self.safeS3Secret else {
-            return returnCallback(nil, nil, "S3 secret is nil")
-        }
-        
+        let accessKey = credentials.accessKey
+        let secretKey = credentials.secretKey
+        let region = credentials.region
+        let service = credentials.service
+
         let path = keyPrefix.hasPrefix("/") ? keyPrefix : "/" + keyPrefix
         
         // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
-        var url = "https://{0}.{1}.{2}.amazonaws.com/" << [bucket, "s3", region]
-        if let overrideUrl = overrideUrl {
-            url = "{0}/" << [overrideUrl]
+        var url = "https://{0}.{1}.{2}.amazonaws.com/" << [bucket, service, region]
+        if let overrideUrl = credentials.url {
+            url = "{0}/" << [overrideUrl, path]
         }
-        
+
         guard var components = URLComponents(string: url.description) else {
             returnCallback(nil, nil, "failed to create url components")
             return

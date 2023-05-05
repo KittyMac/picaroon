@@ -8,31 +8,20 @@ import FoundationNetworking
 #endif
 
 extension HTTPSession {
-    
-    internal func _beSetCredentialsS3(accessKey: String,
-                                      secretKey: String) {
-        safeS3Key = accessKey
-        safeS3Secret = secretKey
-    }
-    
-    internal func _beUploadToS3(url overrideUrl: String?,
-                                accessKey: String?,
-                                secretKey: String?,
+        
+    internal func _beUploadToS3(credentials: S3Credentials,
                                 acl: String?,
                                 storageType: String?,
-                                region: String,
                                 bucket: String,
                                 key: String,
                                 contentType: HttpContentType,
                                 body: Data,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        guard let accessKey = accessKey ?? self.safeS3Key else {
-            return returnCallback(nil, nil, "S3 key is nil")
-        }
-        guard let secretKey = secretKey ?? self.safeS3Secret else {
-            return returnCallback(nil, nil, "S3 secret is nil")
-        }
-        
+        let accessKey = credentials.accessKey
+        let secretKey = credentials.secretKey
+        let region = credentials.region
+        let service = credentials.service
+
         let path = key.hasPrefix("/") ? key : "/" + key
         
         let acl = acl ?? "private"
@@ -40,8 +29,8 @@ extension HTTPSession {
         
         let date = Date().toRFC2822()
         
-        var url = "https://{0}.s3.{1}.amazonaws.com{2}" << [bucket, region, path]
-        if let overrideUrl = overrideUrl {
+        var url = "https://{0}.{1}.{2}.amazonaws.com{3}" << [bucket, service, region, path]
+        if let overrideUrl = credentials.url {
             url = "{0}{1}" << [overrideUrl, path]
         }
 
