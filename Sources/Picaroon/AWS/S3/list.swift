@@ -138,11 +138,11 @@ extension URLRequest {
         // *** Step 2: Create a hash of the canonical request
         let canonicalRequestHash = canonicalRequestString.description.sha256()
         
-        print("--------------------------")
-        print(canonicalRequestString)
-        print("-------")
-        print(canonicalRequestHash)
-        print("--------------------------")
+        // print("--------------------------")
+        // print(canonicalRequestString)
+        // print("-------")
+        // print(canonicalRequestHash)
+        // print("--------------------------")
         
         // *** Step 3: Create a string to sign
         let algorithm = "AWS4-HMAC-SHA256"
@@ -158,14 +158,13 @@ extension URLRequest {
             canonicalRequestHash
         ].joined(separator: "\n")
         
-        
-        print("--------------------------")
-        print(stringToSign)
-        print("--------------------------")
-        
-        print("--------------------------")
-        print("AWS4\(secret)")
-        print("--------------------------")
+        // print("--------------------------")
+        // print(stringToSign)
+        // print("--------------------------")
+        //
+        // print("--------------------------")
+        // print("AWS4\(secret)")
+        // print("--------------------------")
 
         // *** Step 4: Calculate the signature
         guard let kDate = hash("AWS4\(secret)".bytes, dateShort.description.bytes) else { return "failed to hash key" }
@@ -189,11 +188,10 @@ extension URLRequest {
             addValue(value, forHTTPHeaderField: key)
         }
         
-        print("--------------------------")
-        print(self.allHTTPHeaderFields)
-        print("--------------------------")
+        // print("--------------------------")
+        // print(self.allHTTPHeaderFields)
+        // print("--------------------------")
 
-                
         return nil
     }
 }

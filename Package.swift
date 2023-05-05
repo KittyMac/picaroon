@@ -13,6 +13,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/KittyMac/Flynn.git", from: "0.4.0"),
         .package(url: "https://github.com/KittyMac/Hitch.git", from: "0.4.0"),
+        .package(url: "https://github.com/KittyMac/Studding.git", from: "0.0.1"),
         .package(url: "https://github.com/KittyMac/Spanker.git", from: "0.2.0"),
         .package(url: "https://github.com/KittyMac/Sextant.git", from: "0.4.0"),
         .package(url: "https://github.com/KittyMac/GzipSwift.git", from: "5.3.0"),
@@ -34,6 +35,7 @@ let package = Package(
                 "Flynn",
                 "Hitch",
                 "Spanker",
+                "Studding",
                 "Sextant",
                 "CryptoSwift",
                 .product(name: "Gzip", package: "GzipSwift"),
@@ -46,7 +48,9 @@ let package = Package(
             name: "PicaroonTests",
             dependencies: [
                 "Flynn",
-                "Picaroon"
+                "Picaroon",
+                "Studding",
+                "Spanker"
             ]
         )
     ]
