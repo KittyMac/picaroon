@@ -8,12 +8,12 @@ import FoundationNetworking
 #endif
 
 public struct S3Credentials {
-    let url: String?
+    public let url: String?
     
-    let accessKey: String
-    let secretKey: String
-    let region: String
-    let service: String
+    public let accessKey: String
+    public let secretKey: String
+    public let region: String
+    public let service: String
     
     public init(url: String?,
                 accessKey: String,
