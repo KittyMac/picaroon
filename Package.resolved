@@ -68,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Studding.git",
       "state" : {
-        "revision" : "c3a8b4b8b9df5aaab825769c8fb8490d8d366650",
-        "version" : "0.0.3"
+        "revision" : "4592764bb50fc0eb840f7ea2a6349d295264a101",
+        "version" : "0.0.4"
       }
     }
   ],
