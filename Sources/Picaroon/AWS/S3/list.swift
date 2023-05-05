@@ -28,7 +28,7 @@ extension HTTPSession {
         
         
         // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
-        let url = "https://{0}.{1}-{2}.amazonaws.com/" << [bucket, "s3", region]
+        let url = "https://{0}.{1}.{2}.amazonaws.com/" << [bucket, "s3", region]
         
         guard var components = URLComponents(string: url.description) else {
             returnCallback(nil, nil, "failed to create url components")

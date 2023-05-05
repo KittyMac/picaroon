@@ -28,7 +28,7 @@ extension HTTPSession {
                 
         let date = Date().toRFC2822()
         
-        let url = "https://{0}.s3-{1}.amazonaws.com{2}" << [bucket, region, path]
+        let url = "https://{0}.s3.{1}.amazonaws.com{2}" << [bucket, region, path]
         
         let auth: Hitch = Hitch("{0}\n\n{1}\n{2}\n{3}",
                                 "GET",
