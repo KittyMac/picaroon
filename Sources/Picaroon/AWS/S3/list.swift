@@ -13,7 +13,7 @@ extension HTTPSession {
                                 secretKey: String?,
                                 region: String,
                                 bucket: String,
-                                prefix: String,
+                                keyPrefix: String,
                                 marker: String?,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         guard let accessKey = accessKey ?? self.safeS3Key else {
@@ -23,7 +23,7 @@ extension HTTPSession {
             return returnCallback(nil, nil, "S3 secret is nil")
         }
         
-        let path = prefix.hasPrefix("/") ? prefix : "/" + prefix
+        let path = keyPrefix.hasPrefix("/") ? keyPrefix : "/" + keyPrefix
         
         // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
         let url = "https://{0}.{1}.{2}.amazonaws.com/" << [bucket, "s3", region]

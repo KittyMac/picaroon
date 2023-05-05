@@ -53,7 +53,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                               secretKey: secretKey,
                               region: region,
                               bucket: bucket,
-                              prefix: "v1/errorlogs/",
+                              keyPrefix: "v1/errorlogs/",
                               marker: nil,
                               Flynn.any) { data, response, error in
             XCTAssertNil(error)
@@ -85,7 +85,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                               secretKey: secretKey,
                               region: region,
                               bucket: bucket,
-                              prefix: "/",
+                              keyPrefix: "/",
                               marker: nil,
                               Flynn.any) { data, response, error in
             XCTAssertNotNil(error)
