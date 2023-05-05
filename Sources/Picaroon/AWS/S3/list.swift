@@ -9,7 +9,8 @@ import FoundationNetworking
 
 extension HTTPSession {
         
-    internal func _beListFromS3(accessKey: String?,
+    internal func _beListFromS3(url overrideUrl: String?,
+                                accessKey: String?,
                                 secretKey: String?,
                                 region: String,
                                 bucket: String,
@@ -26,7 +27,10 @@ extension HTTPSession {
         let path = keyPrefix.hasPrefix("/") ? keyPrefix : "/" + keyPrefix
         
         // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
-        let url = "https://{0}.{1}.{2}.amazonaws.com/" << [bucket, "s3", region]
+        var url = "https://{0}.{1}.{2}.amazonaws.com/" << [bucket, "s3", region]
+        if let overrideUrl = overrideUrl {
+            url = "{0}/" << [overrideUrl]
+        }
         
         guard var components = URLComponents(string: url.description) else {
             returnCallback(nil, nil, "failed to create url components")

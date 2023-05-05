@@ -9,7 +9,8 @@ import FoundationNetworking
 
 extension HTTPSession {
         
-    internal func _beDownloadFromS3(accessKey: String?,
+    internal func _beDownloadFromS3(url overrideUrl: String?,
+                                    accessKey: String?,
                                     secretKey: String?,
                                     region: String,
                                     bucket: String,
@@ -27,7 +28,10 @@ extension HTTPSession {
                 
         let date = Date().toRFC2822()
         
-        let url = "https://{0}.s3.{1}.amazonaws.com{2}" << [bucket, region, path]
+        var url = "https://{0}.s3.{1}.amazonaws.com{2}" << [bucket, region, path]
+        if let overrideUrl = overrideUrl {
+            url = "{0}{1}" << [overrideUrl, path]
+        }
         
         let auth: Hitch = Hitch("{0}\n\n{1}\n{2}\n{3}",
                                 "GET",

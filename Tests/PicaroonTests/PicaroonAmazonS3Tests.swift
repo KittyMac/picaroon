@@ -19,7 +19,10 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         
         let data = Date().toISO8601Hitch().dataCopy()
         
-        HTTPSession.oneshot.beUploadToS3(accessKey: accessKey,
+        let url = "https://\(bucket).s3.\(region).amazonaws.com"
+                
+        HTTPSession.oneshot.beUploadToS3(url: url,
+                                         accessKey: accessKey,
                                          secretKey: secretKey,
                                          acl: nil,
                                          storageType: nil,
@@ -32,7 +35,8 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             
             XCTAssertNil(error)
             XCTAssertNotNil(data)
-        }.then().doDownloadFromS3(accessKey: accessKey,
+        }.then().doDownloadFromS3(url: url,
+                                  accessKey: accessKey,
                                   secretKey: secretKey,
                                   region: region,
                                   bucket: bucket,
@@ -49,7 +53,8 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             XCTAssertTrue(
                 abs(date.timeIntervalSinceNow) < 10.0
             )
-        }.then().doListFromS3(accessKey: accessKey,
+        }.then().doListFromS3(url: url,
+                              accessKey: accessKey,
                               secretKey: secretKey,
                               region: region,
                               bucket: bucket,
@@ -62,7 +67,8 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                 guard let xml = xml else { XCTFail(); return }
                 XCTAssertEqual(xml["Contents"]?["Key"]?.text, "v1/errorlogs/test.txt")
             }
-        }.then().doUploadToS3(accessKey: accessKey,
+        }.then().doUploadToS3(url: url,
+                              accessKey: accessKey,
                               secretKey: secretKey,
                               acl: nil,
                               storageType: nil,
@@ -73,7 +79,8 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                               body: data,
                               Flynn.any) { data, response, error in
             XCTAssertNotNil(error)
-        }.then().doDownloadFromS3(accessKey: accessKey,
+        }.then().doDownloadFromS3(url: url,
+                                  accessKey: accessKey,
                                   secretKey: secretKey,
                                   region: region,
                                   bucket: bucket,
@@ -81,7 +88,8 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                                   contentType: .txt,
                                   Flynn.any) { data, response, error in
             XCTAssertNotNil(error)
-        }.then().doListFromS3(accessKey: accessKey,
+        }.then().doListFromS3(url: url,
+                              accessKey: accessKey,
                               secretKey: secretKey,
                               region: region,
                               bucket: bucket,

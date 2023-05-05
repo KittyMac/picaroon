@@ -15,7 +15,8 @@ extension HTTPSession {
         safeS3Secret = secretKey
     }
     
-    internal func _beUploadToS3(accessKey: String?,
+    internal func _beUploadToS3(url overrideUrl: String?,
+                                accessKey: String?,
                                 secretKey: String?,
                                 acl: String?,
                                 storageType: String?,
@@ -39,7 +40,10 @@ extension HTTPSession {
         
         let date = Date().toRFC2822()
         
-        let url = "https://{0}.s3.{1}.amazonaws.com{2}" << [bucket, region, path]
+        var url = "https://{0}.s3.{1}.amazonaws.com{2}" << [bucket, region, path]
+        if let overrideUrl = overrideUrl {
+            url = "{0}{1}" << [overrideUrl, path]
+        }
 
         let auth: Hitch = Hitch("{0}\n\n{1}\n{2}\nx-amz-acl:{3}\nx-amz-storage-class:{4}\n{5}",
                                 "PUT",
