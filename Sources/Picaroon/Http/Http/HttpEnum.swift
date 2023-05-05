@@ -51,6 +51,7 @@ public enum HttpEncoding: HalfHitch {
 
 public enum HttpContentType: HalfHitch {
     case none = "none"
+    case any = "any"
     case arc = "arc"
     case avi = "avi"
     case azw = "azw"
@@ -140,6 +141,7 @@ public enum HttpContentType: HalfHitch {
     public var hitch: HalfHitch {
         switch self {
         case .none: return ""
+        case .any: return "*/*"
         case .arc: return "application/x-freearc"
         case .avi: return "video/x-msvideo"
         case .azw: return "application/vnd.amazon.ebook"
