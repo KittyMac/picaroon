@@ -9,31 +9,30 @@ import FoundationNetworking
 
 extension HTTPSession {
     
-    internal func _beSetCredentialsS3(key: String,
-                                      secret: String) {
-        safeS3Key = key
-        safeS3Secret = secret
+    internal func _beSetCredentialsS3(accessKey: String,
+                                      secretKey: String) {
+        safeS3Key = accessKey
+        safeS3Secret = secretKey
     }
     
-    internal func _beUploadToS3(key: String?,
-                                secret: String?,
+    internal func _beUploadToS3(accessKey: String?,
+                                secretKey: String?,
                                 acl: String?,
                                 storageType: String?,
                                 region: String,
                                 bucket: String,
-                                path: String,
+                                key: String,
                                 contentType: HttpContentType,
                                 body: Data,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        guard path.hasPrefix("/") else {
-            return returnCallback(nil, nil, "path does not start at root")
-        }
-        guard let key = key ?? self.safeS3Key else {
+        guard let accessKey = accessKey ?? self.safeS3Key else {
             return returnCallback(nil, nil, "S3 key is nil")
         }
-        guard let secret = secret ?? self.safeS3Secret else {
+        guard let secretKey = secretKey ?? self.safeS3Secret else {
             return returnCallback(nil, nil, "S3 secret is nil")
         }
+        
+        let path = key.hasPrefix("/") ? key : "/" + key
         
         let acl = acl ?? "private"
         let storageType = storageType ?? "STANDARD"
@@ -50,7 +49,7 @@ extension HTTPSession {
                                 storageType,
                                 "/{0}{1}" << [bucket, path])
         
-        guard let signature = try? HMAC(key: secret, variant: .sha1).authenticate(auth.dataNoCopy().bytes).toBase64() else {
+        guard let signature = try? HMAC(key: secretKey, variant: .sha1).authenticate(auth.dataNoCopy().bytes).toBase64() else {
             return returnCallback(nil, nil, "Failed to generate authorization token")
         }
                             
@@ -62,7 +61,7 @@ extension HTTPSession {
                         "Content-Type": contentType.hitch.description,
                         "x-amz-storage-class": storageType,
                         "x-amz-acl": acl,
-                        "Authorization": "AWS \(key):\(signature)"
+                        "Authorization": "AWS \(accessKey):\(signature)"
                        ],
                        cookies: nil,
                        proxy: nil,

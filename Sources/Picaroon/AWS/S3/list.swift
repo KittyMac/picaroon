@@ -9,23 +9,21 @@ import FoundationNetworking
 
 extension HTTPSession {
         
-    internal func _beListFromS3(key: String?,
-                                secret: String?,
+    internal func _beListFromS3(accessKey: String?,
+                                secretKey: String?,
                                 region: String,
                                 bucket: String,
-                                path: String,
+                                prefix: String,
                                 marker: String?,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        guard path.hasPrefix("/") else {
-            return returnCallback(nil, nil, "path does not start at root")
-        }
-        guard let key = key ?? self.safeS3Key else {
+        guard let accessKey = accessKey ?? self.safeS3Key else {
             return returnCallback(nil, nil, "S3 key is nil")
         }
-        guard let secret = secret ?? self.safeS3Secret else {
+        guard let secretKey = secretKey ?? self.safeS3Secret else {
             return returnCallback(nil, nil, "S3 secret is nil")
         }
         
+        let path = prefix.hasPrefix("/") ? prefix : "/" + prefix
         
         // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
         let url = "https://{0}.{1}.{2}.amazonaws.com/" << [bucket, "s3", region]
@@ -59,8 +57,8 @@ extension HTTPSession {
         request.httpBody = Data()
         //request.setValue(contentType.hitch.description, forHTTPHeaderField: "Content-Type")
         
-        if let error = request.aws4(key: key,
-                                    secret: secret,
+        if let error = request.aws4(key: accessKey,
+                                    secret: secretKey,
                                     service: "s3",
                                     region: region,
                                     bucket: bucket) {

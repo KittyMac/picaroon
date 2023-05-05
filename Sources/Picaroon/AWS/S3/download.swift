@@ -9,22 +9,21 @@ import FoundationNetworking
 
 extension HTTPSession {
         
-    internal func _beDownloadFromS3(key: String?,
-                                    secret: String?,
+    internal func _beDownloadFromS3(accessKey: String?,
+                                    secretKey: String?,
                                     region: String,
                                     bucket: String,
-                                    path: String,
+                                    key: String,
                                     contentType: HttpContentType,
                                     _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        guard path.hasPrefix("/") else {
-            return returnCallback(nil, nil, "path does not start at root")
-        }
-        guard let key = key ?? self.safeS3Key else {
+        guard let accessKey = accessKey ?? self.safeS3Key else {
             return returnCallback(nil, nil, "S3 key is nil")
         }
-        guard let secret = secret ?? self.safeS3Secret else {
+        guard let secretKey = secretKey ?? self.safeS3Secret else {
             return returnCallback(nil, nil, "S3 secret is nil")
         }
+        
+        let path = key.hasPrefix("/") ? key : "/" + key
                 
         let date = Date().toRFC2822()
         
@@ -36,7 +35,7 @@ extension HTTPSession {
                                 date,
                                 "/{0}{1}" << [bucket, path])
         
-        guard let signature = try? HMAC(key: secret, variant: .sha1).authenticate(auth.dataNoCopy().bytes).toBase64() else {
+        guard let signature = try? HMAC(key: secretKey, variant: .sha1).authenticate(auth.dataNoCopy().bytes).toBase64() else {
             return returnCallback(nil, nil, "Failed to generate authorization token")
         }
                     
@@ -46,7 +45,7 @@ extension HTTPSession {
                        headers: [
                         "Date": date,
                         "Content-Type": contentType.hitch.description,
-                        "Authorization": "AWS \(key):\(signature)"
+                        "Authorization": "AWS \(accessKey):\(signature)"
                        ],
                        cookies: nil,
                        proxy: nil,
