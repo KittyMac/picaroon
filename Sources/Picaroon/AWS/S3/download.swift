@@ -12,6 +12,7 @@ public struct S3Credentials {
     
     public let accessKey: String
     public let secretKey: String
+    public let baseDomain: String
     public let service: String
     public let region: String
     public let bucket: String
@@ -19,14 +20,16 @@ public struct S3Credentials {
     public init(url: String?,
                 accessKey: String,
                 secretKey: String,
-                region: String,
+                baseDomain: String,
                 service: String,
+                region: String,
                 bucket: String) {
         self.url = url
         self.accessKey = accessKey
         self.secretKey = secretKey
-        self.region = region
+        self.baseDomain = baseDomain
         self.service = service
+        self.region = region
         self.bucket = bucket
     }
 }
@@ -39,6 +42,7 @@ extension HTTPSession {
                                     _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
+        let baseDomain = credentials.baseDomain
         let service = credentials.service
         let region = credentials.region
         let bucket = credentials.bucket
@@ -47,7 +51,7 @@ extension HTTPSession {
                 
         let date = Date().toRFC2822()
         
-        var url = "https://{0}.{1}.{2}.amazonaws.com{3}" << [bucket, service, region, path]
+        var url = "https://{0}.{1}.{2}.{3}{4}" << [bucket, service, region, baseDomain, path]
         if let overrideUrl = credentials.url {
             url = "{0}{1}" << [overrideUrl, path]
         }

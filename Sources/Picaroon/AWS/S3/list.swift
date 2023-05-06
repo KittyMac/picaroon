@@ -15,6 +15,7 @@ extension HTTPSession {
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
+        let baseDomain = credentials.baseDomain
         let service = credentials.service
         let region = credentials.region
         let bucket = credentials.bucket
@@ -22,7 +23,7 @@ extension HTTPSession {
         let path = keyPrefix.hasPrefix("/") ? keyPrefix : "/" + keyPrefix
         
         // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
-        var url = "https://{0}.{1}.{2}.amazonaws.com/" << [bucket, service, region]
+        var url = "https://{0}.{1}.{2}.{3}/" << [bucket, service, region, baseDomain]
         if let overrideUrl = credentials.url {
             url = "{0}/" << [overrideUrl, path]
         }

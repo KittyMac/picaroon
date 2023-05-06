@@ -12,8 +12,9 @@ final class PicaroonAmazonS3Tests: XCTestCase {
     let credentials = S3Credentials(url: nil,
                                     accessKey: try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_key.txt"),
                                     secretKey: try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_secret.txt"),
-                                    region: "us-west-2",
+                                    baseDomain: "amazonaws.com",
                                     service: "s3",
+                                    region: "us-west-2",
                                     bucket: "sp-rover-unittest-west")
     
     func testUploadAndDownloadS3() {

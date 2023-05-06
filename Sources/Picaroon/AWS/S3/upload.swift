@@ -18,6 +18,7 @@ extension HTTPSession {
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
+        let baseDomain = credentials.baseDomain
         let service = credentials.service
         let region = credentials.region
         let bucket = credentials.bucket
@@ -29,7 +30,7 @@ extension HTTPSession {
         
         let date = Date().toRFC2822()
         
-        var url = "https://{0}.{1}.{2}.amazonaws.com{3}" << [bucket, service, region, path]
+        var url = "https://{0}.{1}.{2}.{3}{4}" << [bucket, service, region, baseDomain, path]
         if let overrideUrl = credentials.url {
             url = "{0}{1}" << [overrideUrl, path]
         }
