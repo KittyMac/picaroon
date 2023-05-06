@@ -12,33 +12,36 @@ public struct S3Credentials {
     
     public let accessKey: String
     public let secretKey: String
-    public let region: String
     public let service: String
+    public let region: String
+    public let bucket: String
     
     public init(url: String?,
                 accessKey: String,
                 secretKey: String,
                 region: String,
-                service: String) {
+                service: String,
+                bucket: String) {
         self.url = url
         self.accessKey = accessKey
         self.secretKey = secretKey
         self.region = region
         self.service = service
+        self.bucket = bucket
     }
 }
 
 extension HTTPSession {
             
     internal func _beDownloadFromS3(credentials: S3Credentials,
-                                    bucket: String,
                                     key: String,
                                     contentType: HttpContentType,
                                     _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
-        let region = credentials.region
         let service = credentials.service
+        let region = credentials.region
+        let bucket = credentials.bucket
         
         let path = key.hasPrefix("/") ? key : "/" + key
                 

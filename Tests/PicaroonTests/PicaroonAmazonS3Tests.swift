@@ -6,7 +6,6 @@ import Studding
 import Picaroon
 
 final class PicaroonAmazonS3Tests: XCTestCase {
-    let bucket = "sp-rover-unittest-west"
     let goodPath = "/v1/errorlogs/test.txt"
     let badPath = "/test.txt"
     
@@ -14,7 +13,8 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                                     accessKey: try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_key.txt"),
                                     secretKey: try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_secret.txt"),
                                     region: "us-west-2",
-                                    service: "s3")
+                                    service: "s3",
+                                    bucket: "sp-rover-unittest-west")
     
     func testUploadAndDownloadS3() {
         let expectation = XCTestExpectation(description: #function)
@@ -24,7 +24,6 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         HTTPSession.oneshot.beUploadToS3(credentials: credentials,
                                          acl: nil,
                                          storageType: nil,
-                                         bucket: bucket,
                                          key: goodPath,
                                          contentType: .txt,
                                          body: data,
@@ -33,7 +32,6 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             XCTAssertNil(error)
             XCTAssertNotNil(data)
         }.then().doDownloadFromS3(credentials: credentials,
-                                  bucket: bucket,
                                   key: goodPath,
                                   contentType: .txt,
                                   Flynn.any) { data, response, error in
@@ -48,7 +46,6 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                 abs(date.timeIntervalSinceNow) < 10.0
             )
         }.then().doListFromS3(credentials: credentials,
-                              bucket: bucket,
                               keyPrefix: "v1/errorlogs/",
                               marker: nil,
                               Flynn.any) { data, response, error in
@@ -61,20 +58,17 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         }.then().doUploadToS3(credentials: credentials,
                               acl: nil,
                               storageType: nil,
-                              bucket: bucket,
                               key: badPath,
                               contentType: .txt,
                               body: data,
                               Flynn.any) { data, response, error in
             XCTAssertNotNil(error)
         }.then().doDownloadFromS3(credentials: credentials,
-                                  bucket: bucket,
                                   key: badPath,
                                   contentType: .txt,
                                   Flynn.any) { data, response, error in
             XCTAssertNotNil(error)
         }.then().doListFromS3(credentials: credentials,
-                              bucket: bucket,
                               keyPrefix: "/",
                               marker: nil,
                               Flynn.any) { data, response, error in

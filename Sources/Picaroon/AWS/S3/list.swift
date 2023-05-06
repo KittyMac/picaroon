@@ -10,14 +10,14 @@ import FoundationNetworking
 extension HTTPSession {
         
     internal func _beListFromS3(credentials: S3Credentials,
-                                bucket: String,
                                 keyPrefix: String,
                                 marker: String?,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
-        let region = credentials.region
         let service = credentials.service
+        let region = credentials.region
+        let bucket = credentials.bucket
 
         let path = keyPrefix.hasPrefix("/") ? keyPrefix : "/" + keyPrefix
         

@@ -12,15 +12,15 @@ extension HTTPSession {
     internal func _beUploadToS3(credentials: S3Credentials,
                                 acl: String?,
                                 storageType: String?,
-                                bucket: String,
                                 key: String,
                                 contentType: HttpContentType,
                                 body: Data,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
-        let region = credentials.region
         let service = credentials.service
+        let region = credentials.region
+        let bucket = credentials.bucket
 
         let path = key.hasPrefix("/") ? key : "/" + key
         
