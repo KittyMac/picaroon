@@ -7,7 +7,7 @@ import CryptoSwift
 import FoundationNetworking
 #endif
 
-public struct S3Credentials {
+public struct S3Credentials: Codable {
     public let url: String?
     
     public let accessKey: String
