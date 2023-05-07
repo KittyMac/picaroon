@@ -43,12 +43,12 @@ internal class HTTPTaskManager: Actor {
         // (thus none of these will execute concurrently)
         // Note: per session proxies are only supported on linux
         if let proxy = task.proxy {
-            #if !os(Linux)
+#if !os(Linux)
             if didWarnAbountProxy == false {
                 didWarnAbountProxy = true
                 print("warning: URLSessionDataTasks do not support proxy on this platform")
             }
-            #endif
+#endif
             setenv("all_proxy", proxy, 1)
             task.task.resume()
             task.task.priority = URLSessionTask.defaultPriority
@@ -57,16 +57,16 @@ internal class HTTPTaskManager: Actor {
             task.task.resume()
         }
     }
-        
+    
     internal func _beResume(session: URLSession,
                             request: URLRequest,
                             proxy: String?,
                             timeoutRetry: Int,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
         let task = session.dataTask(with: request) { data, response, error in
-            #if os(Linux) || os(Android)
+#if os(Linux) || os(Android)
             _ = signal(SIGPIPE, SIG_IGN)
-            #endif
+#endif
             
             self.unsafeSend { _ in
                 for task in self.activeTasks where task.task.response == response {
@@ -77,31 +77,45 @@ internal class HTTPTaskManager: Actor {
                 
                 // If we timeout out, go ahead and retry it.
                 if let error = error as? URLError,
-                   (error.code == .timedOut || error.code == .networkConnectionLost) && timeoutRetry > 0 {
-                    #if DEBUG
+                   (error.code == .timedOut ||
+                    error.code == .networkConnectionLost ||
+                    error.errorCode == 104 ||
+                    error.errorCode == -1001) && timeoutRetry > 0 {
+#if DEBUG
                     print("timeout detected, retrying \(timeoutRetry)...")
-                    #endif
-                    self._beResume(session: session,
-                                   request: request,
-                                   proxy: proxy,
-                                   timeoutRetry: timeoutRetry - 1,
-                                   returnCallback)
+#endif
+                    session.flush {
+                        Flynn.Timer(timeInterval: 5.0, repeats: false, self) { [weak self] _ in
+                            guard let self = self else { return }
+                            self.beResume(session: session,
+                                          request: request,
+                                          proxy: proxy,
+                                          timeoutRetry: timeoutRetry - 1,
+                                          self,
+                                          returnCallback)
+                        }
+                    }
                     return
                 }
                 
                 // If we timeout out, go ahead and retry it.
                 if let error = error as? POSIXError,
-                   (error.code == .ENOSPC || error.code == .ECONNRESET) && timeoutRetry > 0 {
-                    #if DEBUG
+                   (error.code == .ENOSPC ||
+                    error.code == .ECONNRESET ||
+                    error.errorCode == 104 ||
+                    error.errorCode == -1001) && timeoutRetry > 0 {
+#if DEBUG
                     print("no space detected, retrying \(timeoutRetry)...")
-                    #endif
+#endif
                     session.flush {
-                        self.unsafeSend { _ in
-                            self._beResume(session: session,
-                                           request: request,
-                                           proxy: proxy,
-                                           timeoutRetry: timeoutRetry - 1,
-                                           returnCallback)
+                        Flynn.Timer(timeInterval: 5.0, repeats: false, self) { [weak self] _ in
+                            guard let self = self else { return }
+                            self.beResume(session: session,
+                                          request: request,
+                                          proxy: proxy,
+                                          timeoutRetry: timeoutRetry - 1,
+                                          self,
+                                          returnCallback)
                         }
                     }
                     return
