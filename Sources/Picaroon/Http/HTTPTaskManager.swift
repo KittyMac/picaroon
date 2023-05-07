@@ -77,7 +77,7 @@ internal class HTTPTaskManager: Actor {
                 
                 // If we timeout out, go ahead and retry it.
                 if let error = error as? URLError,
-                   error.code == .timedOut && timeoutRetry > 0 {
+                   (error.code == .timedOut || error.code == .networkConnectionLost) && timeoutRetry > 0 {
                     #if DEBUG
                     print("timeout detected, retrying \(timeoutRetry)...")
                     #endif
@@ -91,7 +91,7 @@ internal class HTTPTaskManager: Actor {
                 
                 // If we timeout out, go ahead and retry it.
                 if let error = error as? POSIXError,
-                   error.code == .ENOSPC && timeoutRetry > 0 {
+                   (error.code == .ENOSPC || error.code == .ECONNRESET) && timeoutRetry > 0 {
                     #if DEBUG
                     print("no space detected, retrying \(timeoutRetry)...")
                     #endif
