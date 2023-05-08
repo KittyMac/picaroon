@@ -5,6 +5,8 @@ import Studding
 
 import Picaroon
 
+#if os(macOS)
+
 final class PicaroonAmazonS3Tests: XCTestCase {
     let goodPath = "/v1/errorlogs/test.txt"
     let badPath = "/test.txt"
@@ -81,3 +83,5 @@ final class PicaroonAmazonS3Tests: XCTestCase {
     }
          
 }
+
+#endif

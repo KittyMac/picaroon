@@ -75,6 +75,15 @@ public class DNS: Actor {
             break
         }
         
+        // gethostbyname() is old and does not return the aliases consistenty. Flynn provides res_query
+        // code to look these up as well.
+        if let cname = Flynn.dns_resolve_cname(domain: domain) {
+            aliases.append(cname)
+        }
+        if let txt = Flynn.dns_resolve_txt(domain: domain) {
+            aliases.append(txt)
+        }
+        
         return DNS.Results(aliases: aliases,
                            addresses: addresses)
     }

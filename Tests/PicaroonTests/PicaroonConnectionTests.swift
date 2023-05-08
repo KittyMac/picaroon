@@ -56,6 +56,18 @@ final class picaroonConnectionTests: XCTestCase {
         wait(for: [expectation], timeout: 2)
     }
     
+    func testDNSResolver2() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        DNS.shared.beResolve(domain: "staging.rover.smallplanet.com", Flynn.any) { results in
+            XCTAssertEqual(results.aliases.count >= 1, true)
+            XCTAssertEqual(results.addresses.count, 8)
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 2)
+    }
+    
     func testSimpleStaticResponse() {
         let expectation = XCTestExpectation(description: "success")
         
