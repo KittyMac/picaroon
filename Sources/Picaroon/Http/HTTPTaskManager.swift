@@ -15,7 +15,7 @@ internal class HTTPTaskManager: Actor {
     internal static let shared = HTTPTaskManager()
     private override init() { }
     
-    private let maxConcurrentTasks = Flynn.cores * 2
+    private let maxConcurrentTasks = Flynn.cores * 4
     
     private var waitingTasks: [DataTask] = []
     private var activeTasks: [DataTask] = []
