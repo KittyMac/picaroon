@@ -25,7 +25,7 @@ public class HTTPSessionManager: Actor {
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             config.httpCookieAcceptPolicy = .always
-            config.httpShouldUsePipelining = false
+            config.httpShouldUsePipelining = true
             
             waitingURLSessions.append(
                 URLSession(configuration: config)
