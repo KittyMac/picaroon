@@ -21,7 +21,7 @@ public class HTTPSessionManager: Actor {
         for _ in 0..<maxConcurrentSessions {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 10.0
-            config.httpMaximumConnectionsPerHost = 128
+            config.httpMaximumConnectionsPerHost = 64
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             config.httpCookieAcceptPolicy = .always
@@ -34,7 +34,7 @@ public class HTTPSessionManager: Actor {
     }
     
     #if os(macOS) || os(Linux)
-    private let maxConcurrentSessions = 128
+    private let maxConcurrentSessions = 64
     #else
     private let maxConcurrentSessions = 16
     #endif
