@@ -15,7 +15,7 @@ internal class HTTPTaskManager: Actor {
     internal static let shared = HTTPTaskManager()
     private override init() { }
     
-    private let maxConcurrentTasks = 64
+    private let maxConcurrentTasks = Flynn.cores * 2
     
     private var waitingTasks: [DataTask] = []
     private var activeTasks: [DataTask] = []
@@ -73,7 +73,6 @@ internal class HTTPTaskManager: Actor {
                     self.activeTasks.removeOne(task)
                     break
                 }
-                self.checkForMoreTasks()
                 
                 // If we timeout out, go ahead and retry it.
                 if let error = error as? URLError,
@@ -85,15 +84,12 @@ internal class HTTPTaskManager: Actor {
                     print("timeout detected, retrying \(timeoutRetry)...")
 #endif
                     session.flush {
-                        Flynn.Timer(timeInterval: 5.0, repeats: false, self) { [weak self] _ in
-                            guard let self = self else { return }
-                            self.beResume(session: session,
-                                          request: request,
-                                          proxy: proxy,
-                                          timeoutRetry: timeoutRetry - 1,
-                                          self,
-                                          returnCallback)
-                        }
+                        self.beResume(session: session,
+                                      request: request,
+                                      proxy: proxy,
+                                      timeoutRetry: timeoutRetry - 1,
+                                      self,
+                                      returnCallback)
                     }
                     return
                 }
@@ -108,22 +104,21 @@ internal class HTTPTaskManager: Actor {
                     print("no space detected, retrying \(timeoutRetry)...")
 #endif
                     session.flush {
-                        Flynn.Timer(timeInterval: 5.0, repeats: false, self) { [weak self] _ in
-                            guard let self = self else { return }
-                            self.beResume(session: session,
-                                          request: request,
-                                          proxy: proxy,
-                                          timeoutRetry: timeoutRetry - 1,
-                                          self,
-                                          returnCallback)
-                        }
+                        self.beResume(session: session,
+                                      request: request,
+                                      proxy: proxy,
+                                      timeoutRetry: timeoutRetry - 1,
+                                      self,
+                                      returnCallback)
                     }
                     return
                 }
                 
+                self.checkForMoreTasks()
                 returnCallback(data, response, error)
             }
         }
+        
         waitingTasks.append(DataTask(task: task,
                                      proxy: proxy))
         self.checkForMoreTasks()

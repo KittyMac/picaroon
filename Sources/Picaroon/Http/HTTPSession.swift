@@ -37,7 +37,7 @@ public class HTTPSession: Actor {
     fileprivate init(oneshot: Bool) {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 10.0
-        config.httpMaximumConnectionsPerHost = 64
+        config.httpMaximumConnectionsPerHost = Flynn.cores * 2
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
         config.httpCookieStorage = nil
