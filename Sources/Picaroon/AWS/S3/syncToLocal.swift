@@ -12,7 +12,7 @@ extension HTTPSession {
     internal func _beSyncToLocal(credentials: S3Credentials,
                                  keyPrefix: String,
                                  localDirectory: String,
-                                 _ returnCallback: @escaping (Int, String?) -> Void) {
+                                 _ returnCallback: @escaping ([S3Object], [S3Object], String?) -> Void) {
         // Given an output directory, make its contents match the S3's content. This includes:
         // 1. removing any files which do not exist on the S3
         // 2. downloading any files which do not exist locally
@@ -31,13 +31,13 @@ extension HTTPSession {
         HTTPSession.oneshot.beListAllKeysFromS3(credentials: credentials,
                                                 keyPrefix: keyPrefix,
                                                 self) { objects, error in
-            if let error = error { return returnCallback(0, error) }
+            if let error = error { return returnCallback(objects, [], error) }
             let localDirectoryUrl = URL(fileURLWithPath: localDirectory)
             
             var mutableObjects = objects
             var lastError: String? = nil
             
-            var filesChanged = 0
+            var modifiedObjects: [S3Object] = []
             
             // Ensure the output directory exists
             try? FileManager.default.createDirectory(at: localDirectoryUrl,
@@ -64,7 +64,6 @@ extension HTTPSession {
                     
                     // Doesn't exist on the s3, we should remove it
                     if existsOnTheS3 == false {
-                        filesChanged += 1
                         try? FileManager.default.removeItem(atPath: filePath)
                     }
                 }
@@ -102,7 +101,7 @@ extension HTTPSession {
                             ]
                             try? FileManager.default.setAttributes(attributes, ofItemAtPath: fileUrl.path)
                             
-                            filesChanged += 1
+                            modifiedObjects.append(object)
                         }
                         
                         group.leave()
@@ -111,7 +110,7 @@ extension HTTPSession {
             }
             
             group.notify(actor: self) {
-                returnCallback(filesChanged, lastError)
+                returnCallback(objects, modifiedObjects, lastError)
             }
         }
     }
