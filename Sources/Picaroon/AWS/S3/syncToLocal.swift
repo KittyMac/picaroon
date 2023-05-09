@@ -17,6 +17,17 @@ extension HTTPSession {
         // 1. removing any files which do not exist on the S3
         // 2. downloading any files which do not exist locally
         
+        func makeRelativePath(key: String) -> String {
+            var objectKey = key
+            if objectKey.hasPrefix(keyPrefix) {
+                objectKey = objectKey.dropFirst(keyPrefix.count).description
+            }
+            if objectKey.hasPrefix("/") {
+                objectKey = objectKey.dropFirst(1).description
+            }
+            return objectKey
+        }
+        
         HTTPSession.oneshot.beListAllKeysFromS3(credentials: credentials,
                                                 keyPrefix: keyPrefix,
                                                 self) { objects, error in
@@ -44,9 +55,11 @@ extension HTTPSession {
                     
                     // Does this file exist on the s3?
                     var existsOnTheS3 = false
-                    for object in mutableObjects where filePath.hasSuffix(object.key) {
-                        existsOnTheS3 = true
-                        mutableObjects.removeOne(object)
+                    for object in mutableObjects {
+                        if filePath.hasSuffix(makeRelativePath(key: object.key)) {
+                            existsOnTheS3 = true
+                            mutableObjects.removeOne(object)
+                        }
                     }
                     
                     // Doesn't exist on the s3, we should remove it
@@ -72,13 +85,7 @@ extension HTTPSession {
                         
                         if let data = data,
                            error == nil {
-                            var objectKey = object.key
-                            if objectKey.hasPrefix(keyPrefix) {
-                                objectKey = objectKey.dropFirst(keyPrefix.count).description
-                            }
-                            if objectKey.hasPrefix("/") {
-                                objectKey = objectKey.dropFirst(1).description
-                            }
+                            var objectKey = makeRelativePath(key: object.key)
                             
                             let fileUrl = localDirectoryUrl.appendingPathComponent(objectKey)
                             if (try? data.write(to: fileUrl)) == nil {
