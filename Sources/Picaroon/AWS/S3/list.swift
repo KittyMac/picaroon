@@ -9,6 +9,9 @@ import FoundationNetworking
 #endif
 
 public struct S3Object: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        return lhs.key == rhs.key
+    }
     
     let key: String
     let size: Int64
@@ -124,6 +127,7 @@ extension HTTPSession {
                         guard let object = S3Object(xmlElement: child) else {
                             return "failed to part Content"
                         }
+                        guard object.key.hasSuffix("/") == false else { continue }
                         allObjects.append(object)
                     }
                     

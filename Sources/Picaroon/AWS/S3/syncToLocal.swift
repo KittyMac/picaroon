@@ -12,7 +12,7 @@ extension HTTPSession {
     internal func _beSyncToLocal(credentials: S3Credentials,
                                  keyPrefix: String,
                                  localDirectory: String,
-                                 _ returnCallback: @escaping (String?) -> Void) {
+                                 _ returnCallback: @escaping (Int, String?) -> Void) {
         // Given an output directory, make its contents match the S3's content. This includes:
         // 1. removing any files which do not exist on the S3
         // 2. downloading any files which do not exist locally
@@ -20,11 +20,13 @@ extension HTTPSession {
         HTTPSession.oneshot.beListAllKeysFromS3(credentials: credentials,
                                             keyPrefix: keyPrefix,
                                                 self) { objects, error in
-            if let error = error { return returnCallback(error) }
+            if let error = error { return returnCallback(0, error) }
             let localDirectoryUrl = URL(fileURLWithPath: localDirectory)
             
             var mutableObjects = objects
             var lastError: String? = nil
+            
+            var filesChanged = 0
             
             // Ensure the output directory exists
             try? FileManager.default.createDirectory(at: localDirectoryUrl,
@@ -46,6 +48,7 @@ extension HTTPSession {
                     
                     // Doesn't exist on the s3, we should remove it
                     if existsOnTheS3 == false {
+                        filesChanged += 1
                         try? FileManager.default.removeItem(atPath: filePath)
                     }
                 }
@@ -53,7 +56,7 @@ extension HTTPSession {
             
             let group = DispatchGroup()
             
-            for object in objects {
+            for object in mutableObjects {
                 group.enter()
                 HTTPSessionManager.shared.beNew(self) { session in
                     session.beDownloadFromS3(credentials: credentials,
@@ -67,6 +70,7 @@ extension HTTPSession {
                         if let data = data,
                            error == nil {
                             try? data.write(to: localDirectoryUrl.deletingLastPathComponent().appendingPathComponent(object.key))
+                            filesChanged += 1
                         }
                         
                         group.leave()
@@ -75,7 +79,7 @@ extension HTTPSession {
             }
             
             group.notify(actor: self) {
-                returnCallback(lastError)
+                returnCallback(filesChanged, lastError)
             }
         }
     }
