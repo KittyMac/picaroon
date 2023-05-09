@@ -37,6 +37,9 @@ extension HTTPSession {
                                                                includingPropertiesForKeys: [.isRegularFileKey],
                                                                options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
                 for case let fileURL as URL in enumerator {
+                    guard let resourceValues = try? fileURL.resourceValues(forKeys: Set([.isRegularFileKey])) else { continue }
+                    guard resourceValues.isRegularFile == true else { continue }
+                    
                     let filePath = fileURL.path
                     
                     // Does this file exist on the s3?
@@ -69,7 +72,13 @@ extension HTTPSession {
                         
                         if let data = data,
                            error == nil {
-                            try? data.write(to: localDirectoryUrl.deletingLastPathComponent().appendingPathComponent(object.key))
+                            let fileUrl = localDirectoryUrl.deletingLastPathComponent().appendingPathComponent(object.key)
+                            if (try? data.write(to: fileUrl)) == nil {
+                                // probably directory does not exist...
+                                try? FileManager.default.createDirectory(at: fileUrl.deletingLastPathComponent(),
+                                                                         withIntermediateDirectories: true)
+                                try? data.write(to: fileUrl)
+                            }
                             filesChanged += 1
                         }
                         
