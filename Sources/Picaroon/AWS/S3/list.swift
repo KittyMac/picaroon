@@ -8,7 +8,8 @@ import Studding
 import FoundationNetworking
 #endif
 
-public struct S3Object {
+public struct S3Object: Equatable {
+    
     let key: String
     let size: Int64
     let modifiedDate: Date

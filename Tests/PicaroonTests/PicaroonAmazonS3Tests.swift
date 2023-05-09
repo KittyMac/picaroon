@@ -33,6 +33,20 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         wait(for: [expectation], timeout: 600)
     }
     
+    func testSyncToLocal() {
+        let expectation = XCTestExpectation(description: #function)
+
+        HTTPSession.oneshot.beSyncToLocal(credentials: credentials,
+                                          keyPrefix: "many/",
+                                          localDirectory: "/tmp/many",
+                                          Flynn.any) { error in
+            XCTAssertNil(error)
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 600)
+    }
+    
     func testUploadAndDownloadS3() {
         let expectation = XCTestExpectation(description: #function)
         

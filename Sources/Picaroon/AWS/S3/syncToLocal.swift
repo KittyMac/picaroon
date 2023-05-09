@@ -12,43 +12,72 @@ extension HTTPSession {
     internal func _beSyncToLocal(credentials: S3Credentials,
                                  keyPrefix: String,
                                  localDirectory: String,
-                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        // Given a prefix, sync the listed files from the S3 to a local directory
-        /*
-        // 0. Keep calling
-        HTTPSession.oneshot.beListFromS3(credentials: credentials,
-                                         keyPrefix: keyPrefix,
-                                         marker: nil,
-                                         self) { data, response, error in
-            if let data = data,
-               error == nil {
-                let _ = Studding.parsed(data: data) { xml in
-                    guard let xml = xml else {
-                        sprint("DailyErrorLogs: unable to parse list bucket xml")
-                        dailyPrefix.isDone = true
-                        return false
+                                 _ returnCallback: @escaping (String?) -> Void) {
+        // Given an output directory, make its contents match the S3's content. This includes:
+        // 1. removing any files which do not exist on the S3
+        // 2. downloading any files which do not exist locally
+        
+        HTTPSession.oneshot.beListAllKeysFromS3(credentials: credentials,
+                                            keyPrefix: keyPrefix,
+                                                self) { objects, error in
+            if let error = error { return returnCallback(error) }
+            let localDirectoryUrl = URL(fileURLWithPath: localDirectory)
+            
+            var mutableObjects = objects
+            var lastError: String? = nil
+            
+            // Ensure the output directory exists
+            try? FileManager.default.createDirectory(at: localDirectoryUrl,
+                                                     withIntermediateDirectories: true)
+            
+            // Remove any extra local files, remove any object we don't need to download
+            if let enumerator = FileManager.default.enumerator(at: localDirectoryUrl,
+                                                               includingPropertiesForKeys: [.isRegularFileKey],
+                                                               options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
+                for case let fileURL as URL in enumerator {
+                    let filePath = fileURL.path
+                    
+                    // Does this file exist on the s3?
+                    var existsOnTheS3 = false
+                    for object in mutableObjects where filePath.hasSuffix(object.key) {
+                        existsOnTheS3 = true
+                        mutableObjects.removeOne(object)
                     }
                     
-                    dailyPrefix.isDone = xml["IsTruncated"]?.text != "true"
-                                            
-                    for child in xml.children {
-                        guard child.name.description == "Contents" else { continue }
-                        guard let key = child["Key"]?.text.toString() else { continue }
-                        guard key.hasSuffix(".log") else { continue }
-                        dailyPrefix.marker = key
-                        dailyPrefix.allKeys.append(key)
+                    // Doesn't exist on the s3, we should remove it
+                    if existsOnTheS3 == false {
+                        try? FileManager.default.removeItem(atPath: filePath)
                     }
-                    return true
                 }
-            } else {
-                sprint("DailyErrorLogs: \(error ?? "listing bucket failed for unknown reason")")
-                dailyPrefix.isDone = true
             }
             
-            self.bePerformProcess(dailyPrefix: dailyPrefix)
+            let group = DispatchGroup()
+            
+            for object in objects {
+                group.enter()
+                HTTPSessionManager.shared.beNew(self) { session in
+                    session.beDownloadFromS3(credentials: credentials,
+                                             key: object.key,
+                                             contentType: .any,
+                                             self) { data, response, error in
+                        if let error = error {
+                            lastError = error
+                        }
+                        
+                        if let data = data,
+                           error == nil {
+                            try? data.write(to: localDirectoryUrl.deletingLastPathComponent().appendingPathComponent(object.key))
+                        }
+                        
+                        group.leave()
+                    }
+                }
+            }
+            
+            group.notify(actor: self) {
+                returnCallback(lastError)
+            }
         }
-        */
-        
     }
     
 }
