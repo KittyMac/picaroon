@@ -85,7 +85,7 @@ extension HTTPSession {
                         
                         if let data = data,
                            error == nil {
-                            var objectKey = makeRelativePath(key: object.key)
+                            let objectKey = makeRelativePath(key: object.key)
                             
                             let fileUrl = localDirectoryUrl.appendingPathComponent(objectKey)
                             if (try? data.write(to: fileUrl)) == nil {
@@ -94,6 +94,14 @@ extension HTTPSession {
                                                                          withIntermediateDirectories: true)
                                 try? data.write(to: fileUrl)
                             }
+                            
+                            // Update the modification date of the file to match the date of the s3 object
+                            let attributes = [
+                                FileAttributeKey.modificationDate: object.modifiedDate,
+                                FileAttributeKey.creationDate: object.modifiedDate,
+                            ]
+                            try? FileManager.default.setAttributes(attributes, ofItemAtPath: fileUrl.path)
+                            
                             filesChanged += 1
                         }
                         
