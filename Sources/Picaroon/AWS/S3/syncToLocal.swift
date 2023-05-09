@@ -18,7 +18,7 @@ extension HTTPSession {
         // 2. downloading any files which do not exist locally
         
         HTTPSession.oneshot.beListAllKeysFromS3(credentials: credentials,
-                                            keyPrefix: keyPrefix,
+                                                keyPrefix: keyPrefix,
                                                 self) { objects, error in
             if let error = error { return returnCallback(0, error) }
             let localDirectoryUrl = URL(fileURLWithPath: localDirectory)
@@ -72,7 +72,15 @@ extension HTTPSession {
                         
                         if let data = data,
                            error == nil {
-                            let fileUrl = localDirectoryUrl.deletingLastPathComponent().appendingPathComponent(object.key)
+                            var objectKey = object.key
+                            if objectKey.hasPrefix(keyPrefix) {
+                                objectKey = objectKey.dropFirst(keyPrefix.count).description
+                            }
+                            if objectKey.hasPrefix("/") {
+                                objectKey = objectKey.dropFirst(1).description
+                            }
+                            
+                            let fileUrl = localDirectoryUrl.appendingPathComponent(objectKey)
                             if (try? data.write(to: fileUrl)) == nil {
                                 // probably directory does not exist...
                                 try? FileManager.default.createDirectory(at: fileUrl.deletingLastPathComponent(),

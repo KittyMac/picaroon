@@ -32,7 +32,7 @@ public struct S3Object: Equatable {
 }
 
 extension HTTPSession {
-        
+    
     internal func _beListFromS3(credentials: S3Credentials,
                                 keyPrefix: String,
                                 marker: String?,
@@ -43,7 +43,7 @@ extension HTTPSession {
         let service = credentials.service
         let region = credentials.region
         let bucket = credentials.bucket
-
+        
         let path = keyPrefix.hasPrefix("/") ? keyPrefix : "/" + keyPrefix
         
         // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
@@ -53,7 +53,7 @@ extension HTTPSession {
         }
         
         var queryItems: [String: String] = [:]
-
+        
         guard var components = URLComponents(string: url.description) else {
             returnCallback(nil, nil, "failed to create url components")
             return
@@ -73,7 +73,7 @@ extension HTTPSession {
         }
         
         components.percentEncodedQuery = components.query?.percentEncoded()
-
+        
         guard let url = components.url else {
             returnCallback(nil, nil, "failed to get components url")
             return
@@ -93,7 +93,7 @@ extension HTTPSession {
                                     queryItems: queryItems) {
             return returnCallback(nil, nil, error)
         }
-
+        
         self.beRequest(request: request,
                        proxy: nil,
                        self) { data, response, error in
@@ -206,7 +206,7 @@ extension URLRequest {
         }
         let dateString = date.toString()
         canonicalHeaders["x-amz-date"] = dateString
-                
+        
         var canonicalRequest: [String] = []
         // HTTPMethod
         canonicalRequest.append(method)
@@ -258,13 +258,13 @@ extension URLRequest {
         // print("--------------------------")
         // print("AWS4\(secret)")
         // print("--------------------------")
-
+        
         // *** Step 4: Calculate the signature
         guard let kDate = hash("AWS4\(secret)".bytes, dateShort.description.bytes) else { return "failed to hash key" }
         guard let kRegion = hash(kDate, region.bytes) else { return "failed to hash region" }
         guard let kService = hash(kRegion, service.bytes) else { return "failed to hash service" }
         guard let kSigning = hash(kService, "aws4_request".bytes) else { return "failed to hash aws4_request" }
-
+        
         guard let signature = hash(kSigning, stringToSign.bytes)?.toHexString() else { return "failed to hash signature" }
         
         let authorizationString = [
@@ -284,7 +284,7 @@ extension URLRequest {
         // print("--------------------------")
         // print(self.allHTTPHeaderFields)
         // print("--------------------------")
-
+        
         return nil
     }
 }

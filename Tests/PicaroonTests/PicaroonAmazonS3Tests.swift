@@ -37,8 +37,8 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         let expectation = XCTestExpectation(description: #function)
 
         HTTPSession.oneshot.beSyncToLocal(credentials: credentials,
-                                          keyPrefix: "many/",
-                                          localDirectory: "/tmp/many",
+                                          keyPrefix: "v1/many/",
+                                          localDirectory: "/tmp/many/",
                                           Flynn.any) { filesChanged, error in
             XCTAssertNil(error)
             print(filesChanged)
