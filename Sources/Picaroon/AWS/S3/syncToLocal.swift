@@ -38,11 +38,7 @@ extension HTTPSession {
             var lastError: String? = nil
             
             var modifiedObjects: [S3Object] = []
-            
-            // Ensure the output directory exists
-            try? FileManager.default.createDirectory(at: localDirectoryUrl,
-                                                     withIntermediateDirectories: true)
-            
+                        
             // Remove any extra local files, remove any object we don't need to download
             if let enumerator = FileManager.default.enumerator(at: localDirectoryUrl,
                                                                includingPropertiesForKeys: [.isRegularFileKey],
