@@ -19,6 +19,20 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                                     region: "us-west-2",
                                     bucket: "sp-rover-unittest-west")
     
+    func testListAll() {
+        let expectation = XCTestExpectation(description: #function)
+
+        HTTPSession.oneshot.beListAllKeysFromS3(credentials: credentials,
+                                                keyPrefix: "many/",
+                                                Flynn.any) { objects, error in
+            XCTAssertNil(error)
+            XCTAssertEqual(objects.count, 2346)
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 600)
+    }
+    
     func testUploadAndDownloadS3() {
         let expectation = XCTestExpectation(description: #function)
         

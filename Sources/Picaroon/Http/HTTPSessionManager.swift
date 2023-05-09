@@ -21,7 +21,7 @@ public class HTTPSessionManager: Actor {
         for _ in 0..<maxConcurrentSessions {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 10.0
-            config.httpMaximumConnectionsPerHost = Flynn.cores * 3
+            config.httpMaximumConnectionsPerHost = max(Flynn.cores * 3, 4)
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             config.httpCookieAcceptPolicy = .always
@@ -33,7 +33,7 @@ public class HTTPSessionManager: Actor {
         }
     }
     
-    private let maxConcurrentSessions = Flynn.cores * 3
+    private let maxConcurrentSessions = max(Flynn.cores * 3, 4)
     
     private var waitingURLSessions: [URLSession] = []
     private var waitingSessions: [HTTPSession] = []

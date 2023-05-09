@@ -37,7 +37,7 @@ public class HTTPSession: Actor {
     fileprivate init(oneshot: Bool) {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 10.0
-        config.httpMaximumConnectionsPerHost = Flynn.cores * 3
+        config.httpMaximumConnectionsPerHost = max(Flynn.cores * 3, 4)
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
         config.httpCookieStorage = nil
@@ -123,7 +123,7 @@ public class HTTPSession: Actor {
         params.forEach { (key, value) in
             components.queryItems?.append(URLQueryItem(name: key, value: value))
         }
-        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        components.percentEncodedQuery = components.query?.percentEncoded()
         
         guard let url = components.url else {
             returnCallback(nil, nil, "failed to get components url")

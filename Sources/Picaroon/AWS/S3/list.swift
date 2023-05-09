@@ -2,10 +2,30 @@ import Foundation
 import Flynn
 import Hitch
 import CryptoSwift
+import Studding
 
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
+
+public struct S3Object {
+    let key: String
+    let size: Int64
+    let modifiedDate: Date
+    
+    var fileName: String {
+        return key.replacingOccurrences(of: "/", with: "_")
+    }
+    
+    init?(xmlElement: XmlElement) {
+        guard let key = xmlElement["Key"]?.text else { return nil }
+        guard let size = xmlElement["Size"]?.text.toInt() else { return nil }
+        guard let modifiedDate = xmlElement["LastModified"]?.text.description.date() else { return nil }
+        self.key = key.toString()
+        self.size = Int64(size)
+        self.modifiedDate = modifiedDate
+    }
+}
 
 extension HTTPSession {
         
@@ -27,6 +47,8 @@ extension HTTPSession {
         if let overrideUrl = credentials.url {
             url = "{0}/" << [overrideUrl, path]
         }
+        
+        var queryItems: [String: String] = [:]
 
         guard var components = URLComponents(string: url.description) else {
             returnCallback(nil, nil, "failed to create url components")
@@ -37,15 +59,17 @@ extension HTTPSession {
             components.queryItems = []
         }
         
-        if path != "/" {
-            components.queryItems?.append(URLQueryItem(name: "prefix", value: path.dropFirst(1).description))
-        }
         if let marker = marker {
+            queryItems["marker"] = marker
             components.queryItems?.append(URLQueryItem(name: "marker", value: marker))
         }
+        if path != "/" {
+            queryItems["prefix"] = path.dropFirst(1).description
+            components.queryItems?.append(URLQueryItem(name: "prefix", value: path.dropFirst(1).description))
+        }
         
-        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
-        
+        components.percentEncodedQuery = components.query?.percentEncoded()
+
         guard let url = components.url else {
             returnCallback(nil, nil, "failed to get components url")
             return
@@ -61,7 +85,8 @@ extension HTTPSession {
                                     secret: secretKey,
                                     service: "s3",
                                     region: region,
-                                    bucket: bucket) {
+                                    bucket: bucket,
+                                    queryItems: queryItems) {
             return returnCallback(nil, nil, error)
         }
 
@@ -72,6 +97,50 @@ extension HTTPSession {
         }
     }
     
+    internal func _beListAllKeysFromS3(credentials: S3Credentials,
+                                       keyPrefix: String,
+                                       _ returnCallback: @escaping ([S3Object], String?) -> Void) {
+        var allObjects: [S3Object] = []
+        
+        func requestMore() {
+            // Like beListFromS3(), but gives parsed results and will keep listing until all returns have been discovered
+            HTTPSession.oneshot.beListFromS3(credentials: credentials,
+                                             keyPrefix: keyPrefix,
+                                             marker: allObjects.last?.key,
+                                             self) { data, response, error in
+                if let error = error { return returnCallback([], error) }
+                guard let data = data else { return returnCallback([], "data is nil, unknown error listing bucket") }
+                
+                var isDone = false
+                
+                if let error: String? = Studding.parsed(data: data, { xml in
+                    guard let xml = xml else { return "unable to parse xml" }
+                    
+                    isDone = xml["IsTruncated"]?.text != "true"
+                    
+                    for child in xml.children {
+                        guard child.name == "Contents" else { continue }
+                        guard let object = S3Object(xmlElement: child) else {
+                            return "failed to part Content"
+                        }
+                        allObjects.append(object)
+                    }
+                    
+                    return nil
+                }) {
+                    return returnCallback(allObjects, error)
+                }
+                
+                if isDone {
+                    return returnCallback(allObjects, nil)
+                } else {
+                    return requestMore()
+                }
+            }
+        }
+        
+        requestMore()
+    }
 }
 
 extension URLRequest {
@@ -79,7 +148,8 @@ extension URLRequest {
                        secret: String,
                        service: String,
                        region: String,
-                       bucket: String) -> String? {
+                       bucket: String,
+                       queryItems: [String: String]) -> String? {
         // https://docs.aws.amazon.com/IAM/latest/UserGuide/create-signed-request.html
         let hash: (Array<UInt8>, Array<UInt8>) -> Array<UInt8>? = { key, data in
             return try? HMAC(key: key, variant: .sha2(.sha256)).authenticate(data)
@@ -89,8 +159,28 @@ extension URLRequest {
         guard let url = url else { return "url is empty" }
         guard let host = url.host else { return "host is empty" }
         
-        let query = url.query?.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? ""
-        //let path = url.path.hasSuffix("/") ? url.path : url.path + "/"
+        // Note: query parameters must be in the correct order (alphabetical)
+        var query: String? = nil
+        
+        // The URL-encoded query string parameters, separated by ampersands (&). Percent-encode reserved characters, including the space character. Encode names and values separately.
+        // If there are empty parameters, append the equals sign to the parameter name before encoding. After encoding, sort the parameters alphabetically by key name.
+        // If there is no query string, use an empty string ("").
+        //
+        // example: marker=many%2Ffile1898.txt&amp;prefix=many%2F
+        let sortedQueryKeys = queryItems.keys.sorted()
+        if sortedQueryKeys.isEmpty == false {
+            var queryString = ""
+            for key in sortedQueryKeys {
+                guard let value = queryItems[key] else { continue }
+                guard let encodedKey = key.percentEncoded() else { continue }
+                guard let encodedValue = value.percentEncoded() else { continue }
+                queryString.append("\(encodedKey)=\(encodedValue)&")
+            }
+            if queryString.isEmpty == false {
+                query = queryString.dropLast(1).description
+            }
+        }
+        
         let path = url.path
         
         // *** Step 1: Create a canonical request
@@ -118,7 +208,7 @@ extension URLRequest {
         // CanonicalUri
         canonicalRequest.append(path)
         // CanonicalQueryString
-        canonicalRequest.append(query)
+        canonicalRequest.append(query ?? "")
         // CanonicalHeaders
         for key in canonicalHeaders.keys.sorted() {
             guard let value = canonicalHeaders[key] else { continue }
