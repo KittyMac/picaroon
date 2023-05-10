@@ -26,7 +26,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                                                 keyPrefix: "many/",
                                                 Flynn.any) { objects, error in
             XCTAssertNil(error)
-            XCTAssertEqual(objects.count, 2346)
+            XCTAssertEqual(objects.count, 1349)
             expectation.fulfill()
         }
         

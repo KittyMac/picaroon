@@ -13,21 +13,29 @@ public struct S3Object: Equatable {
         return lhs.key == rhs.key
     }
     
+    public let keyPrefix: String
+    
     public let key: String
     public let size: Int64
     public let modifiedDate: Date
     
     public var fileName: String {
-        return key.replacingOccurrences(of: "/", with: "_")
+        let filename = key.replacingOccurrences(of: "/", with: "_")
+        if filename.hasPrefix(keyPrefix) {
+            return filename.dropFirst(keyPrefix.count).description
+        }
+        return filename
     }
     
-    public init?(xmlElement: XmlElement) {
+    public init?(xmlElement: XmlElement,
+                 keyPrefix: String = "") {
         guard let key = xmlElement["Key"]?.text else { return nil }
         guard let size = xmlElement["Size"]?.text.toInt() else { return nil }
         guard let modifiedDate = xmlElement["LastModified"]?.text.description.date() else { return nil }
         self.key = key.toString()
         self.size = Int64(size)
         self.modifiedDate = modifiedDate
+        self.keyPrefix = keyPrefix
     }
 }
 
@@ -124,7 +132,8 @@ extension HTTPSession {
                     
                     for child in xml.children {
                         guard child.name == "Contents" else { continue }
-                        guard let object = S3Object(xmlElement: child) else {
+                        guard let object = S3Object(xmlElement: child,
+                                                    keyPrefix: keyPrefix) else {
                             return "failed to part Content"
                         }
                         guard object.key.hasSuffix("/") == false else { continue }
