@@ -13,15 +13,15 @@ public struct S3Object: Equatable {
         return lhs.key == rhs.key
     }
     
-    let key: String
-    let size: Int64
-    let modifiedDate: Date
+    public let key: String
+    public let size: Int64
+    public let modifiedDate: Date
     
-    var fileName: String {
+    public var fileName: String {
         return key.replacingOccurrences(of: "/", with: "_")
     }
     
-    init?(xmlElement: XmlElement) {
+    public init?(xmlElement: XmlElement) {
         guard let key = xmlElement["Key"]?.text else { return nil }
         guard let size = xmlElement["Size"]?.text.toInt() else { return nil }
         guard let modifiedDate = xmlElement["LastModified"]?.text.description.date() else { return nil }
