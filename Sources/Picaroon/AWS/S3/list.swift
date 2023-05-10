@@ -20,11 +20,10 @@ public struct S3Object: Equatable {
     public let modifiedDate: Date
     
     public var fileName: String {
-        let filename = key.replacingOccurrences(of: "/", with: "_")
-        if filename.hasPrefix(keyPrefix) {
-            return filename.dropFirst(keyPrefix.count).description
+        if key.hasPrefix(keyPrefix) {
+            return key.dropFirst(keyPrefix.count).description.replacingOccurrences(of: "/", with: "_")
         }
-        return filename
+        return key.replacingOccurrences(of: "/", with: "_")
     }
     
     public init?(xmlElement: XmlElement,
