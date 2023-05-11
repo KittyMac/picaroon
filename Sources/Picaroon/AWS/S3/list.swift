@@ -21,7 +21,11 @@ public struct S3Object: Equatable {
     
     public var fileName: String {
         if key.hasPrefix(keyPrefix) {
-            return key.dropFirst(keyPrefix.count).description.replacingOccurrences(of: "/", with: "_")
+            var withoutPrefix = key.dropFirst(keyPrefix.count)
+            if withoutPrefix.hasPrefix("/") {
+                withoutPrefix = key.dropFirst(1)
+            }
+            return withoutPrefix.description.replacingOccurrences(of: "/", with: "_")
         }
         return key.replacingOccurrences(of: "/", with: "_")
     }
