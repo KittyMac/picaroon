@@ -91,11 +91,13 @@ extension HTTPSession {
                             }
                             
                             // Update the modification date of the file to match the date of the s3 object
-                            let attributes = [
-                                FileAttributeKey.modificationDate: object.modifiedDate,
+                            try? FileManager.default.setAttributes([
                                 FileAttributeKey.creationDate: object.modifiedDate,
-                            ]
-                            try? FileManager.default.setAttributes(attributes, ofItemAtPath: fileUrl.path)
+                            ], ofItemAtPath: fileUrl.path)
+                            
+                            try? FileManager.default.setAttributes([
+                                FileAttributeKey.modificationDate: object.modifiedDate,
+                            ], ofItemAtPath: fileUrl.path)
                             
                             modifiedObjects.append(object)
                         }
