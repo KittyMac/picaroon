@@ -23,7 +23,7 @@ public struct S3Object: Equatable {
         if key.hasPrefix(keyPrefix) {
             var withoutPrefix = key.dropFirst(keyPrefix.count)
             if withoutPrefix.hasPrefix("/") {
-                withoutPrefix = key.dropFirst(1)
+                withoutPrefix = withoutPrefix.dropFirst(1)
             }
             return withoutPrefix.description.replacingOccurrences(of: "/", with: "_")
         }
