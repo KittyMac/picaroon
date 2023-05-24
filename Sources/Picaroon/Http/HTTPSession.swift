@@ -23,12 +23,12 @@ public class HTTPSession: Actor {
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
     private var deinitCallback: (() -> ())?
-    private var sessionCookies: HTTPCookieStorage?
+    private var sessionCookies: [HTTPCookie] = []
     
     internal var safeS3Key: String?
     internal var safeS3Secret: String?
     
-    public init(cookies: HTTPCookieStorage?,
+    public init(cookies: [HTTPCookie],
                 _ returnCallback: @escaping (HTTPSession) -> ()) {
         sessionCookies = cookies
         beginCallback = returnCallback
@@ -69,10 +69,8 @@ public class HTTPSession: Actor {
             
             if let httpCookieStorage = urlSession.configuration.httpCookieStorage {
                 httpCookieStorage.removeCookies(since: Date.distantPast)
-                if let sessionCookies = self.sessionCookies?.cookies {
-                    for cookie in sessionCookies {
-                        httpCookieStorage.setCookie(cookie)
-                    }
+                for cookie in self.sessionCookies {
+                    httpCookieStorage.setCookie(cookie)
                 }
             }
 

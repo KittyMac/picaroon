@@ -56,12 +56,12 @@ public class HTTPSessionManager: Actor {
     }
     
     internal func _beNew(_ returnCallback: @escaping (HTTPSession) -> ()) {
-        waitingSessions.append(HTTPSession(cookies: nil,
+        waitingSessions.append(HTTPSession(cookies: [],
                                            returnCallback))
         checkForMoreSessions()
     }
     
-    internal func _beNew(cookies: HTTPCookieStorage?,
+    internal func _beNew(cookies: [HTTPCookie],
                          _ returnCallback: @escaping (HTTPSession) -> ()) {
         waitingSessions.append(HTTPSession(cookies: cookies,
                                            returnCallback))
