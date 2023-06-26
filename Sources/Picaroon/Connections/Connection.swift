@@ -223,7 +223,6 @@ public class Connection: Actor, AnyConnection {
             if (isProcessingRequest == true && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > serverTimeout) ||
                 (isProcessingRequest == false && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > clientTimeout) {
                 _beSendInternalError()
-                socket.close()
                 ConnectionManager.shared.beClose(connection: self)
                 return
             }
@@ -237,7 +236,6 @@ public class Connection: Actor, AnyConnection {
         // if we're reading more data than our buffer allows, end the connection
         if currentPtr >= endPtr {
             _beSendInternalError()
-            socket.close()
             ConnectionManager.shared.beClose(connection: self)
             return
         }
