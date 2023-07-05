@@ -450,11 +450,11 @@ public class HttpRequest {
                        keyEnd: UnsafePointer<UInt8>) {
         let size = keyEnd - buffer
         
-        if host == nil &&
-            size >= 5 &&
-            keyEnd[-4] == .H &&
-            //keyEnd[-3] == .o &&
-            keyEnd[-2] == .s &&
+        if host == nil,
+            size >= 5,
+            keyEnd[-4] == .H,
+            //keyEnd[-3] == .o,
+            keyEnd[-2] == .s,
             keyEnd[-1] == .t {
             host = HalfHitch(sourceObject: nil,
                              raw: buffer,
@@ -463,17 +463,17 @@ public class HttpRequest {
                              to: ptr - buffer)
         }
         
-        if userAgent == nil &&
-            size >= 10 &&
-            keyEnd[-10] == .U &&
-            //keyEnd[-9] == .s &&
-            keyEnd[-8] == .e &&
-            //keyEnd[-7] == .r &&
-            keyEnd[-6] == .minus &&
-            //keyEnd[-5] == .A &&
-            keyEnd[-4] == .g &&
-            //keyEnd[-3] == .e &&
-            keyEnd[-2] == .n &&
+        if userAgent == nil,
+            size >= 10,
+            keyEnd[-10] == .U,
+            //keyEnd[-9] == .s,
+            keyEnd[-8] == .e,
+            //keyEnd[-7] == .r,
+            keyEnd[-6] == .minus,
+            //keyEnd[-5] == .A,
+            keyEnd[-4] == .g,
+            //keyEnd[-3] == .e,
+            keyEnd[-2] == .n,
             keyEnd[-1] == .t {
             userAgent = HalfHitch(sourceObject: nil,
                                   raw: buffer,
@@ -482,20 +482,20 @@ public class HttpRequest {
                                   to: ptr - buffer)
         }
         
-        if authorization == nil &&
-            size >= 13 &&
-            keyEnd[-13] == .A &&
-            //keyEnd[-12] == .u &&
-            keyEnd[-11] == .t &&
-            //keyEnd[-10] == .h &&
-            keyEnd[-9] == .o &&
-            //keyEnd[-8] == .r &&
-            keyEnd[-7] == .i &&
-            //keyEnd[-6] == .z &&
-            keyEnd[-5] == .a &&
-            //keyEnd[-4] == .t &&
-            keyEnd[-3] == .i &&
-            //keyEnd[-2] == .o &&
+        if authorization == nil,
+            size >= 13,
+            keyEnd[-13] == .A,
+            //keyEnd[-12] == .u,
+            keyEnd[-11] == .t,
+            //keyEnd[-10] == .h,
+            keyEnd[-9] == .o,
+            //keyEnd[-8] == .r,
+            keyEnd[-7] == .i,
+            //keyEnd[-6] == .z,
+            keyEnd[-5] == .a,
+            //keyEnd[-4] == .t,
+            keyEnd[-3] == .i,
+            //keyEnd[-2] == .o,
             keyEnd[-1] == .n {
             authorization = HalfHitch(sourceObject: nil,
                                       raw: buffer,
@@ -504,13 +504,13 @@ public class HttpRequest {
                                       to: ptr - buffer)
         }
         
-        if accept == nil &&
-            size >= 6 &&
-            keyEnd[-6] == .A &&
-            //keyEnd[-5] == .c &&
-            keyEnd[-4] == .c &&
-            //keyEnd[-3] == .e &&
-            keyEnd[-2] == .p &&
+        if accept == nil,
+            size >= 6,
+            keyEnd[-6] == .A,
+            //keyEnd[-5] == .c,
+            keyEnd[-4] == .c,
+            //keyEnd[-3] == .e,
+            keyEnd[-2] == .p,
             keyEnd[-1] == .t {
             accept = HalfHitch(sourceObject: nil,
                                raw: buffer,
@@ -519,22 +519,22 @@ public class HttpRequest {
                                to: ptr - buffer)
         }
         
-        if acceptEncoding == nil &&
-            size >= 15 &&
-            keyEnd[-15] == .A &&
-            //keyEnd[-14] == .c &&
-            keyEnd[-13] == .c &&
-            //keyEnd[-12] == .e &&
-            keyEnd[-11] == .p &&
-            //keyEnd[-10] == .t &&
-            keyEnd[-9] == .minus &&
-            //keyEnd[-8] == .E &&
-            keyEnd[-7] == .n &&
-            //keyEnd[-6] == .c &&
-            keyEnd[-5] == .o &&
-            //keyEnd[-4] == .d &&
-            keyEnd[-3] == .i &&
-            //keyEnd[-2] == .n &&
+        if acceptEncoding == nil,
+            size >= 15,
+            keyEnd[-15] == .A,
+            //keyEnd[-14] == .c,
+            keyEnd[-13] == .c,
+            //keyEnd[-12] == .e,
+            keyEnd[-11] == .p,
+            //keyEnd[-10] == .t,
+            keyEnd[-9] == .minus,
+            //keyEnd[-8] == .E,
+            keyEnd[-7] == .n,
+            //keyEnd[-6] == .c,
+            keyEnd[-5] == .o,
+            //keyEnd[-4] == .d,
+            keyEnd[-3] == .i,
+            //keyEnd[-2] == .n,
             keyEnd[-1] == .g {
             acceptEncoding = HalfHitch(sourceObject: nil,
                                        raw: buffer,
@@ -543,21 +543,21 @@ public class HttpRequest {
                                        to: ptr - buffer)
         }
         
-        if acceptCharset == nil &&
-            size >= 14 &&
-            keyEnd[-14] == .A &&
-            //keyEnd[-13] == .c &&
-            keyEnd[-12] == .c &&
-            //keyEnd[-11] == .e &&
-            keyEnd[-10] == .p &&
-            //keyEnd[-9] == .t &&
-            keyEnd[-8] == .minus &&
-            //keyEnd[-7] == .C &&
-            keyEnd[-6] == .h &&
-            //keyEnd[-5] == .a &&
-            keyEnd[-4] == .r &&
-            //keyEnd[-3] == .s &&
-            keyEnd[-2] == .e &&
+        if acceptCharset == nil,
+            size >= 14,
+            keyEnd[-14] == .A,
+            //keyEnd[-13] == .c,
+            keyEnd[-12] == .c,
+            //keyEnd[-11] == .e,
+            keyEnd[-10] == .p,
+            //keyEnd[-9] == .t,
+            keyEnd[-8] == .minus,
+            //keyEnd[-7] == .C,
+            keyEnd[-6] == .h,
+            //keyEnd[-5] == .a,
+            keyEnd[-4] == .r,
+            //keyEnd[-3] == .s,
+            keyEnd[-2] == .e,
             keyEnd[-1] == .t {
             acceptCharset = HalfHitch(sourceObject: nil,
                                       raw: buffer,
@@ -566,22 +566,22 @@ public class HttpRequest {
                                       to: ptr - buffer)
         }
         
-        if acceptLanguage == nil &&
-            size >= 15 &&
-            keyEnd[-15] == .A &&
-            //keyEnd[-14] == .c &&
-            keyEnd[-13] == .c &&
-            //keyEnd[-12] == .e &&
-            keyEnd[-11] == .p &&
-            //keyEnd[-10] == .t &&
-            keyEnd[-9] == .minus &&
-            //keyEnd[-8] == .L &&
-            keyEnd[-7] == .a &&
-            //keyEnd[-6] == .n &&
-            keyEnd[-5] == .g &&
-            //keyEnd[-4] == .u &&
-            keyEnd[-3] == .a &&
-            //keyEnd[-2] == .g &&
+        if acceptLanguage == nil,
+            size >= 15,
+            keyEnd[-15] == .A,
+            //keyEnd[-14] == .c,
+            keyEnd[-13] == .c,
+            //keyEnd[-12] == .e,
+            keyEnd[-11] == .p,
+            //keyEnd[-10] == .t,
+            keyEnd[-9] == .minus,
+            //keyEnd[-8] == .L,
+            keyEnd[-7] == .a,
+            //keyEnd[-6] == .n,
+            keyEnd[-5] == .g,
+            //keyEnd[-4] == .u,
+            keyEnd[-3] == .a,
+            //keyEnd[-2] == .g,
             keyEnd[-1] == .e {
             acceptLanguage = HalfHitch(sourceObject: nil,
                                        raw: buffer,
@@ -590,17 +590,17 @@ public class HttpRequest {
                                        to: ptr - buffer)
         }
         
-        if connection == nil &&
-            size >= 10 &&
-            keyEnd[-10] == .C &&
-            //keyEnd[-9] == .o &&
-            keyEnd[-8] == .n &&
-            //keyEnd[-7] == .n &&
-            keyEnd[-6] == .e &&
-            //keyEnd[-5] == .c &&
-            keyEnd[-4] == .t &&
-            //keyEnd[-3] == .i &&
-            keyEnd[-2] == .o &&
+        if connection == nil,
+            size >= 10,
+            keyEnd[-10] == .C,
+            //keyEnd[-9] == .o,
+            keyEnd[-8] == .n,
+            //keyEnd[-7] == .n,
+            keyEnd[-6] == .e,
+            //keyEnd[-5] == .c,
+            keyEnd[-4] == .t,
+            //keyEnd[-3] == .i,
+            keyEnd[-2] == .o,
             keyEnd[-1] == .n {
             connection = HalfHitch(sourceObject: nil,
                                    raw: buffer,
@@ -609,32 +609,32 @@ public class HttpRequest {
                                    to: ptr - buffer)
         }
         
-        if upgradeInsecureRequests == nil &&
-            size >= 25 &&
-            keyEnd[-25] == .U &&
-            //keyEnd[-24] == .p &&
-            keyEnd[-23] == .g &&
-            //keyEnd[-22] == .r &&
-            keyEnd[-21] == .a &&
-            //keyEnd[-20] == .d &&
-            keyEnd[-19] == .e &&
-            //keyEnd[-18] == .minus &&
-            keyEnd[-17] == .I &&
-            //keyEnd[-16] == .n &&
-            keyEnd[-15] == .s &&
-            //keyEnd[-14] == .e &&
-            keyEnd[-13] == .c &&
-            //keyEnd[-12] == .u &&
-            keyEnd[-11] == .r &&
-            //keyEnd[-10] == .e &&
-            keyEnd[-9] == .minus &&
-            //keyEnd[-8] == .R &&
-            keyEnd[-7] == .e &&
-            //keyEnd[-6] == .q &&
-            keyEnd[-5] == .u &&
-            //keyEnd[-4] == .e &&
-            keyEnd[-3] == .s &&
-            //keyEnd[-2] == .t &&
+        if upgradeInsecureRequests == nil,
+            size >= 25,
+            keyEnd[-25] == .U,
+            //keyEnd[-24] == .p,
+            keyEnd[-23] == .g,
+            //keyEnd[-22] == .r,
+            keyEnd[-21] == .a,
+            //keyEnd[-20] == .d,
+            keyEnd[-19] == .e,
+            //keyEnd[-18] == .minus,
+            keyEnd[-17] == .I,
+            //keyEnd[-16] == .n,
+            keyEnd[-15] == .s,
+            //keyEnd[-14] == .e,
+            keyEnd[-13] == .c,
+            //keyEnd[-12] == .u,
+            keyEnd[-11] == .r,
+            //keyEnd[-10] == .e,
+            keyEnd[-9] == .minus,
+            //keyEnd[-8] == .R,
+            keyEnd[-7] == .e,
+            //keyEnd[-6] == .q,
+            keyEnd[-5] == .u,
+            //keyEnd[-4] == .e,
+            keyEnd[-3] == .s,
+            //keyEnd[-2] == .t,
             keyEnd[-1] == .s {
             upgradeInsecureRequests = HalfHitch(sourceObject: nil,
                                                 raw: buffer,
@@ -643,21 +643,21 @@ public class HttpRequest {
                                                 to: ptr - buffer)
         }
         
-        if contentLength == nil &&
-            size >= 14 &&
-            keyEnd[-14] == .C &&
-            //keyEnd[-13] == .o &&
-            keyEnd[-12] == .n &&
-            //keyEnd[-11] == .t &&
-            keyEnd[-10] == .e &&
-            //keyEnd[-9] == .n &&
-            keyEnd[-8] == .t &&
-            //keyEnd[-7] == .minus &&
-            keyEnd[-6] == .L &&
-            //keyEnd[-5] == .e &&
-            keyEnd[-4] == .n &&
-            //keyEnd[-3] == .g &&
-            keyEnd[-2] == .t &&
+        if contentLength == nil,
+            size >= 14,
+            keyEnd[-14] == .C,
+            //keyEnd[-13] == .o,
+            keyEnd[-12] == .n,
+            //keyEnd[-11] == .t,
+            keyEnd[-10] == .e,
+            //keyEnd[-9] == .n,
+            keyEnd[-8] == .t,
+            //keyEnd[-7] == .minus,
+            keyEnd[-6] == .L,
+            //keyEnd[-5] == .e,
+            keyEnd[-4] == .n,
+            //keyEnd[-3] == .g,
+            keyEnd[-2] == .t,
             keyEnd[-1] == .h {
             contentLength = HalfHitch(sourceObject: nil,
                                       raw: buffer,
@@ -666,19 +666,19 @@ public class HttpRequest {
                                       to: ptr - buffer)
         }
         
-        if contentType == nil &&
-            size >= 12 &&
-            keyEnd[-12] == .C &&
-            //keyEnd[-11] == .o &&
-            keyEnd[-10] == .n &&
-            //keyEnd[-9] == .t &&
-            keyEnd[-8] == .e &&
-            //keyEnd[-7] == .n &&
-            keyEnd[-6] == .t &&
-            //keyEnd[-5] == .minus &&
-            keyEnd[-4] == .T &&
-            //keyEnd[-3] == .y &&
-            keyEnd[-2] == .p &&
+        if contentType == nil,
+            size >= 12,
+            keyEnd[-12] == .C,
+            //keyEnd[-11] == .o,
+            keyEnd[-10] == .n,
+            //keyEnd[-9] == .t,
+            keyEnd[-8] == .e,
+            //keyEnd[-7] == .n,
+            keyEnd[-6] == .t,
+            //keyEnd[-5] == .minus,
+            keyEnd[-4] == .T,
+            //keyEnd[-3] == .y,
+            keyEnd[-2] == .p,
             keyEnd[-1] == .e {
             contentType = HalfHitch(sourceObject: nil,
                                     raw: buffer,
@@ -687,26 +687,26 @@ public class HttpRequest {
                                     to: ptr - buffer)
         }
         
-        if contentDisposition == nil &&
-            size >= 19 &&
-            keyEnd[-19] == .C &&
-            //keyEnd[-18] == .o &&
-            keyEnd[-17] == .n &&
-            //keyEnd[-16] == .t &&
-            keyEnd[-15] == .e &&
-            //keyEnd[-14] == .n &&
-            keyEnd[-13] == .t &&
-            //keyEnd[-12] == .minus &&
-            keyEnd[-11] == .D &&
-            //keyEnd[-10] == .i &&
-            keyEnd[-9] == .s &&
-            //keyEnd[-8] == .p &&
-            keyEnd[-7] == .o &&
-            //keyEnd[-6] == .s &&
-            keyEnd[-5] == .i &&
-            //keyEnd[-4] == .t &&
-            keyEnd[-3] == .i &&
-            //keyEnd[-2] == .o &&
+        if contentDisposition == nil,
+            size >= 19,
+            keyEnd[-19] == .C,
+            //keyEnd[-18] == .o,
+            keyEnd[-17] == .n,
+            //keyEnd[-16] == .t,
+            keyEnd[-15] == .e,
+            //keyEnd[-14] == .n,
+            keyEnd[-13] == .t,
+            //keyEnd[-12] == .minus,
+            keyEnd[-11] == .D,
+            //keyEnd[-10] == .i,
+            keyEnd[-9] == .s,
+            //keyEnd[-8] == .p,
+            keyEnd[-7] == .o,
+            //keyEnd[-6] == .s,
+            keyEnd[-5] == .i,
+            //keyEnd[-4] == .t,
+            keyEnd[-3] == .i,
+            //keyEnd[-2] == .o,
             keyEnd[-1] == .n {
             contentDisposition = HalfHitch(sourceObject: nil,
                                            raw: buffer,
@@ -715,24 +715,24 @@ public class HttpRequest {
                                            to: ptr - buffer)
         }
         
-        if ifModifiedSince == nil &&
-            size >= 17 &&
-            keyEnd[-17] == .I &&
-            //keyEnd[-16] == .f &&
-            keyEnd[-15] == .minus &&
-            //keyEnd[-14] == .M &&
-            keyEnd[-13] == .o &&
-            //keyEnd[-12] == .d &&
-            keyEnd[-11] == .i &&
-            //keyEnd[-10] == .f &&
-            keyEnd[-9] == .i &&
-            //keyEnd[-8] == .e &&
-            keyEnd[-7] == .d &&
-            //keyEnd[-6] == .minus &&
-            keyEnd[-5] == .S &&
-            //keyEnd[-4] == .i &&
-            keyEnd[-3] == .n &&
-            //keyEnd[-2] == .c &&
+        if ifModifiedSince == nil,
+            size >= 17,
+            keyEnd[-17] == .I,
+            //keyEnd[-16] == .f,
+            keyEnd[-15] == .minus,
+            //keyEnd[-14] == .M,
+            keyEnd[-13] == .o,
+            //keyEnd[-12] == .d,
+            keyEnd[-11] == .i,
+            //keyEnd[-10] == .f,
+            keyEnd[-9] == .i,
+            //keyEnd[-8] == .e,
+            keyEnd[-7] == .d,
+            //keyEnd[-6] == .minus,
+            keyEnd[-5] == .S,
+            //keyEnd[-4] == .i,
+            keyEnd[-3] == .n,
+            //keyEnd[-2] == .c,
             keyEnd[-1] == .e {
             ifModifiedSince = HalfHitch(sourceObject: nil,
                                         raw: buffer,
@@ -741,20 +741,20 @@ public class HttpRequest {
                                         to: ptr - buffer)
         }
         
-        if ifNoneMatch == nil &&
-            size >= 13 &&
-            keyEnd[-13] == .I &&
-            //keyEnd[-12] == .f &&
-            keyEnd[-11] == .minus &&
-            //keyEnd[-10] == .N &&
-            keyEnd[-9] == .o &&
-            //keyEnd[-8] == .n &&
-            keyEnd[-7] == .e &&
-            //keyEnd[-6] == .minus &&
-            keyEnd[-5] == .M &&
-            //keyEnd[-4] == .a &&
-            keyEnd[-3] == .t &&
-            //keyEnd[-2] == .c &&
+        if ifNoneMatch == nil,
+            size >= 13,
+            keyEnd[-13] == .I,
+            //keyEnd[-12] == .f,
+            keyEnd[-11] == .minus,
+            //keyEnd[-10] == .N,
+            keyEnd[-9] == .o,
+            //keyEnd[-8] == .n,
+            keyEnd[-7] == .e,
+            //keyEnd[-6] == .minus,
+            keyEnd[-5] == .M,
+            //keyEnd[-4] == .a,
+            keyEnd[-3] == .t,
+            //keyEnd[-2] == .c,
             keyEnd[-1] == .h {
             ifNoneMatch = HalfHitch(sourceObject: nil,
                                     raw: buffer,
@@ -763,13 +763,13 @@ public class HttpRequest {
                                     to: ptr - buffer)
         }
         
-        if cookie == nil &&
-            size >= 6 &&
-            keyEnd[-6] == .C &&
-            //keyEnd[-5] == .o &&
-            keyEnd[-4] == .o &&
-            //keyEnd[-3] == .k &&
-            keyEnd[-2] == .i &&
+        if cookie == nil,
+            size >= 6,
+            keyEnd[-6] == .C,
+            //keyEnd[-5] == .o,
+            keyEnd[-4] == .o,
+            //keyEnd[-3] == .k,
+            keyEnd[-2] == .i,
             keyEnd[-1] == .e {
             cookie = HalfHitch(sourceObject: nil,
                                raw: buffer,
@@ -778,13 +778,13 @@ public class HttpRequest {
                                to: ptr - buffer)
         }
         
-        if expect == nil &&
-            size >= 6 &&
-            keyEnd[-6] == .E &&
-            //keyEnd[-5] == .x &&
-            keyEnd[-4] == .p &&
-            //keyEnd[-3] == .e &&
-            keyEnd[-2] == .c &&
+        if expect == nil,
+            size >= 6,
+            keyEnd[-6] == .E,
+            //keyEnd[-5] == .x,
+            keyEnd[-4] == .p,
+            //keyEnd[-3] == .e,
+            keyEnd[-2] == .c,
             keyEnd[-1] == .t {
             expect = HalfHitch(sourceObject: nil,
                                raw: buffer,
@@ -793,16 +793,16 @@ public class HttpRequest {
                                to: ptr - buffer)
         }
         
-        if flynnTag == nil &&
-            size >= 9 &&
-            keyEnd[-9] == .F &&
-            //keyEnd[-8] == .l &&
-            keyEnd[-7] == .y &&
-            //keyEnd[-6] == .n &&
-            keyEnd[-5] == .n &&
-            //keyEnd[-4] == .minus &&
-            keyEnd[-3] == .T &&
-            //keyEnd[-2] == .a &&
+        if flynnTag == nil,
+            size >= 9,
+            keyEnd[-9] == .F,
+            //keyEnd[-8] == .l,
+            keyEnd[-7] == .y,
+            //keyEnd[-6] == .n,
+            keyEnd[-5] == .n,
+            //keyEnd[-4] == .minus,
+            keyEnd[-3] == .T,
+            //keyEnd[-2] == .a,
             keyEnd[-1] == .g {
             flynnTag = HalfHitch(sourceObject: nil,
                                  raw: buffer,
@@ -811,17 +811,17 @@ public class HttpRequest {
                                  to: ptr - buffer)
         }
         
-        if sessionId == nil &&
-            size >= 10 &&
-            keyEnd[-10] == .S &&
-            //keyEnd[-9] == .e &&
-            keyEnd[-8] == .s &&
-            //keyEnd[-7] == .s &&
-            keyEnd[-6] == .i &&
-            //keyEnd[-5] == .o &&
-            keyEnd[-4] == .n &&
-            //keyEnd[-3] == .minus &&
-            keyEnd[-2] == .I &&
+        if sessionId == nil,
+            size >= 10,
+            keyEnd[-10] == .S,
+            //keyEnd[-9] == .e,
+            keyEnd[-8] == .s,
+            //keyEnd[-7] == .s,
+            keyEnd[-6] == .i,
+            //keyEnd[-5] == .o,
+            keyEnd[-4] == .n,
+            //keyEnd[-3] == .minus,
+            keyEnd[-2] == .I,
             keyEnd[-1] == .d {
             sessionId = HalfHitch(sourceObject: nil,
                                   raw: buffer,

@@ -49,7 +49,7 @@ final class picaroonConnectionTests: XCTestCase {
         let expectation = XCTestExpectation(description: "success")
         
         DNS.shared.beResolve(domain: "www.smallplanet.com", Flynn.any) { results in
-            XCTAssertEqual(results.addresses.joined(separator: ","), "69.164.218.110")
+            XCTAssertEqual(results.addresses.joined(separator: ","), "198.185.159.144,198.49.23.144,198.49.23.145,198.185.159.145")
             expectation.fulfill()
         }
         
