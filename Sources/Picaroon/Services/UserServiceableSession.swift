@@ -71,7 +71,7 @@ open class UserServiceableSession: UserSession {
         
         // Output: We expect an array of results
         // [{"service":"HelloWorldService", "result":"Hello World"}, {"service":"AdminUserService","error":"500"}]
-        let jsonResponses = JsonElement(unknown: [])
+        let jsonResponses = ^[]
         var httpResponses = [HttpResponse]()
         var servicesCalled = 0
         var servicesFinished = 0

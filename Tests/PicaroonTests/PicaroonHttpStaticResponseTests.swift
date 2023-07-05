@@ -116,7 +116,7 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
     }
     
     func testSimpleJson() {
-        let json = JsonElement(unknown: ["1", 2, "3", 4])
+        let json = ^["1", 2, "3", 4]
         let response = HttpStaticResponse(json: json)
         let socket = TestSocket()
         let config = ServerConfig(address: "127.0.0.1", port: 8080)

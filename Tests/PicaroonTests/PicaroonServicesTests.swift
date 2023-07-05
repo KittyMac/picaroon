@@ -24,11 +24,11 @@ class ToUpperService: ServiceActor {
                                     httpRequest: HttpRequest,
                                     _ returnCallback: @escaping (JsonElement?, HttpResponse?) -> ()) {
         guard let value = jsonElement[hitch: "value"] else {
-            returnCallback(JsonElement(unknown: "value field missing"), nil)
+            returnCallback(^"value field missing", nil)
             return
         }
         value.uppercase()
-        returnCallback(JsonElement(unknown: value), nil)
+        returnCallback(^value, nil)
     }
 }
 

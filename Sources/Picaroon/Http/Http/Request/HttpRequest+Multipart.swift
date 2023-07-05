@@ -29,7 +29,7 @@ public extension HttpRequest {
 
                 boundaryStartPtr = ptr - 1
                 while ptr < endPtr {
-                    if ptr.pointee == UInt8.carriageReturn || ptr.pointee == UInt8.newLine {
+                    if ptr[0] == UInt8.carriageReturn || ptr[0] == UInt8.newLine {
                         boundaryEndPtr = ptr
                         break
                     }
@@ -52,7 +52,7 @@ public extension HttpRequest {
 
             // 0. Find the next boundary
             while ptr < endPtr {
-                if ptr.pointee == boundaryStartPtr.pointee &&
+                if ptr[0] == boundaryStartPtr[0] &&
                     endPtr - ptr >= boundaryEndPtr - boundaryStartPtr &&
                     memcmp(ptr, boundaryStartPtr, boundaryEndPtr - boundaryStartPtr) == 0 {
                     ptr += boundaryEndPtr - boundaryStartPtr
@@ -66,7 +66,7 @@ public extension HttpRequest {
 
             // 1. Find the end of the multipart (ie the start of the next boundary
             while ptr < endPtr {
-                if ptr.pointee == boundaryStartPtr.pointee &&
+                if ptr[0] == boundaryStartPtr[0] &&
                     endPtr - ptr >= boundaryEndPtr - boundaryStartPtr &&
                     memcmp(ptr, boundaryStartPtr, boundaryEndPtr - boundaryStartPtr) == 0 {
                     multipartEndPtr = ptr - 2

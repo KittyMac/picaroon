@@ -23,9 +23,9 @@ open class ServiceActor: Actor {
                                 jsonElement: JsonElement,
                                 httpRequest: HttpRequest,
                                 _ returnCallback: @escaping (JsonElement?, HttpResponse?) -> ()) {
-        returnCallback(JsonElement(unknown: [
+        returnCallback(^[
             "error": "service actor not properly configured"
-        ]), HttpStaticResponse.internalServerError)
+        ], HttpStaticResponse.internalServerError)
     }
     
     internal func _beHandleRequest(userSession: UserServiceableSession,

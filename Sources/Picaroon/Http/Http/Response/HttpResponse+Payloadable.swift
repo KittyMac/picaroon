@@ -69,7 +69,7 @@ extension String: Payloadable {
     public func using<T>(_ block: (UnsafePointer<UInt8>?, Int) -> T?) -> T? {
         return withCString { bytes in
             var ptr = bytes
-            while ptr.pointee != 0 {
+            while ptr[0] != 0 {
                 ptr += 1
             }
             let count = ptr - bytes

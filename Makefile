@@ -18,6 +18,17 @@ test:
 update:
 	swift package update
 
+profile: clean
+	mkdir -p /tmp/picaroon.stats
+	swift build \
+		--configuration release \
+		-Xswiftc -stats-output-dir \
+		-Xswiftc /tmp/picaroon.stats \
+		-Xswiftc -trace-stats-events \
+		-Xswiftc -driver-time-compilation \
+		-Xswiftc -debug-time-function-bodies
+
+
 benchmark:
 	/opt/homebrew/bin/wrk -t 4 -c 100 http://localhost:8080/hello/world
 
