@@ -389,7 +389,7 @@ public class HttpRequest {
         return nil
     }
     
-    @inlinable @inline(__always)
+    @inlinable
     func bake(buffer: UnsafePointer<UInt8>,
               bufferSize: Int,
               using: HalfHitch?) -> HalfHitch? {
@@ -407,7 +407,7 @@ public class HttpRequest {
                          to: startIndex + halfhitch.count)
     }
     
-    @inlinable @inline(__always)
+    @inlinable
     func bake(buffer: UnsafePointer<UInt8>,
               bufferSize: Int) {
         
@@ -442,7 +442,7 @@ public class HttpRequest {
         }
     }
     
-    @inlinable @inline(__always)
+    @inlinable
     func parseKeyValue(buffer: UnsafePointer<UInt8>,
                        bufferSize: Int,
                        ptr: UnsafePointer<UInt8>,

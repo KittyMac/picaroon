@@ -147,7 +147,7 @@ public class HttpResponse {
         postInit()
     }
     
-    @inlinable @inline(__always)
+    @inlinable
     func isNew(_ request: HttpRequest) -> Bool {
         if let eTag = eTag,
            request.ifNoneMatch?.contains(eTag) == true {
