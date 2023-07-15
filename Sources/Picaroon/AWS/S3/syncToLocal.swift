@@ -8,11 +8,12 @@ import FoundationNetworking
 #endif
 
 extension HTTPSession {
-    
+        
     internal func _beSyncToLocal(credentials: S3Credentials,
                                  keyPrefix: String,
+                                 marker: String?,
                                  localDirectory: String,
-                                 _ returnCallback: @escaping ([S3Object], [S3Object], String?) -> Void) {
+                                 _ returnCallback: @escaping ([S3Object], [S3Object], String?, String?) -> Void) {
         // Given an output directory, make its contents match the S3's content. This includes:
         // 1. removing any files which do not exist on the S3
         // 2. downloading any files which do not exist locally
@@ -30,8 +31,9 @@ extension HTTPSession {
         
         HTTPSession.oneshot.beListAllKeysFromS3(credentials: credentials,
                                                 keyPrefix: keyPrefix,
-                                                self) { objects, error in
-            if let error = error { return returnCallback(objects, [], error) }
+                                                marker: marker,
+                                                self) { objects, continuationMarker, error in
+            if let error = error { return returnCallback(objects, [], continuationMarker, error) }
             let localDirectoryUrl = URL(fileURLWithPath: localDirectory)
             
             var mutableObjects = objects
@@ -108,7 +110,7 @@ extension HTTPSession {
             }
             
             group.notify(actor: self) {
-                returnCallback(objects, modifiedObjects, lastError)
+                returnCallback(objects, modifiedObjects, continuationMarker, lastError)
             }
         }
     }

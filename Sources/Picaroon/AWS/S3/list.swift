@@ -114,17 +114,18 @@ extension HTTPSession {
     
     internal func _beListAllKeysFromS3(credentials: S3Credentials,
                                        keyPrefix: String,
-                                       _ returnCallback: @escaping ([S3Object], String?) -> Void) {
+                                       marker: String?,
+                                       _ returnCallback: @escaping ([S3Object], String?, String?) -> Void) {
         var allObjects: [S3Object] = []
         
         func requestMore() {
             // Like beListFromS3(), but gives parsed results and will keep listing until all returns have been discovered
             HTTPSession.oneshot.beListFromS3(credentials: credentials,
                                              keyPrefix: keyPrefix,
-                                             marker: allObjects.last?.key,
+                                             marker: allObjects.last?.key ?? marker,
                                              self) { data, response, error in
-                if let error = error { return returnCallback([], error) }
-                guard let data = data else { return returnCallback([], "data is nil, unknown error listing bucket") }
+                if let error = error { return returnCallback([], allObjects.last?.key, error) }
+                guard let data = data else { return returnCallback([], allObjects.last?.key, "data is nil, unknown error listing bucket") }
                 
                 var isDone = false
                 
@@ -145,11 +146,11 @@ extension HTTPSession {
                     
                     return nil
                 }) {
-                    return returnCallback(allObjects, error)
+                    return returnCallback(allObjects, allObjects.last?.key, error)
                 }
                 
                 if isDone {
-                    return returnCallback(allObjects, nil)
+                    return returnCallback(allObjects, allObjects.last?.key, nil)
                 } else {
                     return requestMore()
                 }

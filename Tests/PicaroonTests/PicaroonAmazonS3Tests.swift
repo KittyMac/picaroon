@@ -24,8 +24,10 @@ final class PicaroonAmazonS3Tests: XCTestCase {
 
         HTTPSession.oneshot.beListAllKeysFromS3(credentials: credentials,
                                                 keyPrefix: "many/",
-                                                Flynn.any) { objects, error in
+                                                marker: nil,
+                                                Flynn.any) { objects, continuationMarker, error in
             XCTAssertNil(error)
+            XCTAssertNotNil(continuationMarker)
             XCTAssertEqual(objects.count, 1349)
             expectation.fulfill()
         }
@@ -38,9 +40,11 @@ final class PicaroonAmazonS3Tests: XCTestCase {
 
         HTTPSession.oneshot.beSyncToLocal(credentials: credentials,
                                           keyPrefix: "v1/many/",
+                                          marker: nil,
                                           localDirectory: "/tmp/many/",
-                                          Flynn.any) { allObjects, newObjects, error in
+                                          Flynn.any) { allObjects, newObjects, continuationMarker, error in
             XCTAssertNil(error)
+            XCTAssertNotNil(continuationMarker)
             XCTAssertEqual(allObjects.count, 999)
             print(newObjects.count)
             expectation.fulfill()
