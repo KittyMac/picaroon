@@ -47,7 +47,7 @@ extension HTTPSession {
     internal func _beListFromS3(credentials: S3Credentials,
                                 keyPrefix: String,
                                 marker: String?,
-                                _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+                                _ returnCallback: @escaping ([S3Object], String?, Bool, String?) -> Void) {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
         let baseDomain = credentials.baseDomain
@@ -66,7 +66,7 @@ extension HTTPSession {
         var queryItems: [String: String] = [:]
         
         guard var components = URLComponents(string: url.description) else {
-            returnCallback(nil, nil, "failed to create url components")
+            returnCallback([], nil, false, "failed to create url components")
             return
         }
         
@@ -86,7 +86,7 @@ extension HTTPSession {
         components.percentEncodedQuery = components.query?.percentEncoded()
         
         guard let url = components.url else {
-            returnCallback(nil, nil, "failed to get components url")
+            returnCallback([], nil, false, "failed to get components url")
             return
         }
         
@@ -102,13 +102,41 @@ extension HTTPSession {
                                     region: region,
                                     bucket: bucket,
                                     queryItems: queryItems) {
-            return returnCallback(nil, nil, error)
+            return returnCallback([], nil, false, error)
         }
         
         self.beRequest(request: request,
                        proxy: nil,
                        self) { data, response, error in
-            returnCallback(data, response, error)
+            
+            
+            if let error = error { return returnCallback([], nil, false, error) }
+            guard let data = data else { return returnCallback([], nil, false, "data is nil, unknown error listing bucket") }
+            
+            var isDone = false
+            var allObjects: [S3Object] = []
+            
+            if let error: String? = Studding.parsed(data: data, { xml in
+                guard let xml = xml else { return "unable to parse xml" }
+                
+                isDone = xml["IsTruncated"]?.text != "true"
+                
+                for child in xml.children {
+                    guard child.name == "Contents" else { continue }
+                    guard let object = S3Object(xmlElement: child,
+                                                keyPrefix: keyPrefix) else {
+                        return "failed to part Content"
+                    }
+                    guard object.key.hasSuffix("/") == false else { continue }
+                    allObjects.append(object)
+                }
+                
+                return nil
+            }) {
+                return returnCallback(allObjects, allObjects.last?.key, isDone, error)
+            }
+            
+            returnCallback(allObjects, allObjects.last?.key, isDone, nil)
         }
     }
     
@@ -118,46 +146,26 @@ extension HTTPSession {
                                        _ returnCallback: @escaping ([S3Object], String?, String?) -> Void) {
         var allObjects: [S3Object] = []
         
-        func requestMore() {
+        func requestMore(marker: String?) {
             // Like beListFromS3(), but gives parsed results and will keep listing until all returns have been discovered
             HTTPSession.oneshot.beListFromS3(credentials: credentials,
                                              keyPrefix: keyPrefix,
-                                             marker: allObjects.last?.key ?? marker,
-                                             self) { data, response, error in
-                if let error = error { return returnCallback([], allObjects.last?.key, error) }
-                guard let data = data else { return returnCallback([], allObjects.last?.key, "data is nil, unknown error listing bucket") }
+                                             marker: marker,
+                                             self) { moreObjects, continuationMarker, isDone, error in
                 
-                var isDone = false
+                if let error = error { return returnCallback(allObjects, continuationMarker, error) }
                 
-                if let error: String? = Studding.parsed(data: data, { xml in
-                    guard let xml = xml else { return "unable to parse xml" }
-                    
-                    isDone = xml["IsTruncated"]?.text != "true"
-                    
-                    for child in xml.children {
-                        guard child.name == "Contents" else { continue }
-                        guard let object = S3Object(xmlElement: child,
-                                                    keyPrefix: keyPrefix) else {
-                            return "failed to part Content"
-                        }
-                        guard object.key.hasSuffix("/") == false else { continue }
-                        allObjects.append(object)
-                    }
-                    
-                    return nil
-                }) {
-                    return returnCallback(allObjects, allObjects.last?.key, error)
-                }
+                allObjects.append(contentsOf: moreObjects)
                 
                 if isDone {
-                    return returnCallback(allObjects, allObjects.last?.key, nil)
+                    return returnCallback(allObjects, continuationMarker, nil)
                 } else {
-                    return requestMore()
+                    return requestMore(marker: continuationMarker)
                 }
             }
         }
         
-        requestMore()
+        requestMore(marker: nil)
     }
 }
 

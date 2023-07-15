@@ -85,13 +85,13 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         }.then().doListFromS3(credentials: credentials,
                               keyPrefix: "v1/errorlogs/",
                               marker: nil,
-                              Flynn.any) { data, response, error in
+                              Flynn.any) { allObjects, continuationMarker, isDone, error in
             XCTAssertNil(error)
             XCTAssertNotNil(data)
-            Studding.parsed(data: data!) { xml in
-                guard let xml = xml else { XCTFail(); return }
-                XCTAssertEqual(xml["Contents"]?["Key"]?.text, "v1/errorlogs/test.txt")
-            }
+            XCTAssertEqual(allObjects.count, 2)
+            
+            XCTAssertEqual(allObjects[0].key, "v1/errorlogs/test.txt")
+            XCTAssertEqual(allObjects[1].key, "v1/errorlogs/test2.txt")
         }.then().doUploadToS3(credentials: credentials,
                               acl: nil,
                               storageType: nil,
@@ -108,7 +108,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         }.then().doListFromS3(credentials: credentials,
                               keyPrefix: "/",
                               marker: nil,
-                              Flynn.any) { data, response, error in
+                              Flynn.any) { allObjects, continuationMarker, isDone, error in
             XCTAssertNotNil(error)
             expectation.fulfill()
         }
