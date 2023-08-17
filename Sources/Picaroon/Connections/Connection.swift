@@ -31,7 +31,7 @@ public class Connection: Actor, AnyConnection {
     // same UserSession.
 
     private let socket: Socket
-    public let unsafeClientAddress: String
+    public var unsafeClientAddress: String
 
     private var isProcessingRequest: Bool = false
     
@@ -252,6 +252,8 @@ public class Connection: Actor, AnyConnection {
             resetCheckForMoreBackoff()
             return
         }
+        
+        self.unsafeClientAddress = socket.clientAddress()
         
         self.isProcessingRequest = true
         self.unsafePriority = -1

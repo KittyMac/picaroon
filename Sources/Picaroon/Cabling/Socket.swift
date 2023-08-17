@@ -274,6 +274,32 @@ public class Socket {
     }
     
     @discardableResult
+    public func clientAddress() -> String {
+        var clientAddress = ""
+        
+        var clientAddr = sockaddr_in()
+        var sockAddrInSize = socklen_t(MemoryLayout<sockaddr_in>.size)
+        
+        let capacity = Int(INET6_ADDRSTRLEN)
+        guard let scratch_ptr = malloc(capacity)?.bindMemory(to: CChar.self, capacity: capacity) else { return clientAddress }
+        
+        _ = withUnsafeMutablePointer(to: &clientAddr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                posix_getpeername(socketFd, $0, &sockAddrInSize)
+            }
+        }
+
+        if inet_ntop(Int32(clientAddr.sin_family), &clientAddr.sin_addr, scratch_ptr, socklen_t(INET6_ADDRSTRLEN)) != nil {
+            let count = strnlen(scratch_ptr, Int(INET6_ADDRSTRLEN))
+            scratch_ptr.withMemoryRebound(to: UInt8.self, capacity: count) { hitchPtr in
+                clientAddress = Hitch(bytes: hitchPtr, offset: 0, count: count).toString()
+            }
+        }
+                
+        return clientAddress
+    }
+    
+    @discardableResult
     public func connectTo(address: String,
                           port: Int) -> Int {
         guard socketFd >= 0 else { return -1 }
