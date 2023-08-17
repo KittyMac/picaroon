@@ -35,6 +35,7 @@ public class HttpRequest {
     public var flynnTag: HalfHitch?
     public var sessionId: HalfHitch?
     public var sid: HalfHitch?
+    public var deviceId: HalfHitch?
     
     public var content: HalfHitch?
     public var json: JsonElement?
@@ -434,6 +435,7 @@ public class HttpRequest {
         flynnTag = bake(buffer: buffer, bufferSize: bufferSize, using: flynnTag)
         sessionId = bake(buffer: buffer, bufferSize: bufferSize, using: sessionId)
         sid = bake(buffer: buffer, bufferSize: bufferSize, using: sid)
+        deviceId = bake(buffer: buffer, bufferSize: bufferSize, using: deviceId)
         content = bake(buffer: buffer, bufferSize: bufferSize, using: content)
         
         // If we have json content, automatically parse it out
@@ -828,6 +830,24 @@ public class HttpRequest {
                                   count: bufferSize,
                                   from: valueStart - buffer,
                                   to: ptr - buffer)
+        }
+        
+        if deviceId == nil,
+            size >= 9,
+            keyEnd[-9] == .D,
+            //keyEnd[-8] == .e,
+            keyEnd[-7] == .v,
+            //keyEnd[-6] == .i,
+            keyEnd[-5] == .c,
+            //keyEnd[-4] == .e,
+            keyEnd[-3] == .minus,
+            keyEnd[-2] == .I,
+            keyEnd[-1] == .d {
+            deviceId = HalfHitch(sourceObject: nil,
+                                 raw: buffer,
+                                 count: bufferSize,
+                                 from: valueStart - buffer,
+                                 to: ptr - buffer)
         }
     }
 }
