@@ -14,6 +14,7 @@ RUN rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root/Picaroon
 COPY ./Makefile ./Makefile
+COPY ./.build/repositories ./.build/repositories
 COPY ./Package.resolved ./Package.resolved
 COPY ./Package.swift ./Package.swift
 COPY ./Sources ./Sources

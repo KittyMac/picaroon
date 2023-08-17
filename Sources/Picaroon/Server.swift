@@ -87,7 +87,8 @@ public class Server<T: UserSession> {
 
         repeat {
 #if os(Linux) || os(Android)
-            if let newSocket = serverSocket.accept(blocking: true) {
+            var clientAddress = ""
+            if let newSocket = serverSocket.accept(blocking: true, clientAddress: &clientAddress) {
                 ConnectionManager.shared.beOpen(socket: newSocket,
                                                 clientAddress: clientAddress,
                                                 config: config,
