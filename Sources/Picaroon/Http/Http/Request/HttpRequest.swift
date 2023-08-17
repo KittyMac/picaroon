@@ -35,6 +35,7 @@ public class HttpRequest {
     public var flynnTag: HalfHitch?
     public var sessionId: HalfHitch?
     public var sid: HalfHitch?
+    public var xForwardedFor: HalfHitch?
     public var deviceId: HalfHitch?
     public var waitingCount: HalfHitch?
     public var activeCount: HalfHitch?
@@ -437,6 +438,7 @@ public class HttpRequest {
         flynnTag = bake(buffer: buffer, bufferSize: bufferSize, using: flynnTag)
         sessionId = bake(buffer: buffer, bufferSize: bufferSize, using: sessionId)
         sid = bake(buffer: buffer, bufferSize: bufferSize, using: sid)
+        xForwardedFor = bake(buffer: buffer, bufferSize: bufferSize, using: xForwardedFor)
         deviceId = bake(buffer: buffer, bufferSize: bufferSize, using: deviceId)
         waitingCount = bake(buffer: buffer, bufferSize: bufferSize, using: waitingCount)
         activeCount = bake(buffer: buffer, bufferSize: bufferSize, using: activeCount)
@@ -834,6 +836,30 @@ public class HttpRequest {
                                   count: bufferSize,
                                   from: valueStart - buffer,
                                   to: ptr - buffer)
+        }
+        
+        if xForwardedFor == nil,
+            size >= 15,
+            keyEnd[-15] == .X,
+            //keyEnd[-14] == .minus,
+            keyEnd[-13] == .F,
+            //keyEnd[-12] == .o,
+            keyEnd[-11] == .r,
+            //keyEnd[-10] == .w,
+            keyEnd[-9] == .a,
+            //keyEnd[-8] == .r,
+            keyEnd[-7] == .d,
+            //keyEnd[-6] == .e,
+            keyEnd[-5] == .d,
+            //keyEnd[-4] == .minus,
+            keyEnd[-3] == .F,
+            //keyEnd[-2] == .o,
+            keyEnd[-1] == .r {
+            xForwardedFor = HalfHitch(sourceObject: nil,
+                                      raw: buffer,
+                                      count: bufferSize,
+                                      from: valueStart - buffer,
+                                      to: ptr - buffer)
         }
         
         if deviceId == nil,
