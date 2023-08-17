@@ -2,7 +2,7 @@ import Foundation
 import Flynn
 import Hitch
 
-public typealias StaticStorageHandler = (ServerConfig, HttpRequest) -> HttpResponse?
+public typealias StaticStorageHandler = (Connection, ServerConfig, HttpRequest) -> HttpResponse?
 
 /// Three different mechanisms for allowing session persistance, in order from most complicated to
 /// least complicated.

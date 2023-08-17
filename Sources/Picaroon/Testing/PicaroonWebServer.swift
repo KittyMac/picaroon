@@ -7,7 +7,8 @@ import FoundationNetworking
 
 fileprivate let data = Data(repeating: 55, count: 1024*1024*1024)
 
-private func handleStaticRequest(config: ServerConfig,
+private func handleStaticRequest(connection: Connection,
+                                 config: ServerConfig,
                                  httpRequest: HttpRequest) -> HttpResponse? {
     // http://127.0.0.1:8080/data
     
