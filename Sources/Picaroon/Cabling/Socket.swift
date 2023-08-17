@@ -15,6 +15,7 @@ private let posix_send = Glibc.send
 private let posix_recv = Glibc.recv
 private let posix_listen = Glibc.listen
 private let posix_accept = Glibc.accept
+private let posix_getpeername = Glibc.getpeername
 #endif
 #if canImport(Darwin)
 private let posix_gethostbyname = Darwin.gethostbyname
@@ -25,6 +26,7 @@ private let posix_send = Darwin.send
 private let posix_recv = Darwin.recv
 private let posix_listen = Darwin.listen
 private let posix_accept = Darwin.accept
+private let posix_getpeername = Darwin.getpeername
 #endif
 
 
@@ -254,6 +256,12 @@ public class Socket {
         
         let capacity = Int(INET6_ADDRSTRLEN)
         guard let scratch_ptr = malloc(capacity)?.bindMemory(to: CChar.self, capacity: capacity) else { return socket }
+        
+        _ = withUnsafeMutablePointer(to: &clientAddr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                posix_getpeername(clientFd, $0, &sockAddrInSize)
+            }
+        }
 
         if inet_ntop(Int32(clientAddr.sin_family), &clientAddr.sin_addr, scratch_ptr, socklen_t(INET6_ADDRSTRLEN)) != nil {
             let count = strnlen(scratch_ptr, Int(INET6_ADDRSTRLEN))
@@ -261,7 +269,7 @@ public class Socket {
                 clientAddress = Hitch(bytes: hitchPtr, offset: 0, count: count).toString()
             }
         }
-        
+                
         return socket
     }
     
