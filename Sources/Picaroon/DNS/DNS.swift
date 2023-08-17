@@ -58,7 +58,7 @@ public class DNS: Actor {
             var idx = 0
             while true {
                 guard let addr_ptr = addr_list_ptr[idx] else { break }
-                if inet_ntop(inetType, addr_ptr, scratch_ptr, socklen_t(INET_ADDRSTRLEN)) != nil {
+                if inet_ntop(inetType, addr_ptr, scratch_ptr, socklen_t(INET6_ADDRSTRLEN)) != nil {
                     let count = strnlen(scratch_ptr, Int(INET6_ADDRSTRLEN))
                     scratch_ptr.withMemoryRebound(to: UInt8.self, capacity: count) { hitchPtr in
                         addresses.append(
@@ -68,8 +68,6 @@ public class DNS: Actor {
                 }
                 idx += MemoryLayout.stride(ofValue: in_addr.self)
             }
-            break
-        case AF_INET6:
             break
         default:
             break

@@ -89,14 +89,17 @@ public class Server<T: UserSession> {
 #if os(Linux) || os(Android)
             if let newSocket = serverSocket.accept(blocking: true) {
                 ConnectionManager.shared.beOpen(socket: newSocket,
+                                                clientAddress: clientAddress,
                                                 config: config,
                                                 staticStorageHandler: staticStorageHandler,
                                                 userSessionManager: userSessionManager)
             }
 #else
             autoreleasepool {
-                if let newSocket = serverSocket.accept(blocking: true) {
+                var clientAddress = ""
+                if let newSocket = serverSocket.accept(blocking: true, clientAddress: &clientAddress) {
                     ConnectionManager.shared.beOpen(socket: newSocket,
+                                                    clientAddress: clientAddress,
                                                     config: config,
                                                     staticStorageHandler: self.staticStorageHandler,
                                                     userSessionManager: self.userSessionManager)

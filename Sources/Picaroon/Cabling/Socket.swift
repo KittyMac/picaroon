@@ -6,6 +6,29 @@ import Hitch
 import FoundationNetworking
 #endif
 
+#if canImport(Glibc)
+private let posix_gethostbyname = Glibc.gethostbyname
+private let posix_inet_ntop = Glibc.inet_ntop
+private let posix_shutdown = Glibc.shutdown
+private let posix_close = Glibc.close
+private let posix_send = Glibc.send
+private let posix_recv = Glibc.recv
+private let posix_listen = Glibc.listen
+private let posix_accept = Glibc.accept
+#endif
+#if canImport(Darwin)
+private let posix_gethostbyname = Darwin.gethostbyname
+private let posix_inet_ntop = Darwin.inet_ntop
+private let posix_shutdown = Darwin.shutdown
+private let posix_close = Darwin.close
+private let posix_send = Darwin.send
+private let posix_recv = Darwin.recv
+private let posix_listen = Darwin.listen
+private let posix_accept = Darwin.accept
+#endif
+
+
+
 public class Socket {
     
     @usableFromInline
@@ -99,13 +122,8 @@ public class Socket {
     
     public func close() {
         guard socketFd >= 0 else { return }
-        #if os(Linux) || os(Android)
-        Glibc.shutdown(socketFd, Int32(SHUT_RDWR))
-        Glibc.close(socketFd)
-        #else
-        Darwin.shutdown(socketFd, Int32(SHUT_RDWR))
-        Darwin.close(socketFd)
-        #endif
+        _ = posix_shutdown(socketFd, Int32(SHUT_RDWR))
+        _ = posix_close(socketFd)
         socketFd = -1
     }
     
@@ -146,11 +164,7 @@ public class Socket {
         let endPtr = startPtr + count
         
         while cptr < endPtr {
-            #if os(Linux) || os(Android)
-            let bytesWritten = Glibc.send(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
-            #else
-            let bytesWritten = Darwin.send(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
-            #endif
+            let bytesWritten = posix_send(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
             
             if (bytesWritten < 0) {
                 if errno == EWOULDBLOCK || errno == EAGAIN {
@@ -176,11 +190,7 @@ public class Socket {
         let startPtr = bytes
         let endPtr = startPtr + count
                             
-        #if os(Linux) || os(Android)
-        let bytesRead = Glibc.recv(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
-        #else
-        let bytesRead = Darwin.recv(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
-        #endif
+        let bytesRead = posix_recv(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
         
         if (bytesRead <= 0) {
             if bytesRead < 0 && errno == EWOULDBLOCK || errno == EAGAIN {
@@ -201,13 +211,15 @@ public class Socket {
         setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &one, socklen_t(MemoryLayout<timeval>.stride))
         
         var sockAddressIn = sockaddr_in()
+        let sockAddrInSize = socklen_t(MemoryLayout<sockaddr_in>.size)
+                                       
         sockAddressIn.sin_family = sa_family_t(AF_INET)
         inet_pton(AF_INET, address, &(sockAddressIn.sin_addr))
         sockAddressIn.sin_port = UInt16(clamping: port).bigEndian
         
         let result = withUnsafePointer(to: &sockAddressIn) {
             return $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                return bind(socketFd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+                return bind(socketFd, $0, sockAddrInSize)
             }
         }
                 
@@ -215,12 +227,7 @@ public class Socket {
             return -1
         }
         
-        #if os(Linux) || os(Android)
-        let ret = Glibc.listen(socketFd, 128)
-        #else
-        let ret = Darwin.listen(socketFd, 128)
-        #endif
-        
+        let ret = posix_listen(socketFd, 128)
         if ret < 0 {
             self.close()
             return -1
@@ -230,17 +237,30 @@ public class Socket {
     }
     
     @discardableResult
-    public func accept(blocking: Bool = true) -> Socket? {
+    public func accept(blocking: Bool = true, clientAddress: inout String) -> Socket? {
+        clientAddress = ""
         
-        #if os(Linux) || os(Android)
-        let clientFd = Glibc.accept(socketFd, nil, nil)
-        #else
-        let clientFd = Darwin.accept(socketFd, nil, nil)
-        #endif
+        var clientAddr = sockaddr_in()
+        var sockAddrInSize = socklen_t(MemoryLayout<sockaddr_in>.size)
+
+        let clientFd: Int32 = withUnsafeMutablePointer(to: &clientAddr) {
+            return $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                return posix_accept(socketFd, $0, &sockAddrInSize)
+            }
+        }
         
         let socket = Socket(socketFd: clientFd,
                             blocking: blocking)
         
+        let capacity = Int(INET6_ADDRSTRLEN)
+        guard let scratch_ptr = malloc(capacity)?.bindMemory(to: CChar.self, capacity: capacity) else { return socket }
+
+        if inet_ntop(Int32(clientAddr.sin_family), &clientAddr.sin_addr, scratch_ptr, socklen_t(INET6_ADDRSTRLEN)) != nil {
+            let count = strnlen(scratch_ptr, Int(INET6_ADDRSTRLEN))
+            scratch_ptr.withMemoryRebound(to: UInt8.self, capacity: count) { hitchPtr in
+                clientAddress = Hitch(bytes: hitchPtr, offset: 0, count: count).toString()
+            }
+        }
         
         return socket
     }

@@ -19,6 +19,8 @@ final class picaroonHttpRequestTests: XCTestCase {
         Cookie: FABE1A47-B2FD-4CC3-AB92-D1F570002158=6AF73CB5-4D6A-4CBD-A893-89074F1F51CF\r
         Session-Id: 6AF73CB5-4D6A-4CBD-A893-89074F1F51CF\r
         Device-Id: 0123456789\r
+        Waiting-Count: 3\r
+        Active-Count: 7\r
         Accept-Language: en-us\r
         Accept-Encoding: gzip, deflate\r\n\r\n
         """
@@ -37,6 +39,8 @@ final class picaroonHttpRequestTests: XCTestCase {
         XCTAssertEqual(request.sid, nil)
         XCTAssertEqual(request.sessionId, "6AF73CB5-4D6A-4CBD-A893-89074F1F51CF")
         XCTAssertEqual(request.deviceId, "0123456789")
+        XCTAssertEqual(request.waitingCount, "3")
+        XCTAssertEqual(request.activeCount, "7")
         XCTAssertEqual(request.acceptLanguage, "en-us")
         XCTAssertEqual(request.acceptEncoding, "gzip, deflate")
     }

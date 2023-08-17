@@ -36,6 +36,8 @@ public class HttpRequest {
     public var sessionId: HalfHitch?
     public var sid: HalfHitch?
     public var deviceId: HalfHitch?
+    public var waitingCount: HalfHitch?
+    public var activeCount: HalfHitch?
     
     public var content: HalfHitch?
     public var json: JsonElement?
@@ -436,6 +438,8 @@ public class HttpRequest {
         sessionId = bake(buffer: buffer, bufferSize: bufferSize, using: sessionId)
         sid = bake(buffer: buffer, bufferSize: bufferSize, using: sid)
         deviceId = bake(buffer: buffer, bufferSize: bufferSize, using: deviceId)
+        waitingCount = bake(buffer: buffer, bufferSize: bufferSize, using: waitingCount)
+        activeCount = bake(buffer: buffer, bufferSize: bufferSize, using: activeCount)
         content = bake(buffer: buffer, bufferSize: bufferSize, using: content)
         
         // If we have json content, automatically parse it out
@@ -848,6 +852,49 @@ public class HttpRequest {
                                  count: bufferSize,
                                  from: valueStart - buffer,
                                  to: ptr - buffer)
+        }
+        
+        if waitingCount == nil,
+            size >= 13,
+            keyEnd[-13] == .W,
+            //keyEnd[-12] == .a,
+            keyEnd[-11] == .i,
+            //keyEnd[-10] == .t,
+            keyEnd[-9] == .i,
+            //keyEnd[-8] == .n,
+            //keyEnd[-7] == .g,
+            keyEnd[-6] == .minus,
+            //keyEnd[-5] == .C,
+            keyEnd[-4] == .o,
+            //keyEnd[-3] == .u,
+            keyEnd[-2] == .n,
+            keyEnd[-1] == .t {
+            waitingCount = HalfHitch(sourceObject: nil,
+                                     raw: buffer,
+                                     count: bufferSize,
+                                     from: valueStart - buffer,
+                                     to: ptr - buffer)
+        }
+        
+        if activeCount == nil,
+            size >= 12,
+            keyEnd[-12] == .A,
+            //keyEnd[-11] == .c,
+            keyEnd[-10] == .t,
+            //keyEnd[-9] == .i,
+            keyEnd[-8] == .v,
+            //keyEnd[-7] == .e,
+            keyEnd[-6] == .minus,
+            //keyEnd[-5] == .C,
+            keyEnd[-4] == .o,
+            //keyEnd[-3] == .u,
+            keyEnd[-2] == .n,
+            keyEnd[-1] == .t {
+            activeCount = HalfHitch(sourceObject: nil,
+                                    raw: buffer,
+                                    count: bufferSize,
+                                    from: valueStart - buffer,
+                                    to: ptr - buffer)
         }
     }
 }

@@ -12,10 +12,12 @@ public class ConnectionManager: Actor {
     private var active: [String: Connection] = [:]
     
     internal func _beOpen(socket: Socket,
+                          clientAddress: String,
                           config: ServerConfig,
                           staticStorageHandler: StaticStorageHandler?,
                           userSessionManager: AnyUserSessionManager) {
         let connection = Connection(socket: socket,
+                                    clientAddress: clientAddress,
                                     config: config,
                                     staticStorageHandler: staticStorageHandler,
                                     userSessionManager: userSessionManager)

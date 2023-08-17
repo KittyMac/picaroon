@@ -31,6 +31,7 @@ public class Connection: Actor, AnyConnection {
     // same UserSession.
 
     private let socket: Socket
+    private let clientAddress: String
 
     private var isProcessingRequest: Bool = false
     
@@ -56,10 +57,12 @@ public class Connection: Actor, AnyConnection {
     private let connectionMaxBackoff: Double
 
     init(socket: Socket,
+         clientAddress: String,
          config: ServerConfig,
          staticStorageHandler: StaticStorageHandler?,
          userSessionManager: AnyUserSessionManager) {
         self.socket = socket
+        self.clientAddress = clientAddress
         self.userSessionManager = userSessionManager
         self.staticStorageHandler = staticStorageHandler
         self.config = config
