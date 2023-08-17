@@ -31,7 +31,7 @@ public class Connection: Actor, AnyConnection {
     // same UserSession.
 
     private let socket: Socket
-    private let clientAddress: String
+    public let unsafeClientAddress: String
 
     private var isProcessingRequest: Bool = false
     
@@ -62,7 +62,7 @@ public class Connection: Actor, AnyConnection {
          staticStorageHandler: StaticStorageHandler?,
          userSessionManager: AnyUserSessionManager) {
         self.socket = socket
-        self.clientAddress = clientAddress
+        self.unsafeClientAddress = clientAddress
         self.userSessionManager = userSessionManager
         self.staticStorageHandler = staticStorageHandler
         self.config = config
