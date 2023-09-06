@@ -22,6 +22,7 @@ final class picaroonHttpRequestTests: XCTestCase {
         X-Forwarded-For: 192.168.1.1\r
         Waiting-Count: 3\r
         Active-Count: 7\r
+        Max-Concurrent: 20\r
         Accept-Language: en-us\r
         Accept-Encoding: gzip, deflate\r\n\r\n
         """
@@ -43,6 +44,7 @@ final class picaroonHttpRequestTests: XCTestCase {
         XCTAssertEqual(request.deviceId, "0123456789")
         XCTAssertEqual(request.waitingCount, "3")
         XCTAssertEqual(request.activeCount, "7")
+        XCTAssertEqual(request.maxConcurrent, "20")
         XCTAssertEqual(request.acceptLanguage, "en-us")
         XCTAssertEqual(request.acceptEncoding, "gzip, deflate")
     }

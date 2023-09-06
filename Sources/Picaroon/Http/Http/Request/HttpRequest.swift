@@ -39,6 +39,7 @@ public class HttpRequest {
     public var deviceId: HalfHitch?
     public var waitingCount: HalfHitch?
     public var activeCount: HalfHitch?
+    public var maxConcurrent: HalfHitch?
     
     public var content: HalfHitch?
     public var json: JsonElement?
@@ -442,6 +443,7 @@ public class HttpRequest {
         deviceId = bake(buffer: buffer, bufferSize: bufferSize, using: deviceId)
         waitingCount = bake(buffer: buffer, bufferSize: bufferSize, using: waitingCount)
         activeCount = bake(buffer: buffer, bufferSize: bufferSize, using: activeCount)
+        maxConcurrent = bake(buffer: buffer, bufferSize: bufferSize, using: maxConcurrent)
         content = bake(buffer: buffer, bufferSize: bufferSize, using: content)
         
         // If we have json content, automatically parse it out
@@ -921,6 +923,29 @@ public class HttpRequest {
                                     count: bufferSize,
                                     from: valueStart - buffer,
                                     to: ptr - buffer)
+        }
+        
+        if maxConcurrent == nil,
+            size >= 14,
+            keyEnd[-14] == .M,
+            //keyEnd[-13] == .a,
+            keyEnd[-12] == .x,
+            //keyEnd[-11] == .minus,
+            keyEnd[-10] == .C,
+            //keyEnd[-9] == .o,
+            keyEnd[-8] == .n,
+            //keyEnd[-7] == .c,
+            keyEnd[-6] == .u,
+            //keyEnd[-5] == .r,
+            keyEnd[-4] == .r,
+            //keyEnd[-3] == .e,
+            keyEnd[-2] == .n,
+            keyEnd[-1] == .t {
+            maxConcurrent = HalfHitch(sourceObject: nil,
+                                      raw: buffer,
+                                      count: bufferSize,
+                                      from: valueStart - buffer,
+                                      to: ptr - buffer)
         }
     }
 }
