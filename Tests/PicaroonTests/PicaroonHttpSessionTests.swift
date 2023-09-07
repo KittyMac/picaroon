@@ -16,6 +16,7 @@ final class PicaroonHttpSessionTests: XCTestCase {
                                           params: [:],
                                           headers: [:],
                                           cookies: nil,
+                                          timeoutRetry: nil,
                                           proxy: nil,
                                           body: nil,
                                           Flynn.any) { data, response, error in
@@ -45,6 +46,7 @@ final class PicaroonHttpSessionTests: XCTestCase {
                                   params: [:],
                                   headers: [:],
                                   cookies: nil,
+                                  timeoutRetry: nil,
                                   proxy: nil,
                                   body: nil,
                                   Flynn.any) { data, response, error in
@@ -75,6 +77,7 @@ final class PicaroonHttpSessionTests: XCTestCase {
                                   params: [:],
                                   headers: [:],
                                   cookies: nil,
+                                  timeoutRetry: nil,
                                   proxy: nil,
                                   body: nil,
                                   Flynn.any) { data, response, error in

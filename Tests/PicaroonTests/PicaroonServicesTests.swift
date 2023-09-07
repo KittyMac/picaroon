@@ -113,6 +113,7 @@ final class picaroonServicesTests: XCTestCase {
                                   params: [:],
                                   headers: [:],
                                   cookies: nil,
+                                  timeoutRetry: nil,
                                   proxy: nil,
                                   body: jsonRequest.data(using: .utf8),
                                   client) { data, response, error in
@@ -155,6 +156,7 @@ final class picaroonServicesTests: XCTestCase {
                                   params: [:],
                                   headers: [:],
                                   cookies: nil,
+                                  timeoutRetry: nil,
                                   proxy: nil,
                                   body: jsonRequest.data(using: .utf8),
                                   client) { data, response, error in
@@ -197,6 +199,7 @@ final class picaroonServicesTests: XCTestCase {
                                   params: [:],
                                   headers: [:],
                                   cookies: nil,
+                                  timeoutRetry: nil,
                                   proxy: nil,
                                   body: jsonRequest.data(using: .utf8),
                                   client) { data, response, error in
@@ -239,6 +242,7 @@ final class picaroonServicesTests: XCTestCase {
                                   params: [:],
                                   headers: [:],
                                   cookies: nil,
+                                  timeoutRetry: nil,
                                   proxy: nil,
                                   body: jsonRequest.data(using: .utf8),
                                   client) { data, response, error in

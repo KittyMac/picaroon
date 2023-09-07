@@ -58,6 +58,7 @@ extension HTTPSession {
                         "Authorization": "AWS \(accessKey):\(signature)"
                        ],
                        cookies: nil,
+                       timeoutRetry: nil,
                        proxy: nil,
                        body: body,
                        self) { data, response, error in
