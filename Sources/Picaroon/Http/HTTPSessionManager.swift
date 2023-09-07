@@ -20,7 +20,7 @@ public class HTTPSessionManager: Actor {
     private override init() {        
         for _ in 0..<maxConcurrentSessions {
             let config = URLSessionConfiguration.ephemeral
-            config.timeoutIntervalForRequest = 10.0
+            config.timeoutIntervalForRequest = 20.0
             config.httpMaximumConnectionsPerHost = max(Flynn.cores * 3, 4)
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
