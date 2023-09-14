@@ -134,10 +134,10 @@ extension HTTPSession {
                 
                 return nil
             }) {
-                return returnCallback(allObjects, allObjects.last?.key, isDone, error)
+                return returnCallback(allObjects, allObjects.last?.key ?? marker, isDone, error)
             }
             
-            returnCallback(allObjects, allObjects.last?.key, isDone, nil)
+            returnCallback(allObjects, allObjects.last?.key ?? marker, isDone, nil)
         }
     }
     
@@ -166,7 +166,7 @@ extension HTTPSession {
             }
         }
         
-        requestMore(marker: nil)
+        requestMore(marker: marker)
     }
 }
 
