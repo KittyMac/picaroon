@@ -25,6 +25,7 @@ extension HTTPSession {
     internal func _beSyncToLocal(credentials: S3Credentials,
                                  keyPrefix: String,
                                  localDirectory: String,
+                                 continuous: Bool,
                                  _ returnCallback: @escaping ([S3Object], [S3Object], String?, String?) -> Void) {
         // Given an output directory, make its contents match the S3's content. This includes:
         // 1. removing any files which do not exist on the S3
@@ -64,7 +65,11 @@ extension HTTPSession {
         
         localFiles.sort()
                 
-        let marker: String? = localFiles.last?.s3Key
+        var marker: String? = localFiles.last?.s3Key
+        
+        if continuous == false {
+            marker = nil
+        }
         
         HTTPSession.oneshot.beListAllKeysFromS3(credentials: credentials,
                                                 keyPrefix: keyPrefix,
@@ -83,7 +88,7 @@ extension HTTPSession {
                 // Does this file exist on the s3?
                 var existsOnTheS3 = false
                 for object in mutableObjects {
-                    if localFile.s3Key == makeRelativePath(key: object.key) {
+                    if localFile.s3Key == object.key {
                         existsOnTheS3 = true
                         mutableObjects.removeOne(object)
                     }
