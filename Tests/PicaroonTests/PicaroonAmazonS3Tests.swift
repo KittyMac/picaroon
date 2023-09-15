@@ -41,12 +41,12 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         HTTPSession.oneshot.beSyncToLocal(credentials: credentials,
                                           keyPrefix: "v1/many/",
                                           localDirectory: "/tmp/many/",
-                                          continuous: false,
+                                          continuous: true,
                                           Flynn.any) { allObjects, newObjects, continuationMarker, error in
             XCTAssertNil(error)
             XCTAssertNotNil(continuationMarker)
             //XCTAssertEqual(allObjects.count, 999)
-            print("TOTAL OBJECTS SYNC'D: \(allObjects.count)")
+            print("TOTAL OBJECTS QUERIED FROM S3: \(allObjects.count)")
             print("DOWNLOADED: \(newObjects.count)")
             print("CONTINUATION MARKER: \(continuationMarker)")
             expectation.fulfill()

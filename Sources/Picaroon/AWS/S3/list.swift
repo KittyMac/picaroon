@@ -70,21 +70,46 @@ extension HTTPSession {
             return
         }
         
-        if components.queryItems == nil {
-            components.queryItems = []
+        // At this point components.queryItems contains the queries embedded in the url
+        // in an percent unescaped fashion. components.url will, by default, attempt to
+        // percent escape the query string. However, the percent escaping it performs does
+        // not appear to be standard. Specifically, things like "/" and "+" do not get
+        // escaped. Some service (like Amazon S3) require that the queries be properly
+        // percent escaped.
+        // To work around this, we generate an array of unescaped query items, then we
+        // manually percent escape each name and value using a custom percentEncoded method.
+        // Finally override components.percentEncodedQuery with components.query which
+        // will be the correct string with unescaped &name=value while "name" and "value"
+        // are escaped.
+        var unescapedQueryItems: [URLQueryItem] = []
+        if let originalQueryItems = components.queryItems {
+            for originalQueryItem in originalQueryItems {
+                unescapedQueryItems.append(originalQueryItem)
+            }
         }
         
         if let marker = marker {
             queryItems["marker"] = marker
-            components.queryItems?.append(URLQueryItem(name: "marker", value: marker))
+            unescapedQueryItems.append(URLQueryItem(name: "marker",
+                                                    value: marker))
         }
         if path != "/" {
-            queryItems["prefix"] = path.dropFirst(1).description
-            components.queryItems?.append(URLQueryItem(name: "prefix", value: path.dropFirst(1).description))
+            let value = path.dropFirst(1).description
+            queryItems["prefix"] = value
+            unescapedQueryItems.append(URLQueryItem(name: "prefix",
+                                                    value: value))
         }
         
-        components.percentEncodedQuery = components.query?.percentEncoded()
+        if unescapedQueryItems.count > 0 {
+            components.queryItems = []
+            for unescapedQueryItem in unescapedQueryItems {
+                components.queryItems?.append(URLQueryItem(name: unescapedQueryItem.name.percentEncoded() ?? unescapedQueryItem.name,
+                                                           value: unescapedQueryItem.value?.percentEncoded() ?? unescapedQueryItem.value))
+            }
+        }
         
+        components.percentEncodedQuery = components.query
+
         guard let url = components.url else {
             returnCallback([], nil, false, "failed to get components url")
             return
