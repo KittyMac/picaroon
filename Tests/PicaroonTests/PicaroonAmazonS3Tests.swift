@@ -55,6 +55,35 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         wait(for: [expectation], timeout: 600)
     }
     
+    func testSyncOneFileToLocal() {
+        let expectation = XCTestExpectation(description: #function)
+        
+        HTTPSession.oneshot.beDownloadFromS3(toFilePath: "/tmp/many/file2091.txt",
+                                             credentials: credentials,
+                                             key: "v1/many/file2091.txt",
+                                             contentType: .any,
+                                             cacheTime: 30,
+                                             Flynn.any) { data, source, response, error in
+            XCTAssertNil(error)
+            XCTAssertNotNil(data)
+            
+            if let source = source {
+                switch source {
+                case .cache:
+                    print ("LOADED FROM CACHE WITHOUT REQUEST")
+                case .notModified:
+                    print ("LOADED FROM CACHE NOT MODIFIED")
+                case .network:
+                    print ("LOADED FROM NETWORK")
+                }
+            }
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 600)
+    }
+    
     func testUploadAndDownloadS3() {
         let expectation = XCTestExpectation(description: #function)
         

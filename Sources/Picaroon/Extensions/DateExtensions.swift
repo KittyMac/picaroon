@@ -14,3 +14,12 @@ public extension Date {
         return Hitch(string: ISO8601DateFormatter().string(from: self))
     }
 }
+
+public extension String {
+    func fromRFC2822() -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
+        return formatter.date(from: self)
+        
+    }
+}
