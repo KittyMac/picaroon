@@ -163,7 +163,7 @@ extension HTTPSession {
             
             if abs(fileModificationDate.timeIntervalSinceNow) < cacheTime,
                let data = try? Data(contentsOf: fileUrl) {
-                returnCallback(data, .cache, nil, nil)
+                return returnCallback(data, .cache, nil, nil)
             }
         }
         
@@ -213,7 +213,7 @@ extension HTTPSession {
                 ], ofItemAtPath: fileUrl.path)
             }
             
-            returnCallback(data, .network, response, error)
+            return returnCallback(data, .network, response, error)
         }
     }
     
