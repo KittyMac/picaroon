@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Chronometer.git",
       "state" : {
-        "revision" : "742a6a58714e6c134d635abc589dbca9526099c3",
-        "version" : "0.1.9"
+        "revision" : "12ac87fa5d945169e32818bda82fa53d8220c256",
+        "version" : "0.1.10"
       }
     },
     {
@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/krzyzanowskim/CryptoSwift.git",
       "state" : {
-        "revision" : "32f641cf24fc7abc1c591a2025e9f2f572648b0f",
-        "version" : "1.7.2"
+        "revision" : "db51c407d3be4a051484a141bf0bff36c43d3b1e",
+        "version" : "1.8.0"
       }
     },
     {
@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Flynn.git",
       "state" : {
-        "revision" : "22d3058d1b4ef58b6bca7ed83ab5713d97db62a9",
-        "version" : "0.4.57"
+        "revision" : "ca46ed90a9867196af19b840a558507682399c98",
+        "version" : "0.4.61"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Hitch.git",
       "state" : {
-        "revision" : "90065f8f6900b389cbd4d3c73d94d50d172994cd",
-        "version" : "0.4.111"
+        "revision" : "de110dd6d2de0f41f4a4e7b7dea0bb769df7b12b",
+        "version" : "0.4.113"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Sextant.git",
       "state" : {
-        "revision" : "105afd7c8b7c44198a5625bf3175af666c7268e0",
-        "version" : "0.4.21"
+        "revision" : "49b567226e72ba4f22943e352e1ee3bf3bf4824e",
+        "version" : "0.4.24"
       }
     },
     {
@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Spanker.git",
       "state" : {
-        "revision" : "6abde231ed31628d7ce542fefc21d6a4a79bba94",
-        "version" : "0.2.44"
+        "revision" : "6b0edd2996d1f3bebb534fb05e20eac6bf8c8739",
+        "version" : "0.2.46"
       }
     },
     {

@@ -67,6 +67,16 @@ extension HTTPSession {
                 
         var marker: String? = localFiles.last?.s3Key
         
+        // If our sorting of the local files and s3 bucket were perfect, then we could pick up
+        // where the last file left off. However, given time drift of user devices it is entirely
+        // possible that the sorting will leave gaps. To combat this, we allow up to one extra list
+        // API call for continuous pulls.
+        if localFiles.count <= 1000 {
+            marker = localFiles.first?.s3Key
+        } else {
+            marker = localFiles[localFiles.count - 999].s3Key
+        }
+        
         if continuous == false {
             marker = nil
         }
