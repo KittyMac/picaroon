@@ -1,6 +1,8 @@
 import Foundation
 import Hitch
 
+fileprivate let iso8601Formatter = ISO8601DateFormatter()
+
 public extension Date {
     func toRFC2822() -> String {
         let formatter = DateFormatter()
@@ -8,10 +10,10 @@ public extension Date {
         return formatter.string(from: self)
     }
     func toISO8601() -> String {
-        return ISO8601DateFormatter().string(from: self)
+        return iso8601Formatter.string(from: self)
     }
     func toISO8601Hitch() -> Hitch {
-        return Hitch(string: ISO8601DateFormatter().string(from: self))
+        return Hitch(string: iso8601Formatter.string(from: self))
     }
 }
 
