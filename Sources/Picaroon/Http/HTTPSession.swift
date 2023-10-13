@@ -19,6 +19,7 @@ import FoundationNetworking
 
 public class HTTPSession: Actor {
     public static let oneshot: HTTPSession = HTTPSession(oneshot: true)
+    public static let longshot: HTTPSession = HTTPSession(longshot: true)
     
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
@@ -36,7 +37,21 @@ public class HTTPSession: Actor {
     
     fileprivate init(oneshot: Bool) {
         let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 10.0
+        config.timeoutIntervalForRequest = 20.0
+        config.httpMaximumConnectionsPerHost = max(Flynn.cores * 3, 4)
+        config.httpShouldSetCookies = false
+        config.httpCookieAcceptPolicy = .never
+        config.httpCookieStorage = nil
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        config.httpShouldUsePipelining = true
+        urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
+    }
+    
+    fileprivate init(longshot: Bool) {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 600.0
+        config.timeoutIntervalForResource = 600.0
         config.httpMaximumConnectionsPerHost = max(Flynn.cores * 3, 4)
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
