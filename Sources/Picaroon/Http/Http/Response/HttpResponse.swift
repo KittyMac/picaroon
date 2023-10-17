@@ -13,7 +13,7 @@ private let hitchCacheControlNoCache: Hitch = "Cache-Control: no-cache"
 private let hitchETag: Hitch = "ETag: "
 
 private let hitchSetCookie1: Hitch = "Set-Cookie: "
-private let hitchSetCookie2: Hitch = "; HttpOnly\r\n"
+private let hitchSetCookie2: Hitch = "; Max-Age=172800; HttpOnly\r\n"
 
 private let hitchSessionId1: Hitch = "Session-Id: "
 
