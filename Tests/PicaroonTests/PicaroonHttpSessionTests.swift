@@ -9,8 +9,8 @@ final class PicaroonHttpSessionTests: XCTestCase {
     func testManyHttpTasksOnOneShotSession() {
         let expectation = XCTestExpectation(description: "testManyHttpTasksOnSingleSession")
         
-        var waiting = 2048
-        for _ in 0..<2048 {
+        var waiting = 4096
+        for _ in 0..<4096 {
             HTTPSession.oneshot.beRequest(url: "https://www.swift-linux.com",
                                           httpMethod: "GET",
                                           params: [:],
@@ -39,8 +39,8 @@ final class PicaroonHttpSessionTests: XCTestCase {
         let expectation = XCTestExpectation(description: "testManyHttpTasksOnSingleSession")
         
         HTTPSessionManager.shared.beNew(Flynn.any) { session in
-            var waiting = 2048
-            for _ in 0..<2048 {
+            var waiting = 4096
+            for _ in 0..<4096 {
                 session.beRequest(url: "https://www.swift-linux.com",
                                   httpMethod: "GET",
                                   params: [:],
@@ -69,8 +69,8 @@ final class PicaroonHttpSessionTests: XCTestCase {
     func testManyHttpSessions() {
         let expectation = XCTestExpectation(description: "testManyHttpSessions")
         
-        var waiting = 2048
-        for _ in 0..<2048 {
+        var waiting = 4096
+        for _ in 0..<4096 {
             HTTPSessionManager.shared.beNew(Flynn.any) { session in
                 session.beRequest(url: "https://www.swift-linux.com",
                                   httpMethod: "GET",

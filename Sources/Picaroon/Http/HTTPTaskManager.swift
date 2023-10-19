@@ -74,24 +74,15 @@ internal class HTTPTaskManager: Actor {
                     break
                 }
                 
-                // If we timeout out, go ahead and retry it.
+                var shouldBeRetried: String? = nil
+                
+                // Allow specific error to be retried
                 if let error = error as? URLError,
                    (error.code == .timedOut ||
                     error.code == .networkConnectionLost ||
                     error.errorCode == 104 ||
-                    error.errorCode == -1001) && timeoutRetry > 0 {
-#if DEBUG
-                    print("timeout detected, retrying \(timeoutRetry)...")
-#endif
-                    session.flush {
-                        self.beResume(session: session,
-                                      request: request,
-                                      proxy: proxy,
-                                      timeoutRetry: timeoutRetry - 1,
-                                      self,
-                                      returnCallback)
-                    }
-                    return
+                    error.errorCode == -1001) {
+                    shouldBeRetried = "timeout detected, retrying \(timeoutRetry)..."
                 }
                 
                 // If we timeout out, go ahead and retry it.
@@ -99,10 +90,26 @@ internal class HTTPTaskManager: Actor {
                    (error.code == .ENOSPC ||
                     error.code == .ECONNRESET ||
                     error.errorCode == 104 ||
-                    error.errorCode == -1001) && timeoutRetry > 0 {
-#if DEBUG
-                    print("no space detected, retrying \(timeoutRetry)...")
-#endif
+                    error.errorCode == -1001) {
+                    shouldBeRetried = "no space detected, retrying \(timeoutRetry)..."
+                }
+                
+                // If we timeout out, go ahead and retry it.
+                if let errorString = error?.localizedDescription,
+                   timeoutRetry > 0 {
+                    let retryErrorStrings = [
+                        "Transferred a partial file"
+                    ]
+                    
+                    for retryErrorString in retryErrorStrings where errorString.contains(retryErrorString) {
+                        shouldBeRetried = "\(retryErrorString), retrying \(timeoutRetry)..."
+                    }
+                }
+                
+                if let shouldBeRetried = shouldBeRetried,
+                   timeoutRetry > 0 {
+                    print(shouldBeRetried)
+                    
                     session.flush {
                         self.beResume(session: session,
                                       request: request,
