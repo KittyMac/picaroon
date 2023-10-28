@@ -82,7 +82,7 @@ internal class HTTPTaskManager: Actor {
                     error.code == .networkConnectionLost ||
                     error.errorCode == 104 ||
                     error.errorCode == -1001) {
-                    shouldBeRetried = "timeout detected, retrying \(timeoutRetry)..."
+                    shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 
                 // If we timeout out, go ahead and retry it.
@@ -91,7 +91,7 @@ internal class HTTPTaskManager: Actor {
                     error.code == .ECONNRESET ||
                     error.errorCode == 104 ||
                     error.errorCode == -1001) {
-                    shouldBeRetried = "no space detected, retrying \(timeoutRetry)..."
+                    shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 
                 // If we timeout out, go ahead and retry it.
@@ -102,7 +102,7 @@ internal class HTTPTaskManager: Actor {
                     ]
                     
                     for retryErrorString in retryErrorStrings where errorString.contains(retryErrorString) {
-                        shouldBeRetried = "\(retryErrorString), retrying \(timeoutRetry)..."
+                        shouldBeRetried = "\(retryErrorString) \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                     }
                 }
                 
