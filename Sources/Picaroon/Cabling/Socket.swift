@@ -16,6 +16,7 @@ private let posix_recv = Glibc.recv
 private let posix_listen = Glibc.listen
 private let posix_accept = Glibc.accept
 private let posix_getpeername = Glibc.getpeername
+private let posix_poll = Glibc.poll
 #endif
 #if canImport(Darwin)
 private let posix_gethostbyname = Darwin.gethostbyname
@@ -27,6 +28,7 @@ private let posix_recv = Darwin.recv
 private let posix_listen = Darwin.listen
 private let posix_accept = Darwin.accept
 private let posix_getpeername = Darwin.getpeername
+private let posix_poll = Darwin.poll
 #endif
 
 
@@ -181,6 +183,18 @@ public class Socket {
             cptr += bytesWritten
         }
         return cptr - startPtr
+    }
+    
+    @discardableResult
+    public func poll() -> Int {
+        guard socketFd >= 0 else { return -1 }
+        
+        let nfds: nfds_t = 1
+        let timeout: Int32 = 0
+        var fds: pollfd = pollfd(fd: socketFd,
+                                 events: Int16(POLLIN),
+                                 revents: 0)
+        return Int(posix_poll(&fds, nfds, timeout))
     }
     
     @discardableResult

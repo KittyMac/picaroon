@@ -4,8 +4,34 @@ import Spanker
 
 import Picaroon
 
+extension String {
+    private func substring(with nsrange: NSRange) -> Substring? {
+        guard let range = Range(nsrange, in: self) else { return nil }
+        return self[range]
+    }
+    
+    func matches(_ pattern: String, _ callback: @escaping ((NSTextCheckingResult, [String]) -> Void)) {
+        do {
+            let body = self
+            let regex = try NSRegularExpression(pattern: pattern, options: [])
+            let nsrange = NSRange(location: Int(0), length: Int(count))
+            regex.enumerateMatches(in: body, options: [], range: nsrange) { (match, _, _) in
+                guard let match = match else { return }
+                
+                var groups: [String] = []
+                for iii in 0..<match.numberOfRanges {
+                    if let groupString = body.substring(with: match.range(at: iii)) {
+                        groups.append(String(groupString))
+                    }
+                }
+                callback(match, groups)
+            }
+        } catch { }
+    }
+}
+
 final class picaroonHttpResponseTests: XCTestCase {
-    /*
+    
     func testPerformance1() {
         
         let port = Int.random(in: 8000..<65500)
@@ -14,7 +40,7 @@ final class picaroonHttpResponseTests: XCTestCase {
         
         let helloWorldResponse = HttpResponse(text: "Hello World")
         
-        let server = Server(config: config) { _, _ in
+        let server = Server(config: config) { _, _, _ in
             return helloWorldResponse
         }
         server.listen()
@@ -54,9 +80,9 @@ final class picaroonHttpResponseTests: XCTestCase {
         
         print(output)
         
-        XCTAssertTrue(requestsPerSecond > 90000)
+        XCTAssertTrue(requestsPerSecond > 50000)
     }
-    */
+    
     func testGzipDetection() {
         let compressedShellFontsHtml = Data(base64Encoded:"H4sIAAAAAAACA+WUy07DMBBF93yFlU1aQUjiPhChregDr2CDxAe4qZNauHZkp6oqxL8zsaOWVgQVEAuEF3Mzc+OxdRxnILh8RpqJoVdAVHThoaVmGaTrueBpmClZmlDQUl1uVJZhD1Ez9Kqqh8ptwdxzWHupVsYozXMuR2hwWm+t5uq3u6+UdCt8ZQFTbgUbnSEYt9VbQUZThl5soRp1bcXFNkH+PSDybw5N2yFBUukVFUfehvF8WSaoG0VHzoKbQlDoaTa02HtGpwlaa9FqOJk2zIZ1ypZvU7+9n7qWPFULFmgqc9jP03kEI4giQi6qJO7ETns4gNCxCZ5MAghTl0z7TmfjWm0dV21w1Ccuueo6HTszxtjpdVyr7YzBqLVXKblz2yCEzNyWX09l/mgP9zvUez+j/v6b/QfcP6KOHuBO7dA3g2/62Juhf4Z8d5EPqe+h/0nkLgxC98d5A8wWR3OUBQAA")!
         

@@ -26,7 +26,56 @@ public protocol AnyConnection {
 }
 
 public class Connection: Actor, AnyConnection {
-
+    
+    // A dedicated thread which poll's all open sockets and, when those sockets can read, calls
+    // checkForMoreData on the associated connection
+    private struct WatchSocket {
+        let connection: Connection
+        let socket: Socket
+    }
+    private static let watchLock = NSLock()
+    private static var watchSockets: [WatchSocket] = []
+    private static var watchRunning = false
+    
+    private static func watch(connection: Connection,
+                              socket: Socket) {
+        watchLock.lock()
+        if watchRunning == false {
+            begin()
+        }
+        watchSockets.append(
+            WatchSocket(connection: connection, socket: socket)
+        )
+        watchLock.unlock()
+    }
+    
+    private static func begin() {
+        guard watchRunning == false else { return }
+        watchRunning = true
+        
+        Thread {
+            while true {
+                watchLock.lock()
+                watchSockets = watchSockets.filter({ watchSocket in
+                    let result = watchSocket.socket.poll()
+                    // if the socket is in error or is ready to read data
+                    if result != 0 {
+                        watchSocket.connection.beCheckForMoreData()
+                    }
+                    // if the socket is not in error
+                    return result >= 0
+                })
+                let shouldSleep = watchSockets.isEmpty
+                watchLock.unlock()
+                
+                if shouldSleep {
+                    usleep(50_000)
+                }
+            }
+        }.start()
+    }
+    
+    
     // Handle a single TCP connection to a client. Multiple connections can link to the
     // same UserSession.
 
@@ -52,8 +101,6 @@ public class Connection: Actor, AnyConnection {
     
     private let config: ServerConfig
 
-    private var checkForMoreDataScheduled = false
-    private var checkForMoreBackoff = 0.0
     private let connectionMaxBackoff: Double
 
     init(socket: Socket,
@@ -85,7 +132,8 @@ public class Connection: Actor, AnyConnection {
 
         unsafeMessageBatchSize = 1
 
-        checkForMoreDataIfNeeded()
+        Connection.watch(connection: self,
+                         socket: socket)
     }
 
     deinit {
@@ -96,7 +144,6 @@ public class Connection: Actor, AnyConnection {
         httpResponse.send(config: config,
                           socket: socket,
                           userSession: userSession)
-        resetCheckForMoreBackoff()
     }
 
     internal func _beSendIfModified(httpRequest: HttpRequest,
@@ -105,7 +152,6 @@ public class Connection: Actor, AnyConnection {
         _beSend(httpResponse: httpResponse)
 #else
         if httpResponse.isNew(httpRequest) {
-            resetCheckForMoreBackoff()
             httpResponse.send(config: config,
                               socket: socket,
                               userSession: userSession)
@@ -177,37 +223,8 @@ public class Connection: Actor, AnyConnection {
     internal func _beSendNotModified() {
         _beSend(httpResponse: HttpStaticResponse.notModified)
     }
-    
-    private func resetCheckForMoreBackoff() {
-        isProcessingRequest = false
-        checkForMoreBackoff = 0.0
-        checkForMoreDataIfNeeded()
-    }
 
-    private func checkForMoreDataIfNeeded() {
-        guard isProcessingRequest == false else { return }
-        guard checkForMoreDataScheduled == false else { return }
-        
-        checkForMoreDataScheduled = true
-        
-        checkForMoreBackoff = checkForMoreBackoff * 2.0
-        if checkForMoreBackoff < 0.01 {
-            checkForMoreBackoff = 0.01
-        }
-        if checkForMoreBackoff > connectionMaxBackoff {
-            checkForMoreBackoff = connectionMaxBackoff
-        }
-        
-        Flynn.Timer(timeInterval: checkForMoreBackoff, repeats: false, self) { [weak self] _ in
-            guard let self = self else { return }
-            self.checkForMoreData()
-            
-            self.checkForMoreDataScheduled = false
-            self.checkForMoreDataIfNeeded()
-        }
-    }
-
-    private func checkForMoreData() {
+    internal func _beCheckForMoreData() {
         // Checks the socket to see if there is an HTTP command ready to be processed.
         // Whether we process one or not, we call beNextCommand() to check again in
         // the future for another command.
@@ -215,7 +232,7 @@ public class Connection: Actor, AnyConnection {
             ConnectionManager.shared.beClose(connection: self)
             return
         }
-
+        
         // Read some data onto the current buffer position
         let bytesRead = socket.recv(bytes: currentPtr,
                                     count: (endPtr - currentPtr))
@@ -249,7 +266,6 @@ public class Connection: Actor, AnyConnection {
                                             size: currentPtr - buffer) else {
             // We have an incomplete https request, wait for more data and try again
             self.unsafePriority = 99
-            resetCheckForMoreBackoff()
             return
         }
         
