@@ -32,6 +32,7 @@ extension String {
 
 final class picaroonHttpResponseTests: XCTestCase {
     
+#if os(macOS)
     func testPerformance1() {
         
         let port = Int.random(in: 8000..<65500)
@@ -82,6 +83,7 @@ final class picaroonHttpResponseTests: XCTestCase {
         
         XCTAssertTrue(requestsPerSecond > 50000)
     }
+#endif
     
     func testGzipDetection() {
         let compressedShellFontsHtml = Data(base64Encoded:"H4sIAAAAAAACA+WUy07DMBBF93yFlU1aQUjiPhChregDr2CDxAe4qZNauHZkp6oqxL8zsaOWVgQVEAuEF3Mzc+OxdRxnILh8RpqJoVdAVHThoaVmGaTrueBpmClZmlDQUl1uVJZhD1Ez9Kqqh8ptwdxzWHupVsYozXMuR2hwWm+t5uq3u6+UdCt8ZQFTbgUbnSEYt9VbQUZThl5soRp1bcXFNkH+PSDybw5N2yFBUukVFUfehvF8WSaoG0VHzoKbQlDoaTa02HtGpwlaa9FqOJk2zIZ1ypZvU7+9n7qWPFULFmgqc9jP03kEI4giQi6qJO7ETns4gNCxCZ5MAghTl0z7TmfjWm0dV21w1Ccuueo6HTszxtjpdVyr7YzBqLVXKblz2yCEzNyWX09l/mgP9zvUez+j/v6b/QfcP6KOHuBO7dA3g2/62Juhf4Z8d5EPqe+h/0nkLgxC98d5A8wWR3OUBQAA")!

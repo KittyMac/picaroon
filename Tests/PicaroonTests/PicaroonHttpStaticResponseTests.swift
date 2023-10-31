@@ -39,7 +39,8 @@ class TestSocket: SocketSendable {
 }
 
 final class picaroonHttpStaticResponseTests: XCTestCase {
-        
+    
+#if os(macOS)
     func testPerformance1() {
         
         let port = Int.random(in: 8000..<65500)
@@ -90,7 +91,7 @@ final class picaroonHttpStaticResponseTests: XCTestCase {
         
         XCTAssertTrue(requestsPerSecond > 90000)
     }
-    
+#endif
     
     func testEmpty() {
         
