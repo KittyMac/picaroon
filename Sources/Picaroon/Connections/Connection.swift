@@ -59,7 +59,7 @@ public class Connection: Actor, AnyConnection {
                 watchSockets = watchSockets.filter({ watchSocket in
                     let result = watchSocket.socket.poll()
                     // if the socket is in error or is ready to read data
-                    if result != 0 {
+                    if result != 0 && watchSocket.connection.unsafeMessagesCount < 2 {
                         watchSocket.connection.beCheckForMoreData()
                     }
                     // if the socket is not in error
@@ -130,8 +130,8 @@ public class Connection: Actor, AnyConnection {
 
         super.init()
 
-        unsafeMessageBatchSize = 1
-
+        _beCheckForMoreData()
+        
         Connection.watch(connection: self,
                          socket: socket)
     }
@@ -230,6 +230,10 @@ public class Connection: Actor, AnyConnection {
         // the future for another command.
         if socket.isClosed() {
             ConnectionManager.shared.beClose(connection: self)
+            return
+        }
+        
+        guard socket.poll() != 0 else {
             return
         }
         
