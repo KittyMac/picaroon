@@ -29,9 +29,26 @@ public class Connection: Actor, AnyConnection {
     
     // A dedicated thread which poll's all open sockets and, when those sockets can read, calls
     // checkForMoreData on the associated connection
-    private struct WatchSocket {
+    private class WatchSocket {
         let connection: Connection
         let socket: Socket
+        var date: Date
+        
+        init(connection: Connection, socket: Socket, date: Date) {
+            self.connection = connection
+            self.socket = socket
+            self.date = date
+        }
+        
+        func shouldRead() -> Bool {
+            let result = socket.poll()
+            if (result > 0 && connection.unsafeMessagesCount < 2) ||
+                abs(date.timeIntervalSinceNow) > 60 {
+                date = Date()
+                return true
+            }
+            return false
+        }
     }
     private static let watchLock = NSLock()
     private static var watchSockets: [WatchSocket] = []
@@ -44,7 +61,9 @@ public class Connection: Actor, AnyConnection {
             begin()
         }
         watchSockets.append(
-            WatchSocket(connection: connection, socket: socket)
+            WatchSocket(connection: connection,
+                        socket: socket,
+                        date: Date())
         )
         watchLock.unlock()
     }
@@ -59,14 +78,13 @@ public class Connection: Actor, AnyConnection {
                 
                 var shouldSleep = true
                 watchSockets = watchSockets.filter({ watchSocket in
-                    let result = watchSocket.socket.poll()
                     // if the socket is in error or is ready to read data
-                    if result != 0 && watchSocket.connection.unsafeMessagesCount < 2 {
+                    if watchSocket.shouldRead() {
                         watchSocket.connection.beCheckForMoreData()
                         shouldSleep = false
                     }
                     // if the socket is not in error
-                    return result >= 0 && watchSocket.socket.isClosed() == false
+                    return watchSocket.socket.isClosed() == false
                 })
                 watchLock.unlock()
                 
