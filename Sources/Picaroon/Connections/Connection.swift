@@ -56,16 +56,18 @@ public class Connection: Actor, AnyConnection {
         Thread {
             while true {
                 watchLock.lock()
+                
+                var shouldSleep = true
                 watchSockets = watchSockets.filter({ watchSocket in
                     let result = watchSocket.socket.poll()
                     // if the socket is in error or is ready to read data
                     if result != 0 && watchSocket.connection.unsafeMessagesCount < 2 {
                         watchSocket.connection.beCheckForMoreData()
+                        shouldSleep = false
                     }
                     // if the socket is not in error
-                    return result >= 0
+                    return result >= 0 && watchSocket.socket.isClosed() == false
                 })
-                let shouldSleep = watchSockets.isEmpty
                 watchLock.unlock()
                 
                 if shouldSleep {
