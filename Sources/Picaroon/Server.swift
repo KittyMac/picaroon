@@ -2,6 +2,12 @@ import Foundation
 import Flynn
 import Hitch
 
+#if os(Linux) || os(Android)
+public func autoreleasepool(_ block: () -> ()) {
+    block()
+}
+#endif
+
 public typealias StaticStorageHandler = (Connection, ServerConfig, HttpRequest) -> HttpResponse?
 
 /// Three different mechanisms for allowing session persistance, in order from most complicated to
@@ -86,16 +92,6 @@ public class Server<T: UserSession> {
                             port: config.port)
 
         repeat {
-#if os(Linux) || os(Android)
-            var clientAddress = ""
-            if let newSocket = serverSocket.accept(blocking: true, clientAddress: &clientAddress) {
-                ConnectionManager.shared.beOpen(socket: newSocket,
-                                                clientAddress: clientAddress,
-                                                config: config,
-                                                staticStorageHandler: staticStorageHandler,
-                                                userSessionManager: userSessionManager)
-            }
-#else
             autoreleasepool {
                 var clientAddress = ""
                 if let newSocket = serverSocket.accept(blocking: true, clientAddress: &clientAddress) {
@@ -106,7 +102,6 @@ public class Server<T: UserSession> {
                                                     userSessionManager: self.userSessionManager)
                 }
             }
-#endif
         } while self.listening
         return true
     }
