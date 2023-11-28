@@ -150,10 +150,10 @@ public class Connection: Actor, AnyConnection {
 
         super.init()
 
-        _beCheckForMoreData()
-        
         Connection.watch(connection: self,
                          socket: socket)
+        
+        beCheckForMoreData()
     }
 
     deinit {
