@@ -174,19 +174,21 @@ extension HTTPSession {
         
         func requestMore(marker: String?) {
             // Like beListFromS3(), but gives parsed results and will keep listing until all returns have been discovered
-            HTTPSession.oneshot.beListFromS3(credentials: credentials,
-                                             keyPrefix: keyPrefix,
-                                             marker: marker,
-                                             self) { moreObjects, continuationMarker, isDone, error in
-                
-                if let error = error { return returnCallback(allObjects, continuationMarker, error) }
-                
-                allObjects.append(contentsOf: moreObjects)
-                
-                if isDone {
-                    return returnCallback(allObjects, continuationMarker, nil)
-                } else {
-                    return requestMore(marker: continuationMarker)
+            HTTPSessionManager.shared.beNew(self) { session in
+                session.beListFromS3(credentials: credentials,
+                                     keyPrefix: keyPrefix,
+                                     marker: marker,
+                                     self) { moreObjects, continuationMarker, isDone, error in
+                    
+                    if let error = error { return returnCallback(allObjects, continuationMarker, error) }
+                    
+                    allObjects.append(contentsOf: moreObjects)
+                    
+                    if isDone {
+                        return returnCallback(allObjects, continuationMarker, nil)
+                    } else {
+                        return requestMore(marker: continuationMarker)
+                    }
                 }
             }
         }
