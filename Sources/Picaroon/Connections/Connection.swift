@@ -114,7 +114,7 @@ public class Connection: Actor, AnyConnection {
     private let endPtr: UnsafeMutablePointer<UInt8>
     private var currentPtr: UnsafeMutablePointer<UInt8>
 
-    private var userSession: UserSession?
+    var unsafeUserSession: UserSession?
     private let userSessionManager: AnyUserSessionManager
 
     private let staticStorageHandler: StaticStorageHandler?
@@ -163,7 +163,7 @@ public class Connection: Actor, AnyConnection {
     internal func _beSend(httpResponse: HttpResponse) {
         httpResponse.send(config: config,
                           socket: socket,
-                          userSession: userSession)
+                          userSession: unsafeUserSession)
     }
 
     internal func _beSendIfModified(httpRequest: HttpRequest,
@@ -174,7 +174,7 @@ public class Connection: Actor, AnyConnection {
         if httpResponse.isNew(httpRequest) {
             httpResponse.send(config: config,
                               socket: socket,
-                              userSession: userSession)
+                              userSession: unsafeUserSession)
         } else {
             _beSendNotModified()
         }
@@ -182,10 +182,10 @@ public class Connection: Actor, AnyConnection {
     }
 
     internal func _beEndUserSession() {
-        if let userSession = userSession {
-            userSessionManager.end(userSession)
+        if let unsafeUserSession = unsafeUserSession {
+            userSessionManager.end(unsafeUserSession)
         }
-        userSession = nil
+        unsafeUserSession = nil
     }
 
     internal func _beSendUnauthorized() {
@@ -243,7 +243,7 @@ public class Connection: Actor, AnyConnection {
     internal func _beSendNotModified() {
         _beSend(httpResponse: HttpStaticResponse.notModified)
     }
-
+    
     internal func _beCheckForMoreData() {
         // Checks the socket to see if there is an HTTP command ready to be processed.
         // Whether we process one or not, we call beNextCommand() to check again in
@@ -334,7 +334,7 @@ public class Connection: Actor, AnyConnection {
            oldJavascriptSessionUUID != newJavascriptSessionUUID {
             if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                 oldJavascriptSessionUUID, newJavascriptSessionUUID) {
-                self.userSession = userSession
+                self.unsafeUserSession = userSession
                 
                 userSession.beHandleRequest(connection: self,
                                             httpRequest: httpRequest)
@@ -346,7 +346,7 @@ public class Connection: Actor, AnyConnection {
         if let oldJavascriptSessionUUID = httpRequestSid {
             if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                 oldJavascriptSessionUUID, oldJavascriptSessionUUID) {
-                self.userSession = userSession
+                self.unsafeUserSession = userSession
                 
                 userSession.beHandleRequest(connection: self,
                                             httpRequest: httpRequest)
@@ -360,7 +360,7 @@ public class Connection: Actor, AnyConnection {
         // error  (it should be served by the static handler if we don't have a client which is
         // running enough to provide us a session id).
         if let userSession = userSessionManager.get(cookieSessionUUID, javascriptSessionUUID) {
-            self.userSession = userSession
+            self.unsafeUserSession = userSession
             
             userSession.beHandleRequest(connection: self,
                                         httpRequest: httpRequest)

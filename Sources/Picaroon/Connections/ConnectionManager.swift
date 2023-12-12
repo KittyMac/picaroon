@@ -29,4 +29,9 @@ public class ConnectionManager: Actor {
         active[connection.unsafeUUID] = nil
     }
     
+    internal func _beClose(session: UserSession) {
+        for connection in active.values where connection.unsafeUserSession == session {
+            active[connection.unsafeUUID] = nil
+        }
+    }
 }

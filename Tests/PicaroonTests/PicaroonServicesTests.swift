@@ -38,8 +38,12 @@ class TestServicesSession: UserServiceableSession {
         setInitialServices()
     }
 
-    required init(cookieSessionUUID: Hitch?, javascriptSessionUUID: Hitch?) {
-        super.init(cookieSessionUUID: cookieSessionUUID, javascriptSessionUUID: javascriptSessionUUID)
+    required init(cookieSessionUUID: Hitch?,
+                  javascriptSessionUUID: Hitch?,
+                  sessionActivityTimeout: TimeInterval) {
+        super.init(cookieSessionUUID: cookieSessionUUID,
+                   javascriptSessionUUID: javascriptSessionUUID,
+                   sessionActivityTimeout: 60)
         setInitialServices()
     }
     

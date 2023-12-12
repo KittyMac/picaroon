@@ -31,6 +31,10 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
 
     init(config: ServerConfig) {
         self.config = config
+        
+        Flynn.Timer(timeInterval: 30, immediate: false, repeats: true, Flynn.any) { [weak self] _ in
+            self?.checkExpiredSessions()
+        }
     }
 
     public func numberOfUserSessions() -> Int {
@@ -52,6 +56,17 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         return self.reassociate(cookieSessionUUID: cookieSessionUUID,
                                 old: oldJavascriptSessionUUID,
                                 new: newJavascriptSessionUUID)
+    }
+    
+    private func checkExpiredSessions() {
+        lock.lock()
+        for userSession in sessionsByCombinedSessionUUID.values where userSession.unsafeIsExpired() {
+            sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
+            sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
+            sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
+            ConnectionManager.shared.beClose(session: userSession)
+        }
+        lock.unlock()
     }
 
     private func reassociate(cookieSessionUUID: Hitch?,
@@ -135,7 +150,8 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
 
         // Otherwise, this must be a new incoming session
         let userSession = T(cookieSessionUUID: localCookieSessionUUID,
-                            javascriptSessionUUID: localJavascriptSessionUUID)
+                            javascriptSessionUUID: localJavascriptSessionUUID,
+                            sessionActivityTimeout: config.sessionActivityTimeout)
         //print("CREATING NEW USER SESSION: \(userSession.unsafeSessionUUID)")
         sessionsByCombinedSessionUUID[userSession.unsafeSessionUUID] = userSession
         sessionsByCookieSessionUUID[userSession.unsafeCookieSessionUUID] = userSession
@@ -147,8 +163,9 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         lock.lock()
 
         sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
-        sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
+        sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
         sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
+        ConnectionManager.shared.beClose(session: userSession)
 
         lock.unlock()
     }

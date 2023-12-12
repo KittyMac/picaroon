@@ -44,8 +44,17 @@ open class UserSession: Actor {
     private var javascriptSessionUUID: Hitch
 
     private var allowReassociationFromDate: Date?
-
+    
     var unsafeSessionHeaders: [Hitch] = []
+    
+    private let lastActivityLock = NSLock()
+    private var lastActivity: Date = Date()
+    private let sessionActivityTimeout: TimeInterval
+    
+    func unsafeIsExpired() -> Bool {
+        lastActivityLock.lock(); defer { lastActivityLock.unlock() }
+        return abs(lastActivity.timeIntervalSinceNow) > sessionActivityTimeout
+    }
 
     func unsafeReassociationIsAllowed() -> Bool {
         guard let date = allowReassociationFromDate else { return false }
@@ -53,7 +62,8 @@ open class UserSession: Actor {
         return abs(date.timeIntervalSinceNow) < 5 * 60
     }
 
-    func unsafeUpdateSessionUUIDs(_ cookieSessionUUID: Hitch?, _ javascriptSessionUUID: Hitch?) {
+    func unsafeUpdateSessionUUIDs(_ cookieSessionUUID: Hitch?,
+                                  _ javascriptSessionUUID: Hitch?) {
         self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidHitch
         self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidHitch
         sessionUUID = UserSessionManager.combined(unsafeCookieSessionUUID, unsafeJavascriptSessionUUID)
@@ -62,13 +72,17 @@ open class UserSession: Actor {
     required public override init() {
         cookieSessionUUID = UUID().uuidHitch
         javascriptSessionUUID = UUID().uuidHitch
+        self.sessionActivityTimeout = 60 * 60
         sessionUUID = UserSessionManager.combined(cookieSessionUUID, javascriptSessionUUID)
         super.init()
     }
 
-    required public init(cookieSessionUUID: Hitch?, javascriptSessionUUID: Hitch?) {
+    required public init(cookieSessionUUID: Hitch?,
+                         javascriptSessionUUID: Hitch?,
+                         sessionActivityTimeout: TimeInterval) {
         self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidHitch
         self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidHitch
+        self.sessionActivityTimeout = sessionActivityTimeout
         sessionUUID = UserSessionManager.combined(self.cookieSessionUUID, self.javascriptSessionUUID)
         super.init()
     }
@@ -85,9 +99,9 @@ open class UserSession: Actor {
 
     internal func _beHandleRequest(connection: AnyConnection,
                                    httpRequest: HttpRequest) {
-                
         if safeHandleServiceRequest(connection: connection,
                                     httpRequest: httpRequest) {
+            lastActivity = Date()
             return
         }
         

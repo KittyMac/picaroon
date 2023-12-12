@@ -43,11 +43,13 @@ public struct ServerConfig: Codable {
     public let connectionMaxBackoff: Double
 
     public let sessionPer: UserSessionPer
+    public let sessionActivityTimeout: TimeInterval
 
     public init(address: String,
                 port: Int,
                 basePath: String = "/",
                 sessionPer: UserSessionPer = .window,
+                sessionActivityTimeout: TimeInterval = 60 * 60,
                 clientTimeout: TimeInterval = 5.0,
                 serverTimeout: TimeInterval = 30.0,
                 maxRequestInBytes: Int = 1024 * 1024 * 8,
@@ -55,6 +57,7 @@ public struct ServerConfig: Codable {
         self.address = Hitch(string: address)
         self.port = port
         self.sessionPer = sessionPer
+        self.sessionActivityTimeout = sessionActivityTimeout
         self.clientTimeout = clientTimeout
         self.serverTimeout = serverTimeout
         self.maxRequestInBytes = maxRequestInBytes
