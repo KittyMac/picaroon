@@ -55,6 +55,13 @@ open class UserSession: Actor {
         lastActivityLock.lock(); defer { lastActivityLock.unlock() }
         return abs(lastActivity.timeIntervalSinceNow) > sessionActivityTimeout
     }
+    
+    func unsafeLastActivity() -> Date {
+        lastActivityLock.lock();
+        let date = lastActivity
+        lastActivityLock.unlock()
+        return date
+    }
 
     func unsafeReassociationIsAllowed() -> Bool {
         guard let date = allowReassociationFromDate else { return false }

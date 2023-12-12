@@ -60,12 +60,27 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
     
     private func checkExpiredSessions() {
         lock.lock()
+        
+        // Remove any inactive sessions
         for userSession in sessionsByCombinedSessionUUID.values where userSession.unsafeIsExpired() {
             sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
             sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
             sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
             ConnectionManager.shared.beClose(session: userSession)
         }
+        
+        // Remove the most inactive sessions until we get back under our maximum
+        if sessionsByCombinedSessionUUID.count > config.maximumSessions {
+            var sorted = sessionsByCombinedSessionUUID.values.sorted(by: {  $0.unsafeLastActivity() < $1.unsafeLastActivity() })
+            while sessionsByCombinedSessionUUID.count > config.maximumSessions && sorted.count > 0 {
+                let userSession = sorted.removeFirst()
+                sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
+                sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
+                sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
+                ConnectionManager.shared.beClose(session: userSession)
+            }
+        }
+        
         lock.unlock()
     }
 
