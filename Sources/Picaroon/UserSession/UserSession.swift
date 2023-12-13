@@ -49,11 +49,11 @@ open class UserSession: Actor {
     
     private let lastActivityLock = NSLock()
     private var lastActivity: Date = Date()
-    private let sessionActivityTimeout: TimeInterval
+    public let safeSessionActivityTimeout: TimeInterval
     
     func unsafeIsExpired() -> Bool {
         lastActivityLock.lock(); defer { lastActivityLock.unlock() }
-        return abs(lastActivity.timeIntervalSinceNow) > sessionActivityTimeout
+        return abs(lastActivity.timeIntervalSinceNow) > safeSessionActivityTimeout
     }
     
     func unsafeLastActivity() -> Date {
@@ -79,7 +79,7 @@ open class UserSession: Actor {
     required public override init() {
         cookieSessionUUID = UUID().uuidHitch
         javascriptSessionUUID = UUID().uuidHitch
-        self.sessionActivityTimeout = 60 * 60
+        self.safeSessionActivityTimeout = 60 * 60
         sessionUUID = UserSessionManager.combined(cookieSessionUUID, javascriptSessionUUID)
         super.init()
     }
@@ -89,7 +89,7 @@ open class UserSession: Actor {
                          sessionActivityTimeout: TimeInterval) {
         self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidHitch
         self.javascriptSessionUUID = javascriptSessionUUID ?? UUID().uuidHitch
-        self.sessionActivityTimeout = sessionActivityTimeout
+        self.safeSessionActivityTimeout = sessionActivityTimeout
         sessionUUID = UserSessionManager.combined(self.cookieSessionUUID, self.javascriptSessionUUID)
         super.init()
     }
