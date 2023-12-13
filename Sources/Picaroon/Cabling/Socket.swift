@@ -309,6 +309,8 @@ public class Socket {
                 clientAddress = Hitch(bytes: hitchPtr, offset: 0, count: count).toString()
             }
         }
+        
+        free(scratch_ptr)
                 
         return clientAddress
     }
