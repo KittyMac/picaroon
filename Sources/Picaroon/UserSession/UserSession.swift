@@ -49,7 +49,7 @@ open class UserSession: Actor {
     
     private let lastActivityLock = NSLock()
     private var lastActivity: Date = Date()
-    public let safeSessionActivityTimeout: TimeInterval
+    public var safeSessionActivityTimeout: TimeInterval
     
     func unsafeIsExpired() -> Bool {
         lastActivityLock.lock(); defer { lastActivityLock.unlock() }
