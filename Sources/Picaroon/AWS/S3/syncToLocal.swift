@@ -86,32 +86,29 @@ extension HTTPSession {
                                         self) { objects, continuationMarker, error in
                 if let error = error { return returnCallback(objects, [], continuationMarker, error) }
                 
-                var mutableObjects = objects
+                var mutableObjectsByKey: [String: S3Object] = [:]
+                for object in objects {
+                    mutableObjectsByKey[object.key] = object
+                }
+                
+                
                 var lastError: String? = nil
                 
                 var modifiedObjects: [S3Object] = []
                 
                 // Remove any extra local files, remove any object we don't need to download
                 for localFile in localFiles where marker == nil || localFile.s3Key > marker! {
-                    
                     // Does this file exist on the s3?
-                    var existsOnTheS3 = false
-                    for object in mutableObjects {
-                        if localFile.s3Key == object.key {
-                            existsOnTheS3 = true
-                            mutableObjects.removeOne(object)
-                        }
-                    }
-                    
-                    // Doesn't exist on the s3, we should remove it
-                    if existsOnTheS3 == false {
+                    if mutableObjectsByKey[localFile.s3Key] != nil {
+                        mutableObjectsByKey[localFile.s3Key] = nil
+                    } else {
                         try? FileManager.default.removeItem(atPath: localFile.path)
                     }
                 }
                 
                 let group = DispatchGroup()
                 
-                for object in mutableObjects {
+                for object in mutableObjectsByKey.values {
                     group.enter()
                     HTTPSessionManager.shared.beNew(self) { session in
                         session.beDownloadFromS3(credentials: credentials,
