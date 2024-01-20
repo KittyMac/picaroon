@@ -74,22 +74,24 @@ public class Connection: Actor, AnyConnection {
         
         Thread {
             while true {
-                watchLock.lock()
-                
-                var shouldSleep = true
-                watchSockets = watchSockets.filter({ watchSocket in
-                    // if the socket is in error or is ready to read data
-                    if watchSocket.shouldRead() {
-                        watchSocket.connection.beCheckForMoreData()
-                        shouldSleep = false
+                autoreleasepool {
+                    watchLock.lock()
+                    
+                    var shouldSleep = true
+                    watchSockets = watchSockets.filter({ watchSocket in
+                        // if the socket is in error or is ready to read data
+                        if watchSocket.shouldRead() {
+                            watchSocket.connection.beCheckForMoreData()
+                            shouldSleep = false
+                        }
+                        // if the socket is not in error
+                        return watchSocket.socket.isClosed() == false
+                    })
+                    watchLock.unlock()
+                    
+                    if shouldSleep {
+                        usleep(50_000)
                     }
-                    // if the socket is not in error
-                    return watchSocket.socket.isClosed() == false
-                })
-                watchLock.unlock()
-                
-                if shouldSleep {
-                    usleep(50_000)
                 }
             }
         }.start()
