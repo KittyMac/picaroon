@@ -50,8 +50,6 @@ public class HTTPSessionManager: Actor {
     
     internal func _beReclaim(urlSession: URLSession) {
         if self.waitingURLSessions.contains(urlSession) == false {
-            Flynn.syslog("PICAROON", "reclaimed URLSession")
-
             //urlSession.reset {
             self.waitingURLSessions.append(urlSession)
             self.checkForMoreSessions()
