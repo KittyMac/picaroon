@@ -63,8 +63,11 @@ public class HTTPSession: Actor {
     }
     
     deinit {
+        Flynn.syslog("PICAROON", "HTTPSession deinit 0")
         guard let deinitCallback = deinitCallback else { return }
+        Flynn.syslog("PICAROON", "HTTPSession deinit 1")
         HTTPSessionManager.shared.unsafeSend { _ in
+            Flynn.syslog("PICAROON", "HTTPSession deinit 2")
             deinitCallback()
         }
     }

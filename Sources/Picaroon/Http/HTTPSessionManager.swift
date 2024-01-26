@@ -46,6 +46,8 @@ public class HTTPSessionManager: Actor {
         let httpSession = waitingSessions.removeFirst()
         
         httpSession.beBegin(urlSession: urlSession) {
+            Flynn.syslog("PICAROON", "httpSession.beBegin() ended")
+            
             self.waitingURLSessions.append(urlSession)
             self.checkForMoreSessions()
             
