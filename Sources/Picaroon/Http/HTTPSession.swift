@@ -67,6 +67,7 @@ public class HTTPSession: Actor {
     private func releaseUrlSession() {
         if let deinitCallback = deinitCallback {
             self.deinitCallback = nil
+            self.urlSession = URLSession.shared
             HTTPSessionManager.shared.unsafeSend { _ in
                 deinitCallback()
             }
@@ -134,7 +135,10 @@ public class HTTPSession: Actor {
                              proxy: String?,
                              body: Data?,
                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        guard urlSession != URLSession.shared else { fatalError("HTTPSession is not allowed to use URLSession.shared") }
+        guard urlSession != URLSession.shared else {
+            returnCallback(nil, nil, "HTTPSession is not allowed to use URLSession.shared")
+            return
+        }
         
         guard var components = URLComponents(string: url) else {
             returnCallback(nil, nil, "failed to create url components")
