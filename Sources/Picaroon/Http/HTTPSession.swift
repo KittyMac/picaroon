@@ -215,7 +215,7 @@ public class HTTPSession: Actor {
                                     returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         
         defer {
-            if self.outstandingRequests == 0 && unsafeMessagesCount == 0 {
+            if self.outstandingRequests == 0 {
                 releaseUrlSession()
             }
         }
