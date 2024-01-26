@@ -39,8 +39,8 @@ public class HTTPSessionManager: Actor {
     private var waitingSessions: [HTTPSession] = []
     
     private func releaseUrlSession(urlSession: URLSession) {
-        urlSession.reset {
-            if self.waitingURLSessions.contains(urlSession) == false {
+        if self.waitingURLSessions.contains(urlSession) == false {
+            urlSession.reset {
                 self.waitingURLSessions.append(urlSession)
                 self.checkForMoreSessions()
             }
