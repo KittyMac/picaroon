@@ -46,12 +46,16 @@ public class HTTPSessionManager: Actor {
         let httpSession = waitingSessions.removeFirst()
         
         httpSession.beBegin(urlSession: urlSession) {
-            urlSession.reset {
-                self.unsafeSend { _ in
-                    self.waitingURLSessions.append(urlSession)
-                    self.checkForMoreSessions()
-                }
-            }
+            self.waitingURLSessions.append(urlSession)
+            self.checkForMoreSessions()
+            
+            // Rocco: suspect this is not returning on armv7 android
+            //urlSession.reset {
+            //    self.unsafeSend { _ in
+            //        self.waitingURLSessions.append(urlSession)
+            //        self.checkForMoreSessions()
+            //    }
+            //}
         }
     }
     
