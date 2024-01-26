@@ -37,18 +37,7 @@ public class HTTPSessionManager: Actor {
     
     private var waitingURLSessions: [URLSession] = []
     private var waitingSessions: [HTTPSession] = []
-    
-    private func releaseUrlSession(urlSession: URLSession) {
-        if self.waitingURLSessions.contains(urlSession) == false {
-            Flynn.syslog("PICAROON", "reclaimed URLSession")
-
-            urlSession.reset {
-                self.waitingURLSessions.append(urlSession)
-                self.checkForMoreSessions()
-            }
-        }
-    }
-    
+        
     private func checkForMoreSessions() {
         guard waitingSessions.isEmpty == false else { return }
         guard waitingURLSessions.isEmpty == false else { return }
@@ -56,7 +45,18 @@ public class HTTPSessionManager: Actor {
         let urlSession = waitingURLSessions.removeFirst()
         let httpSession = waitingSessions.removeFirst()
         
-        httpSession.beBegin(urlSession: urlSession, releaseUrlSession)
+        httpSession.beBegin(urlSession: urlSession)
+    }
+    
+    internal func _beReclaim(urlSession: URLSession) {
+        if self.waitingURLSessions.contains(urlSession) == false {
+            Flynn.syslog("PICAROON", "reclaimed URLSession")
+
+            //urlSession.reset {
+            self.waitingURLSessions.append(urlSession)
+            self.checkForMoreSessions()
+            //}
+        }
     }
     
     internal func _beNew(_ returnCallback: @escaping (HTTPSession) -> ()) {

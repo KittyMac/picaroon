@@ -23,7 +23,6 @@ public class HTTPSession: Actor {
     
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
-    private var deinitCallback: ((URLSession) -> ())?
     private var sessionCookies: [HTTPCookie] = []
     
     internal var safeS3Key: String?
@@ -61,25 +60,17 @@ public class HTTPSession: Actor {
         config.httpShouldUsePipelining = true
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
     }
-    
+        
     deinit {
-        if let deinitCallback = deinitCallback {
-            self.deinitCallback = nil
-            let localUrlSession = self.urlSession
-            HTTPSessionManager.shared.unsafeSend { _ in
-                deinitCallback(localUrlSession)
-            }
-        }
+        HTTPSessionManager.shared.beReclaim(urlSession: urlSession)
     }
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
-    internal func beBegin(urlSession: URLSession,
-                          _ deinitCallback: @escaping (URLSession) -> ()) {
+    internal func beBegin(urlSession: URLSession) {
         unsafeSend { _ in            
             guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
             self.beginCallback = nil
             self.urlSession = urlSession
-            self.deinitCallback = deinitCallback
             
             #if os(Linux) || os(Android)
             _ = signal(SIGPIPE, SIG_IGN)
@@ -101,13 +92,6 @@ public class HTTPSession: Actor {
         guard self != HTTPSession.longshot else { fatalError("You cannot cancel the longshot HTTPSession") }
         
         urlSession.invalidateAndCancel()
-        if let deinitCallback = deinitCallback {
-            self.deinitCallback = nil
-            let localUrlSession = self.urlSession
-            HTTPSessionManager.shared.unsafeSend { _ in
-                deinitCallback(localUrlSession)
-            }
-        }
         urlSession = URLSession.shared
     }
         
@@ -213,6 +197,11 @@ public class HTTPSession: Actor {
                                     response: URLResponse?,
                                     error: Error?,
                                     returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+        if self != HTTPSession.oneshot,
+           self != HTTPSession.longshot {
+            HTTPSessionManager.shared.beReclaim(urlSession: urlSession)
+        }
+        
         if let error = error {
             returnCallback(nil, nil, "\(error.localizedDescription) [\(error)]")
             return
