@@ -29,6 +29,8 @@ public class HTTPSession: Actor {
     internal var safeS3Key: String?
     internal var safeS3Secret: String?
     
+    private var outstandingRequests = 0
+    
     public init(cookies: [HTTPCookie],
                 _ returnCallback: @escaping (HTTPSession) -> ()) {
         sessionCookies = cookies
@@ -62,11 +64,17 @@ public class HTTPSession: Actor {
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
     }
     
-    deinit {
-        guard let deinitCallback = deinitCallback else { return }
-        HTTPSessionManager.shared.unsafeSend { _ in
-            deinitCallback()
+    private func releaseUrlSession() {
+        if let deinitCallback = deinitCallback {
+            self.deinitCallback = nil
+            HTTPSessionManager.shared.unsafeSend { _ in
+                deinitCallback()
+            }
         }
+    }
+    
+    deinit {
+        releaseUrlSession()
     }
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
@@ -103,11 +111,13 @@ public class HTTPSession: Actor {
                              timeoutRetry: Int?,
                              proxy: String?,
                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
+        outstandingRequests += 1
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
                                         self) { data, response, error in
+            self.outstandingRequests -= 1
             self.handleTaskResponse(data: data,
                                     response: response,
                                     error: error,
@@ -185,11 +195,13 @@ public class HTTPSession: Actor {
             }
         }
         
+        outstandingRequests += 1
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
                                         self) { data, response, error in
+            self.outstandingRequests -= 1
             self.handleTaskResponse(data: data,
                                     response: response,
                                     error: error,
@@ -201,6 +213,13 @@ public class HTTPSession: Actor {
                                     response: URLResponse?,
                                     error: Error?,
                                     returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+        
+        defer {
+            if self.outstandingRequests == 0 && unsafeMessagesCount == 0 {
+                releaseUrlSession()
+            }
+        }
+        
         if let error = error {
             returnCallback(nil, nil, "\(error.localizedDescription) [\(error)]")
             return
