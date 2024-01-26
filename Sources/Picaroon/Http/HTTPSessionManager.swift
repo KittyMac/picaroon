@@ -50,10 +50,10 @@ public class HTTPSessionManager: Actor {
     
     internal func _beReclaim(urlSession: URLSession) {
         if self.waitingURLSessions.contains(urlSession) == false {
-            //urlSession.reset {
-            self.waitingURLSessions.append(urlSession)
-            self.checkForMoreSessions()
-            //}
+            urlSession.reset {
+                self.waitingURLSessions.append(urlSession)
+                self.checkForMoreSessions()
+            }
         }
     }
     

@@ -197,9 +197,11 @@ public class HTTPSession: Actor {
                                     response: URLResponse?,
                                     error: Error?,
                                     returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        if self != HTTPSession.oneshot,
-           self != HTTPSession.longshot {
-            HTTPSessionManager.shared.beReclaim(urlSession: urlSession)
+        defer {
+            if self != HTTPSession.oneshot,
+               self != HTTPSession.longshot {
+                HTTPSessionManager.shared.beReclaim(urlSession: urlSession)
+            }
         }
         
         if let error = error {
