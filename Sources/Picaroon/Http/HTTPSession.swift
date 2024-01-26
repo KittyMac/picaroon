@@ -23,7 +23,7 @@ public class HTTPSession: Actor {
     
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
-    private var deinitCallback: (() -> ())?
+    private var deinitCallback: ((URLSession) -> ())?
     private var sessionCookies: [HTTPCookie] = []
     
     internal var safeS3Key: String?
@@ -63,19 +63,19 @@ public class HTTPSession: Actor {
     }
     
     deinit {
-        Flynn.syslog("PICAROON", "HTTPSession deinit 0")
+        Flynn.syslog("PICAROON", "HTTPSession deinit")
         guard let deinitCallback = deinitCallback else { return }
-        Flynn.syslog("PICAROON", "HTTPSession deinit 1")
         HTTPSessionManager.shared.unsafeSend { _ in
-            Flynn.syslog("PICAROON", "HTTPSession deinit 2")
-            deinitCallback()
+            deinitCallback(self.urlSession)
         }
     }
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
     internal func beBegin(urlSession: URLSession,
-                          _ deinitCallback: @escaping () -> ()) {
-        unsafeSend { _ in
+                          _ deinitCallback: @escaping (URLSession) -> ()) {
+        unsafeSend { [weak self] _ in
+            guard let self = self else { return }
+            
             guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
             self.beginCallback = nil
             self.urlSession = urlSession

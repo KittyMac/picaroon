@@ -38,6 +38,15 @@ public class HTTPSessionManager: Actor {
     private var waitingURLSessions: [URLSession] = []
     private var waitingSessions: [HTTPSession] = []
     
+    private func releaseUrlSession(urlSession: URLSession) {
+        urlSession.reset {
+            if self.waitingURLSessions.contains(urlSession) == false {
+                self.waitingURLSessions.append(urlSession)
+                self.checkForMoreSessions()
+            }
+        }
+    }
+    
     private func checkForMoreSessions() {
         guard waitingSessions.isEmpty == false else { return }
         guard waitingURLSessions.isEmpty == false else { return }
@@ -45,20 +54,7 @@ public class HTTPSessionManager: Actor {
         let urlSession = waitingURLSessions.removeFirst()
         let httpSession = waitingSessions.removeFirst()
         
-        httpSession.beBegin(urlSession: urlSession) {
-            Flynn.syslog("PICAROON", "httpSession.beBegin() ended")
-            
-            self.waitingURLSessions.append(urlSession)
-            self.checkForMoreSessions()
-            
-            // Rocco: suspect this is not returning on armv7 android
-            //urlSession.reset {
-            //    self.unsafeSend { _ in
-            //        self.waitingURLSessions.append(urlSession)
-            //        self.checkForMoreSessions()
-            //    }
-            //}
-        }
+        httpSession.beBegin(urlSession: urlSession, releaseUrlSession)
     }
     
     internal func _beNew(_ returnCallback: @escaping (HTTPSession) -> ()) {
