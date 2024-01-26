@@ -45,14 +45,12 @@ public class HTTPSessionManager: Actor {
         let urlSession = waitingURLSessions.removeFirst()
         let httpSession = waitingSessions.removeFirst()
         
-        httpSession.beBegin(urlSession: urlSession)
-    }
-    
-    internal func _beReclaim(urlSession: URLSession) {
-        if self.waitingURLSessions.contains(urlSession) == false {
+        httpSession.beBegin(urlSession: urlSession) {
             urlSession.reset {
-                self.waitingURLSessions.append(urlSession)
-                self.checkForMoreSessions()
+                self.unsafeSend { _ in
+                    self.waitingURLSessions.append(urlSession)
+                    self.checkForMoreSessions()
+                }
             }
         }
     }
