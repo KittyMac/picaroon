@@ -63,12 +63,12 @@ public class HTTPSession: Actor {
     }
     
     deinit {
-        Flynn.syslog("PICAROON", "HTTPSession deinit")
-        guard let deinitCallback = deinitCallback else { return }
-        
-        let localUrlSession = self.urlSession
-        HTTPSessionManager.shared.unsafeSend { _ in
-            deinitCallback(localUrlSession)
+        if let deinitCallback = deinitCallback {
+            self.deinitCallback = nil
+            let localUrlSession = self.urlSession
+            HTTPSessionManager.shared.unsafeSend { _ in
+                deinitCallback(localUrlSession)
+            }
         }
     }
     
@@ -98,7 +98,16 @@ public class HTTPSession: Actor {
     
     internal func _beCancel() {
         guard self != HTTPSession.oneshot else { fatalError("You cannot cancel the oneshot HTTPSession") }
+        guard self != HTTPSession.longshot else { fatalError("You cannot cancel the longshot HTTPSession") }
+        
         urlSession.invalidateAndCancel()
+        if let deinitCallback = deinitCallback {
+            self.deinitCallback = nil
+            let localUrlSession = self.urlSession
+            HTTPSessionManager.shared.unsafeSend { _ in
+                deinitCallback(localUrlSession)
+            }
+        }
         urlSession = URLSession.shared
     }
         
