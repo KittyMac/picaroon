@@ -23,10 +23,13 @@ public class HTTPSession: Actor {
     
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
+    private var deinitCallback: (() -> ())?
     private var sessionCookies: [HTTPCookie] = []
     
     internal var safeS3Key: String?
     internal var safeS3Secret: String?
+    
+    private var outstandingRequests = 0
     
     public init(cookies: [HTTPCookie],
                 _ returnCallback: @escaping (HTTPSession) -> ()) {
@@ -60,17 +63,28 @@ public class HTTPSession: Actor {
         config.httpShouldUsePipelining = true
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
     }
-        
+    
+    private func releaseUrlSession() {
+        if let deinitCallback = deinitCallback {
+            self.deinitCallback = nil
+            HTTPSessionManager.shared.unsafeSend { _ in
+                deinitCallback()
+            }
+        }
+    }
+    
     deinit {
-        HTTPSessionManager.shared.beReclaim(urlSession: urlSession)
+        releaseUrlSession()
     }
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
-    internal func beBegin(urlSession: URLSession) {
-        unsafeSend { _ in            
+    internal func beBegin(urlSession: URLSession,
+                          _ deinitCallback: @escaping () -> ()) {
+        unsafeSend { _ in
             guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
             self.beginCallback = nil
             self.urlSession = urlSession
+            self.deinitCallback = deinitCallback
             
             #if os(Linux) || os(Android)
             _ = signal(SIGPIPE, SIG_IGN)
@@ -89,8 +103,6 @@ public class HTTPSession: Actor {
     
     internal func _beCancel() {
         guard self != HTTPSession.oneshot else { fatalError("You cannot cancel the oneshot HTTPSession") }
-        guard self != HTTPSession.longshot else { fatalError("You cannot cancel the longshot HTTPSession") }
-        
         urlSession.invalidateAndCancel()
         urlSession = URLSession.shared
     }
@@ -99,11 +111,13 @@ public class HTTPSession: Actor {
                              timeoutRetry: Int?,
                              proxy: String?,
                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
+        outstandingRequests += 1
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
                                         self) { data, response, error in
+            self.outstandingRequests -= 1
             self.handleTaskResponse(data: data,
                                     response: response,
                                     error: error,
@@ -181,11 +195,13 @@ public class HTTPSession: Actor {
             }
         }
         
+        outstandingRequests += 1
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
                                         self) { data, response, error in
+            self.outstandingRequests -= 1
             self.handleTaskResponse(data: data,
                                     response: response,
                                     error: error,
@@ -197,10 +213,10 @@ public class HTTPSession: Actor {
                                     response: URLResponse?,
                                     error: Error?,
                                     returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+        
         defer {
-            if self != HTTPSession.oneshot,
-               self != HTTPSession.longshot {
-                HTTPSessionManager.shared.beReclaim(urlSession: urlSession)
+            if self.outstandingRequests == 0 && unsafeMessagesCount == 0 {
+                releaseUrlSession()
             }
         }
         
