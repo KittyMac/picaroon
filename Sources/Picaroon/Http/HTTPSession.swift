@@ -65,17 +65,17 @@ public class HTTPSession: Actor {
     deinit {
         Flynn.syslog("PICAROON", "HTTPSession deinit")
         guard let deinitCallback = deinitCallback else { return }
+        
+        let localUrlSession = self.urlSession
         HTTPSessionManager.shared.unsafeSend { _ in
-            deinitCallback(self.urlSession)
+            deinitCallback(localUrlSession)
         }
     }
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
     internal func beBegin(urlSession: URLSession,
                           _ deinitCallback: @escaping (URLSession) -> ()) {
-        unsafeSend { [weak self] _ in
-            guard let self = self else { return }
-            
+        unsafeSend { _ in            
             guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
             self.beginCallback = nil
             self.urlSession = urlSession
