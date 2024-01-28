@@ -260,6 +260,7 @@ public class HTTPSession: Actor {
                                          timeoutRetry: Int?,
                                          proxy: String?,
                                          body: Data?) -> (Data?, HTTPURLResponse?, String?) {
+        // NOTE: it is important not to reference self in this method!
         guard urlSession != URLSession.shared else {
             return (nil, nil, "HTTPSession is not allowed to use URLSession.shared")
         }
@@ -283,16 +284,11 @@ public class HTTPSession: Actor {
         var returnData: Data? = nil
         var returnResponse: HTTPURLResponse? = nil
         var returnError: String? = nil
-        
+                
         urlSession.dataTask(with: request) { data, response, error in
             (returnData, returnResponse, returnError) = handleTaskResponse(data: data,
                                                                            response: response,
                                                                            error: error)
-
-            self.outstandingRequests -= 1
-            if self.outstandingRequests == 0 {
-                self.releaseUrlSession()
-            }
             group.leave()
         }.resume()
         
