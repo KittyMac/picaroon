@@ -40,4 +40,5 @@ release:
 	-docker login
 	
 	swift package resolve
-	docker buildx build --platform linux/amd64,linux/arm64 --push -t kittymac/picaroon .
+	docker buildx build --platform linux/arm64 --push -t kittymac/picaroon .
+	#linux/amd64,

@@ -118,11 +118,15 @@ public class HTTPSession: Actor {
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
                                         self) { data, response, error in
+            let (data2, respose2, error2) = handleTaskResponse(data: data,
+                                                               response: response,
+                                                               error: error)
+            returnCallback(data2, respose2, error2)
+            
             self.outstandingRequests -= 1
-            self.handleTaskResponse(data: data,
-                                    response: response,
-                                    error: error,
-                                    returnCallback: returnCallback)
+            if self.outstandingRequests == 0 {
+                self.releaseUrlSession()
+            }
         }
     }
     
@@ -140,9 +144,49 @@ public class HTTPSession: Actor {
             return
         }
         
-        guard var components = URLComponents(string: url) else {
-            returnCallback(nil, nil, "failed to create url components")
+        let (request, error) = makeRequest(url: url,
+                                           httpMethod: httpMethod,
+                                           params: params,
+                                           headers: headers,
+                                           cookies: cookies,
+                                           timeoutRetry: timeoutRetry,
+                                           proxy: proxy,
+                                           body: body)
+        
+        guard let request = request else {
+            returnCallback(nil, nil, error ?? "unknown error")
             return
+        }
+                
+        outstandingRequests += 1
+        HTTPTaskManager.shared.beResume(session: urlSession,
+                                        request: request,
+                                        proxy: proxy,
+                                        timeoutRetry: timeoutRetry ?? 3,
+                                        self) { data, response, error in
+            let (data2, respose2, error2) = handleTaskResponse(data: data,
+                                                               response: response,
+                                                               error: error)
+            returnCallback(data2, respose2, error2)
+
+            self.outstandingRequests -= 1
+            if self.outstandingRequests == 0 {
+                self.releaseUrlSession()
+            }
+
+        }
+    }
+    
+    private func makeRequest(url: String,
+                             httpMethod: String,
+                             params: [String: String],
+                             headers: [String: String],
+                             cookies: HTTPCookieStorage? = nil,
+                             timeoutRetry: Int?,
+                             proxy: String?,
+                             body: Data?) -> (URLRequest?, String?) {
+        guard var components = URLComponents(string: url) else {
+            return (nil, "failed to create url components")
         }
         
         // At this point components.queryItems contains the queries embedded in the url
@@ -180,8 +224,7 @@ public class HTTPSession: Actor {
         
         
         guard let url = components.url else {
-            returnCallback(nil, nil, "failed to get components url")
-            return
+            return(nil, "failed to get components url")
         }
         
         var request = URLRequest(url: url)
@@ -198,60 +241,92 @@ public class HTTPSession: Actor {
                 request.addValue(value, forHTTPHeaderField: header)
             }
         }
-        
-        outstandingRequests += 1
-        HTTPTaskManager.shared.beResume(session: urlSession,
-                                        request: request,
-                                        proxy: proxy,
-                                        timeoutRetry: timeoutRetry ?? 3,
-                                        self) { data, response, error in
-            self.outstandingRequests -= 1
-            self.handleTaskResponse(data: data,
-                                    response: response,
-                                    error: error,
-                                    returnCallback: returnCallback)
-        }
+
+        return (request, nil)
     }
     
-    private func handleTaskResponse(data: Data?,
-                                    response: URLResponse?,
-                                    error: Error?,
-                                    returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+    
+    /// For use only when you need to do a synchronous network conneciton on a Flynn actor.
+    /// In such a scenario, using the normal cooperative scheduling system can lead to
+    /// a deadlock (all actors on all schedulers holding their thread such that their
+    /// dependent actors never get a chance to run). In such a scenario we can instead
+    /// use GCD only.
+    /// Note: these tasks do not have automatic retries
+    public func unsafeSynchronousRequest(url: String,
+                                         httpMethod: String,
+                                         params: [String: String],
+                                         headers: [String: String],
+                                         cookies: HTTPCookieStorage? = nil,
+                                         timeoutRetry: Int?,
+                                         proxy: String?,
+                                         body: Data?) -> (Data?, HTTPURLResponse?, String?) {
+        guard urlSession != URLSession.shared else {
+            return (nil, nil, "HTTPSession is not allowed to use URLSession.shared")
+        }
+
+        let (request, error) = makeRequest(url: url,
+                                           httpMethod: httpMethod,
+                                           params: params,
+                                           headers: headers,
+                                           cookies: cookies,
+                                           timeoutRetry: timeoutRetry,
+                                           proxy: proxy,
+                                           body: body)
         
-        defer {
+        guard let request = request else {
+            return (nil, nil, error ?? "unknown error")
+        }
+
+        let group = DispatchGroup()
+        group.enter()
+        
+        var returnData: Data? = nil
+        var returnResponse: HTTPURLResponse? = nil
+        var returnError: String? = nil
+        
+        urlSession.dataTask(with: request) { data, response, error in
+            (returnData, returnResponse, returnError) = handleTaskResponse(data: data,
+                                                                           response: response,
+                                                                           error: error)
+
+            self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                releaseUrlSession()
+                self.releaseUrlSession()
             }
-        }
+            group.leave()
+        }.resume()
         
+        group.wait()
+        
+        return (returnData, returnResponse, returnError)
+    }
+}
+
+fileprivate func handleTaskResponse(data: Data?,
+                                    response: URLResponse?,
+                                    error: Error?) -> (Data?, HTTPURLResponse?, String?) {
+    if let error = error {
+        return (nil, nil, "\(error.localizedDescription) [\(error)]")
+    }
+    guard let httpResponse = response as? HTTPURLResponse else {
+        let dataDesc = data?.description ?? "nil"
+        let responseDesc = response?.description ?? "nil"
+        var errorDesc = "nil"
         if let error = error {
-            returnCallback(nil, nil, "\(error.localizedDescription) [\(error)]")
-            return
+            errorDesc = "\(error.localizedDescription) [\(error)]"
         }
-        guard let httpResponse = response as? HTTPURLResponse else {
-            let dataDesc = data?.description ?? "nil"
-            let responseDesc = response?.description ?? "nil"
-            var errorDesc = "nil"
-            if let error = error {
-                errorDesc = "\(error.localizedDescription) [\(error)]"
-            }
-            returnCallback(nil, nil, "response is not HTTPURLResponse ( \(dataDesc): \(responseDesc): \(errorDesc) )")
-            return
-        }
-        guard let data = data else {
-            returnCallback(nil, httpResponse, "httpResponse data is nil")
-            return
-        }
-        guard error == nil else {
-            returnCallback(nil, httpResponse, "\(error!)")
-            return
-        }
-        
-        if httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299 {
-            returnCallback(data, httpResponse, nil)
-        } else {
-            returnCallback(data, httpResponse, "http \(httpResponse.statusCode)")
-        }
-        
+        return (nil, nil, "response is not HTTPURLResponse ( \(dataDesc): \(responseDesc): \(errorDesc) )")
+    }
+    guard let data = data else {
+        return (nil, httpResponse, "httpResponse data is nil")
+    }
+    guard error == nil else {
+        return (nil, httpResponse, "\(error!)")
+    }
+    
+    if httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299 {
+        return (data, httpResponse, nil)
+    } else {
+        return (data, httpResponse, "http \(httpResponse.statusCode)")
     }
 }
