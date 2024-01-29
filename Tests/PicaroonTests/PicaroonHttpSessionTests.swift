@@ -306,4 +306,40 @@ final class PicaroonHttpSessionTests: XCTestCase {
             print(waiting)
         }
     }
+    
+    func testAsynchronousRequests() {
+        let expectation = XCTestExpectation(description: #function)
+        var waiting = 4
+        let lock = NSLock()
+        for _ in 0..<4 {
+            
+            let start = Date()
+            HTTPSession.oneshot.unsafeAsynchronousRequest(url: "https://www.apple.com",
+                                  httpMethod: "GET",
+                                  params: [:],
+                                  headers: [:],
+                                  cookies: nil,
+                                  timeoutRetry: timeoutRetry,
+                                  proxy: nil,
+                                  body: nil) { data, response, error in
+                lock.lock(); defer { lock.unlock() }
+                
+                if abs(start.timeIntervalSinceNow) > 10 {
+                    XCTFail("timeout occurred")
+                }
+
+                XCTAssertNil(error)
+                XCTAssertNotNil(data)
+                waiting -= 1
+                
+                print(waiting)
+                
+                if waiting <= 0 {
+                    expectation.fulfill()
+                }
+            }
+        }
+        
+        wait(for: [expectation], timeout: 600)
+    }
 }

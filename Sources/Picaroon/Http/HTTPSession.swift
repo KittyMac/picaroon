@@ -296,6 +296,43 @@ public class HTTPSession: Actor {
         
         return (returnData, returnResponse, returnError)
     }
+    
+    public func unsafeAsynchronousRequest(url: String,
+                                          httpMethod: String,
+                                          params: [String: String],
+                                          headers: [String: String],
+                                          cookies: HTTPCookieStorage? = nil,
+                                          timeoutRetry: Int?,
+                                          proxy: String?,
+                                          body: Data?,
+                                          _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+        // NOTE: it is important not to reference self in this method!
+        guard urlSession != URLSession.shared else {
+            returnCallback(nil, nil, "HTTPSession is not allowed to use URLSession.shared")
+            return
+        }
+
+        let (request, error) = makeRequest(url: url,
+                                           httpMethod: httpMethod,
+                                           params: params,
+                                           headers: headers,
+                                           cookies: cookies,
+                                           timeoutRetry: timeoutRetry,
+                                           proxy: proxy,
+                                           body: body)
+        
+        guard let request = request else {
+            returnCallback(nil, nil, error ?? "unknown error")
+            return
+        }
+
+        urlSession.dataTask(with: request) { data, response, error in
+            let (returnData, returnResponse, returnError) = handleTaskResponse(data: data,
+                                                                               response: response,
+                                                                               error: error)
+            returnCallback(returnData, returnResponse, returnError)
+        }.resume()
+    }
 }
 
 fileprivate func handleTaskResponse(data: Data?,
