@@ -3,7 +3,7 @@ import Flynn
 import Hitch
 
 #if os(Linux) || os(Android)
-public func autoreleasepool(_ block: () -> ()) {
+public func autoreleasepool(_ block: @escaping () -> ()) {
     block()
 }
 #endif
