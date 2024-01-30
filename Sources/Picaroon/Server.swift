@@ -103,7 +103,7 @@ public class Server<T: UserSession> {
                 if let newSocket = serverSocket.accept(blocking: true, clientAddress: &clientAddress) {
                     ConnectionManager.shared.beOpen(socket: newSocket,
                                                     clientAddress: clientAddress,
-                                                    config: config,
+                                                    config: self.config,
                                                     staticStorageHandler: self.staticStorageHandler,
                                                     userSessionManager: self.userSessionManager)
                 }
