@@ -63,6 +63,7 @@ internal class HTTPTaskManager: Actor {
                             proxy: String?,
                             timeoutRetry: Int,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
+
         let task = session.dataTask(with: request) { data, response, error in
 #if os(Linux) || os(Android)
             _ = signal(SIGPIPE, SIG_IGN)
@@ -110,9 +111,12 @@ internal class HTTPTaskManager: Actor {
                    timeoutRetry > 0 {
                     print(shouldBeRetried)
                     
+                    var newRequest = request
+                    newRequest.timeoutInterval = request.timeoutInterval * 2
+                    
                     session.flush {
                         self.beResume(session: session,
-                                      request: request,
+                                      request: newRequest,
                                       proxy: proxy,
                                       timeoutRetry: timeoutRetry - 1,
                                       self,

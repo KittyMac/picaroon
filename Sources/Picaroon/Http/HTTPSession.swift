@@ -144,7 +144,8 @@ public class HTTPSession: Actor {
             return
         }
         
-        let (request, error) = makeRequest(url: url,
+        let (request, error) = makeRequest(urlSession: urlSession,
+                                           url: url,
                                            httpMethod: httpMethod,
                                            params: params,
                                            headers: headers,
@@ -177,7 +178,8 @@ public class HTTPSession: Actor {
         }
     }
     
-    private func makeRequest(url: String,
+    private func makeRequest(urlSession: URLSession,
+                             url: String,
                              httpMethod: String,
                              params: [String: String],
                              headers: [String: String],
@@ -232,6 +234,11 @@ public class HTTPSession: Actor {
         request.httpMethod = httpMethod
         request.httpBody = body
         
+        let localTimeoutRetry = timeoutRetry ?? 3
+        if localTimeoutRetry > 0 {
+            request.timeoutInterval = sqrt(urlSession.configuration.timeoutIntervalForRequest)
+        }
+        
         for (header, value) in headers {
             request.addValue(value, forHTTPHeaderField: header)
         }
@@ -265,7 +272,8 @@ public class HTTPSession: Actor {
             return (nil, nil, "HTTPSession is not allowed to use URLSession.shared")
         }
 
-        let (request, error) = makeRequest(url: url,
+        let (request, error) = makeRequest(urlSession: urlSession,
+                                           url: url,
                                            httpMethod: httpMethod,
                                            params: params,
                                            headers: headers,
@@ -312,7 +320,8 @@ public class HTTPSession: Actor {
             return
         }
 
-        let (request, error) = makeRequest(url: url,
+        let (request, error) = makeRequest(urlSession: urlSession,
+                                           url: url,
                                            httpMethod: httpMethod,
                                            params: params,
                                            headers: headers,
