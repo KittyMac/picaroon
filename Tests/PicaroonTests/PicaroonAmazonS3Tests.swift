@@ -25,6 +25,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         HTTPSession.oneshot.beListAllKeysFromS3(credentials: credentials,
                                                 keyPrefix: "many/",
                                                 marker: nil,
+                                                priority: .low,
                                                 Flynn.any) { objects, continuationMarker, error in
             XCTAssertNil(error)
             XCTAssertNotNil(continuationMarker)
@@ -42,6 +43,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                                           keyPrefix: "v1/many/",
                                           localDirectory: "/tmp/many/",
                                           continuous: true,
+                                          priority: .low,
                                           Flynn.any) { allObjects, newObjects, continuationMarker, error in
             XCTAssertNil(error)
             XCTAssertNotNil(continuationMarker)

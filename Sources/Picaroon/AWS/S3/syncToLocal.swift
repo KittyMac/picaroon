@@ -26,6 +26,7 @@ extension HTTPSession {
                                  keyPrefix: String,
                                  localDirectory: String,
                                  continuous: Bool,
+                                 priority: HTTPSessionPriority,
                                  _ returnCallback: @escaping ([S3Object], [S3Object], String?, String?) -> Void) {
         // Given an output directory, make its contents match the S3's content. This includes:
         // 1. removing any files which do not exist on the S3
@@ -79,10 +80,11 @@ extension HTTPSession {
             marker = nil
         }
         
-        HTTPSessionManager.shared.beNew(self) { session in
+        HTTPSessionManager.shared.beNew(priority: priority, self) { session in
             session.beListAllKeysFromS3(credentials: credentials,
                                         keyPrefix: keyPrefix,
                                         marker: marker,
+                                        priority: priority,
                                         self) { objects, continuationMarker, error in
                 if let error = error { return returnCallback(objects, [], continuationMarker, error) }
                 
@@ -110,7 +112,7 @@ extension HTTPSession {
                 
                 for object in mutableObjectsByKey.values {
                     group.enter()
-                    HTTPSessionManager.shared.beNew(self) { session in
+                    HTTPSessionManager.shared.beNew(priority: priority, self) { session in
                         session.beDownloadFromS3(credentials: credentials,
                                                  key: object.key,
                                                  contentType: .any,

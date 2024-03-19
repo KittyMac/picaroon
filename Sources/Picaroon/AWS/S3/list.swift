@@ -169,12 +169,13 @@ extension HTTPSession {
     internal func _beListAllKeysFromS3(credentials: S3Credentials,
                                        keyPrefix: String,
                                        marker: String?,
+                                       priority: HTTPSessionPriority,
                                        _ returnCallback: @escaping ([S3Object], String?, String?) -> Void) {
         var allObjects: [S3Object] = []
         
         func requestMore(marker: String?) {
             // Like beListFromS3(), but gives parsed results and will keep listing until all returns have been discovered
-            HTTPSessionManager.shared.beNew(self) { session in
+            HTTPSessionManager.shared.beNew(priority: priority, self) { session in
                 session.beListFromS3(credentials: credentials,
                                      keyPrefix: keyPrefix,
                                      marker: marker,
