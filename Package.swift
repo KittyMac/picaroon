@@ -16,8 +16,8 @@ let package = Package(
         .package(url: "https://github.com/KittyMac/Studding.git", from: "0.0.1"),
         .package(url: "https://github.com/KittyMac/Spanker.git", from: "0.2.0"),
         .package(url: "https://github.com/KittyMac/Sextant.git", from: "0.4.0"),
+        .package(url: "https://github.com/KittyMac/GzipSwift.git", from: "5.3.0"),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.5.0"),
-        .package(url: "https://github.com/KittyMac/SWCompression.git", from: "4.8.5")
     ],
     targets: [
         .executableTarget(
@@ -38,7 +38,7 @@ let package = Package(
                 "Studding",
                 "Sextant",
                 "CryptoSwift",
-                "SWCompression"
+                .product(name: "Gzip", package: "GzipSwift"),
 			],
             plugins: [
                 .plugin(name: "FlynnPlugin", package: "Flynn")

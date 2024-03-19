@@ -1,13 +1,7 @@
 import Flynn
 import Foundation
 import Hitch
-import SWCompression
-
-extension Data {
-    public var isGzipped: Bool {
-        return self.starts(with: [0x1f, 0x8b])  // check magic number
-    }
-}
+import Gzip
 
 struct GzipError: Error {
     let message: String
@@ -22,26 +16,26 @@ struct GzipError: Error {
 }
 
 public protocol Payloadable {
-    func gzipped() throws -> Data
+    func gzipped(level: CompressionLevel) throws -> Data
     func using<T>(_ block: (UnsafePointer<UInt8>?, Int) -> T?) -> T?
 }
 
 extension HalfHitch: Payloadable {
-    public func gzipped() throws -> Data {
-        return try GzipArchive.archive(data: dataNoCopy())
+    public func gzipped(level: CompressionLevel) throws -> Data {
+        return try dataNoCopy().gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
     }
 }
 
 extension Hitch: Payloadable {
-    public func gzipped() throws -> Data {
-        return try GzipArchive.archive(data: dataNoCopy())
+    public func gzipped(level: CompressionLevel) throws -> Data {
+        return try dataNoCopy().gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
     }
 }
 
 extension Data: Payloadable {
-    public func gzipped() throws -> Data {
+    public func gzipped(level: CompressionLevel) throws -> Data {
         guard isGzipped == false else { return self }
-        return try GzipArchive.archive(data: self)
+        return try gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
     }
     
     public func using<T>(_ block: (UnsafePointer<UInt8>?, Int) -> T?) -> T? {
@@ -54,11 +48,11 @@ extension Data: Payloadable {
 }
 
 extension StaticString: Payloadable {
-    public func gzipped() throws -> Data {
+    public func gzipped(level: CompressionLevel) throws -> Data {
         let data = Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: self.utf8Start),
                         count: self.utf8CodeUnitCount,
                         deallocator: .none)
-        return try GzipArchive.archive(data: data)
+        return try data.gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
     }
     
     public func using<T>(_ block: (UnsafePointer<UInt8>?, Int) -> T?) -> T? {
@@ -67,9 +61,9 @@ extension StaticString: Payloadable {
 }
 
 extension String: Payloadable {
-    public func gzipped() throws -> Data {
+    public func gzipped(level: CompressionLevel) throws -> Data {
         guard let data = data(using: .utf8) else { throw GzipError("failed to convert string to data") }
-        return try GzipArchive.archive(data: data)
+        return try data.gzipped(level: level, wBits: Gzip.maxWindowBits + 16)
     }
     
     public func using<T>(_ block: (UnsafePointer<UInt8>?, Int) -> T?) -> T? {
