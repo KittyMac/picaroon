@@ -2,7 +2,6 @@ import Flynn
 import Foundation
 import Hitch
 import Spanker
-import Gzip
 
 let hitchContentTransferEncodingBinary: HalfHitch = "Content-Transfer-Encoding: binary"
 let hitchContentDispositionFormat: HalfHitch = #"Content-Disposition: attachment; filename="{0}""#
@@ -21,7 +20,7 @@ public extension HttpResponse {
         if request?.supportsGzip == true {
             self.init(status: .ok,
                       type: .json,
-                      payload: (try? payload.dataNoCopy().gzipped(level: .bestSpeed)) ?? payload,
+                      payload: (try? payload.dataNoCopy().gzipped()) ?? payload,
                       headers: headers,
                       encoding: encoding,
                       lastModified: lastModified,
@@ -61,7 +60,7 @@ public extension HttpResponse {
         if request?.supportsGzip == true {
             self.init(status: .ok,
                       type: .html,
-                      payload: (try? html.gzipped(level: .bestSpeed)) ?? html,
+                      payload: (try? html.gzipped()) ?? html,
                       headers: headers,
                       encoding: encoding,
                       lastModified: lastModified,
@@ -92,7 +91,7 @@ public extension HttpResponse {
         if request?.supportsGzip == true {
             self.init(status: .ok,
                       type: .txt,
-                      payload: (try? text.gzipped(level: .bestSpeed)) ?? text,
+                      payload: (try? text.gzipped()) ?? text,
                       headers: headers,
                       encoding: encoding,
                       lastModified: lastModified,
@@ -123,7 +122,7 @@ public extension HttpResponse {
         if request?.supportsGzip == true {
             self.init(status: .ok,
                       type: .js,
-                      payload: (try? javascript.gzipped(level: .bestSpeed)) ?? javascript,
+                      payload: (try? javascript.gzipped()) ?? javascript,
                       headers: headers,
                       encoding: encoding,
                       lastModified: lastModified,
@@ -154,7 +153,7 @@ public extension HttpResponse {
         if request?.supportsGzip == true {
             self.init(status: .ok,
                       type: .xml,
-                      payload: (try? xml.gzipped(level: .bestSpeed)) ?? xml,
+                      payload: (try? xml.gzipped()) ?? xml,
                       headers: headers,
                       encoding: encoding,
                       lastModified: lastModified,
@@ -185,7 +184,7 @@ public extension HttpResponse {
         if request?.supportsGzip == true {
             self.init(status: .ok,
                       type: .json,
-                      payload: (try? json.gzipped(level: .bestSpeed)) ?? json,
+                      payload: (try? json.gzipped()) ?? json,
                       headers: headers,
                       encoding: encoding,
                       lastModified: lastModified,
