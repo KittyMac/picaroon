@@ -111,12 +111,9 @@ internal class HTTPTaskManager: Actor {
                    timeoutRetry > 0 {
                     print(shouldBeRetried)
                     
-                    var newRequest = request
-                    newRequest.timeoutInterval = request.timeoutInterval * 2
-                    
                     session.flush {
                         self.beResume(session: session,
-                                      request: newRequest,
+                                      request: request,
                                       proxy: proxy,
                                       timeoutRetry: timeoutRetry - 1,
                                       self,

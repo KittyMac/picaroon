@@ -234,11 +234,6 @@ public class HTTPSession: Actor {
         request.httpMethod = httpMethod
         request.httpBody = body
         
-        let localTimeoutRetry = timeoutRetry ?? 3
-        if localTimeoutRetry > 0 {
-            request.timeoutInterval = sqrt(urlSession.configuration.timeoutIntervalForRequest)
-        }
-        
         for (header, value) in headers {
             request.addValue(value, forHTTPHeaderField: header)
         }
