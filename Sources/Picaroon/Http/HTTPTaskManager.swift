@@ -111,9 +111,17 @@ internal class HTTPTaskManager: Actor {
                    timeoutRetry > 0 {
                     print(shouldBeRetried)
                     
+                    var newRequest = request
+                    
+                    #if os(Android)
+                    if request.timeoutInterval == 4 {
+                        newRequest.timeoutInterval = 60
+                    }
+                    #endif
+                    
                     session.flush {
                         self.beResume(session: session,
-                                      request: request,
+                                      request: newRequest,
                                       proxy: proxy,
                                       timeoutRetry: timeoutRetry - 1,
                                       self,

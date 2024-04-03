@@ -17,6 +17,8 @@ import FoundationNetworking
 // Note: WE MUST BE ABLE TO SUPPORT MULTIPLE CONCURRENT URLSESSIONS, as that is the only way we have separated cookie storage
 // Note: We also want to support "one shot" url tasks which are ephemeral, have cookies disabled, and can share a single url session
 
+private var firstTimeCalled = true
+
 public class HTTPSession: Actor {
     public static let oneshot: HTTPSession = HTTPSession(oneshot: true)
     public static let longshot: HTTPSession = HTTPSession(longshot: true)
@@ -233,6 +235,15 @@ public class HTTPSession: Actor {
         
         request.httpMethod = httpMethod
         request.httpBody = body
+        
+        #if os(Android)
+        // On android specifically, the first time we make a network call it always time outs
+        // To help work around this, we give the first network call a small timeout value
+        if firstTimeCalled {
+            firstTimeCalled = false
+            request.timeoutInterval = 4
+        }
+        #endif
         
         for (header, value) in headers {
             request.addValue(value, forHTTPHeaderField: header)
