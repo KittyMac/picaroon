@@ -1,5 +1,6 @@
 import Foundation
 import Hitch
+import Flynn
 
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -57,7 +58,7 @@ extension PicaroonTesting {
                                staticStorageHandler: handleStaticRequest)
             server.listen()
 
-            sleep(1)
+            Flynn.sleep(1)
         }
 
         public func numberOfUserSessions() -> Int {

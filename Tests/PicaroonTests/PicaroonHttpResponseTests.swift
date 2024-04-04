@@ -1,7 +1,7 @@
 import XCTest
 import Hitch
 import Spanker
-
+import Flynn
 import Picaroon
 
 extension String {
@@ -46,7 +46,7 @@ final class picaroonHttpResponseTests: XCTestCase {
         }
         server.listen()
         
-        sleep(1)
+        Flynn.sleep(1)
         
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/wrk")

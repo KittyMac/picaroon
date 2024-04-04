@@ -90,7 +90,7 @@ public class Connection: Actor, AnyConnection {
                     watchLock.unlock()
                     
                     if shouldSleep {
-                        usleep(50_000)
+                        Flynn.usleep(50_000)
                     }
                 }
             }

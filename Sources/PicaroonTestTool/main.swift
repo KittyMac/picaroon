@@ -25,5 +25,5 @@ for _ in 0..<2048 {
     }
 }
 
-while waiting > 0 { sleep(1) }
+while waiting > 0 { Flynn.sleep(1) }
 Flynn.shutdown()
