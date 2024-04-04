@@ -2,6 +2,8 @@ import Foundation
 import Flynn
 import Hitch
 
+#if !os(Windows)
+
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
@@ -340,3 +342,5 @@ public class Socket {
         return 0
     }
 }
+
+#endif

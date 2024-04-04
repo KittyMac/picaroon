@@ -2,7 +2,7 @@ import Foundation
 import Flynn
 import Hitch
 
-#if os(Linux) || os(Android)
+#if os(Linux) || os(Android) || os(Windows)
 public func autoreleasepool(_ block: @escaping () -> ()) {
     block()
 }

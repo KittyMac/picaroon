@@ -4,6 +4,8 @@ import Hitch
 
 import Foundation
 
+#if !os(Windows)
+
 #if canImport(Glibc)
 private let gethostbyname = Glibc.gethostbyname
 private let inet_ntop = Glibc.inet_ntop
@@ -110,3 +112,5 @@ public class DNS: Actor {
     
     
 }
+
+#endif
