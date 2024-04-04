@@ -29,6 +29,9 @@ internal class HTTPTaskManager: Actor {
         let task = waitingTasks.removeFirst()
         activeTasks.append(task)
         
+        #if os(Windows)
+        // TODO: implement for windows
+        #else
         // This is super hacky, but here it goes.
         // We can get per-session-task proxy by setting an environment
         // variable which libcurl uses to know that this requst should
@@ -56,6 +59,7 @@ internal class HTTPTaskManager: Actor {
         } else {
             task.task.resume()
         }
+        #endif
     }
     
     internal func _beResume(session: URLSession,
@@ -86,6 +90,7 @@ internal class HTTPTaskManager: Actor {
                     shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 
+                #if !os(Windows)
                 // If we timeout out, go ahead and retry it.
                 if let error = error as? POSIXError,
                    (error.code == .ENOSPC ||
@@ -94,6 +99,7 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1001) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
+                #endif
                 
                 // If we timeout out, go ahead and retry it.
                 if let errorString = error?.localizedDescription,

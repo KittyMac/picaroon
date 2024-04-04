@@ -18,10 +18,12 @@ public class Socket {
         self.socketFd = socketFd
         
         guard socketFd >= 0 else { return nil }
+        
+        self.socketFd = socketFd
     }
         
     public init?(blocking: Bool = true) {
-        
+        self.socketFd = 0
     }
     
     deinit {
