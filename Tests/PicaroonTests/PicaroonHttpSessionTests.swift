@@ -14,6 +14,40 @@ fileprivate let timeoutRetry: Int? = 0
 fileprivate let maxConnection = 4096
 
 final class PicaroonHttpSessionTests: XCTestCase {
+    
+    
+    func testSingleHttpURLSession() {
+        let expectation = XCTestExpectation(description: #function)
+
+        let request = URLRequest(url: URL(string: "https://www.apple.com")!)
+    
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            XCTAssertNil(error)
+            expectation.fulfill()
+        }.resume()
+    
+        wait(for: [expectation], timeout: 600)
+    }
+    
+    func testSingleHttpSession() {
+        let expectation = XCTestExpectation(description: #function)
+    
+        HTTPSession.oneshot.beRequest(url: "https://www.apple.com",
+                                      httpMethod: "GET",
+                                      params: [:],
+                                      headers: [:],
+                                      cookies: nil,
+                                      timeoutRetry: timeoutRetry,
+                                      proxy: nil,
+                                      body: nil,
+                                      Flynn.any) { data, response, error in
+            XCTAssertNil(error)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 600)
+    }
+    
     func testManyHttpTasksBaseline() {
         let expectation = XCTestExpectation(description: #function)
         var waiting = maxConnection
