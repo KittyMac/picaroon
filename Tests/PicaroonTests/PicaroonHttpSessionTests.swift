@@ -45,7 +45,7 @@ final class PicaroonHttpSessionTests: XCTestCase {
             expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 600)
+        wait(for: [expectation], timeout: 4)
     }
     
     func testManyHttpTasksBaseline() {

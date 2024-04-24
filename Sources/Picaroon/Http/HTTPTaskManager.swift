@@ -30,7 +30,7 @@ internal class HTTPTaskManager: Actor {
         activeTasks.append(task)
         
         #if os(Windows)
-        // TODO: implement for windows
+        task.task.resume()
         #else
         // This is super hacky, but here it goes.
         // We can get per-session-task proxy by setting an environment
