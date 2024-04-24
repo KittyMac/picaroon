@@ -1,9 +1,10 @@
 import Foundation
 import Flynn
 import Hitch
-import WinSDK
 
 #if os(Windows)
+
+import WinSDK
 
 #if canImport(FoundationNetworking)
 import FoundationNetworking
