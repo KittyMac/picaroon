@@ -26,6 +26,8 @@ public class DNS: Actor {
     }
     
     public static func resolve(domain: String) -> DNS.Results {
+        guard checkWAS() else { return DNS.Results() }
+        
         guard let hp = gethostbyname(domain) else { return DNS.Results() }
         
         var aliases: [String] = []
@@ -60,7 +62,7 @@ public class DNS: Actor {
                         )
                     }
                 }
-                idx += MemoryLayout.stride(ofValue: in_addr.self)
+                idx += 1
             }
             break
         default:

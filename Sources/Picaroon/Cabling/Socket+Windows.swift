@@ -18,7 +18,7 @@ private func MAKEWORD(_ a: UInt16, _ b: UInt16) -> UInt16 {
     return (a & 0xff) | (b & 0xff) << 8
 }
 
-private func checkWAS() -> Bool {
+func checkWAS() -> Bool {
     wsaLock.lock()
     if wsaInited == false {
         // ((WORD)(((BYTE)(((DWORD_PTR)(a)) & 0xff)) | ((WORD)((BYTE)(((DWORD_PTR)(b)) & 0xff))) << 8))
