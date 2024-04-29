@@ -38,7 +38,7 @@ public class NTP {
         let delta = needsRollOver ? epochRolloverDelta : -epochDelta
         let integer = TimeInterval(time >> 32)
         let decimal = TimeInterval(time & 0xffffffff) / 4294967296.0
-        ntpOffset = Date().timeIntervalSince1970 - TimeInterval(integer + delta + decimal)
+        ntpOffset = TimeInterval(integer + delta + decimal) - Date().timeIntervalSince1970
     }
     
     public static func date() -> Date {

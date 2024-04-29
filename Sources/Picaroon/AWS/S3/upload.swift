@@ -28,7 +28,7 @@ extension HTTPSession {
         let acl = acl ?? "private"
         let storageType = storageType ?? "STANDARD"
         
-        let date = Date().toRFC2822()
+        let date = NTP.date().toRFC2822()
         
         var url = "https://{0}.{1}.{2}.{3}{4}" << [bucket, service, region, baseDomain, path]
         if let overrideUrl = credentials.url {

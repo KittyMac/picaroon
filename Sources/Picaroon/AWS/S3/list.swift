@@ -250,7 +250,7 @@ extension URLRequest {
         }
         canonicalHeaders["x-amz-content-sha256"] = contentHash
         
-        let date = Date().toISO8601Hitch().replace(occurencesOf: "-", with: "").replace(occurencesOf: ":", with: "")
+        let date = NTP.date().toISO8601Hitch().replace(occurencesOf: "-", with: "").replace(occurencesOf: ":", with: "")
         guard let dateShort = date.substring(0, 8) else {
             return "failed to create short date"
         }
