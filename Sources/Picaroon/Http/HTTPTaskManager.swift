@@ -90,11 +90,20 @@ internal class HTTPTaskManager: Actor {
                     shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 
-                #if !os(Windows)
                 // If we timeout out, go ahead and retry it.
+                #if !os(Windows)
                 if let error = error as? POSIXError,
                    (error.code == .ENOSPC ||
                     error.code == .ECONNRESET ||
+                    error.errorCode == 54 ||
+                    error.errorCode == 104 ||
+                    error.errorCode == -1001) {
+                    shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                }
+                #else
+                if let error = error as? POSIXError,
+                   (error.code == .ENOSPC ||
+                    error.errorCode == 104 ||
                     error.errorCode == 104 ||
                     error.errorCode == -1001) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
