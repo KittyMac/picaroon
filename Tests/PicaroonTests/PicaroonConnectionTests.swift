@@ -39,8 +39,6 @@ final class picaroonConnectionTests: XCTestCase {
         XCTAssertTrue(abs(correctedDate.timeIntervalSinceNow) < 1.0)
     }
     
-    #if os(macOS)
-    
     func testDNSResolver0() {
         let expectation = XCTestExpectation(description: "success")
         
@@ -51,7 +49,7 @@ final class picaroonConnectionTests: XCTestCase {
         
         wait(for: [expectation], timeout: 2)
     }
-    
+        
     func testDNSResolver1() {
         let expectation = XCTestExpectation(description: "success")
         
@@ -244,9 +242,7 @@ final class picaroonConnectionTests: XCTestCase {
         
         wait(for: [expectation], timeout: 2)
     }
-    
-    #endif
-    
+        
     /*
     func testArrayAccessPerformance() {
         let hitch = Hitch(string: "This is some sample data!")
