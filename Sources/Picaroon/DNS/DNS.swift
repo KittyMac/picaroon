@@ -68,7 +68,7 @@ public class DNS: Actor {
                         )
                     }
                 }
-                idx += MemoryLayout.stride(ofValue: in_addr.self)
+                idx += 1
             }
             break
         default:
