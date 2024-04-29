@@ -32,12 +32,14 @@ final class picaroonConnectionTests: XCTestCase {
         return rightTime < leftTime
     }
     
-    #if os(macOS)
+    
     
     func testNTPResolver0() {
         let correctedDate = NTP.date()
         XCTAssertTrue(abs(correctedDate.timeIntervalSinceNow) < 1.0)
     }
+    
+    #if os(macOS)
     
     func testDNSResolver0() {
         let expectation = XCTestExpectation(description: "success")

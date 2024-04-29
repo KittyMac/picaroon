@@ -49,6 +49,20 @@ public class Socket {
         
         applyOptions(blocking: blocking)
     }
+    
+    public init?(udp: Bool = true) {
+        guard checkWAS() else { return nil }
+        
+        socketFd = Int32(socket(AF_INET, SOCK_DGRAM, IPPROTO_TCP))
+        if (socketFd == INVALID_SOCKET) {
+            return nil
+        }
+        
+        guard socketFd >= 0 else { return nil }
+        
+        setWriteTimeout(milliseconds: 1000)
+        setWriteTimeout(milliseconds: 1000)
+    }
         
     public init?(blocking: Bool = true) {
         guard checkWAS() else { return nil }
