@@ -48,6 +48,29 @@ public class Socket {
         
         applyOptions(blocking: blocking)
     }
+    
+    public init?(udp: Bool) {
+        #if os(Android)
+        if blocking {
+            socketFd = socket(AF_INET, SOCK_DGRAM, 0)
+        } else {
+            socketFd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0)
+        }
+        #elseif os(Linux)
+        if blocking {
+            socketFd = socket(AF_INET, Int32(SOCK_DGRAM.rawValue), 0)
+        } else {
+            socketFd = socket(AF_INET, Int32(SOCK_DGRAM.rawValue | SOCK_NONBLOCK.rawValue), 0)
+        }
+        #else
+        socketFd = socket(AF_INET, SOCK_DGRAM, 0)
+        #endif
+
+        guard socketFd >= 0 else { return nil }
+        
+        setWriteTimeout(milliseconds: 1000)
+        setWriteTimeout(milliseconds: 1000)
+    }
         
     public init?(blocking: Bool = true) {
         #if os(Android)
@@ -326,13 +349,7 @@ public class Socket {
         sockAddressIn.sin_family = sa_family_t(AF_INET)
         inet_pton(AF_INET, address, &(sockAddressIn.sin_addr))
         sockAddressIn.sin_port = UInt16(clamping: port).bigEndian
-        
-        //var timeout = timeval()
-        //timeout.tv_sec = 5
-        //timeout.tv_usec = 0
-        //setsockopt (socketFd, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
-        //setsockopt (socketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
-                
+                        
         let _ = withUnsafePointer(to: &sockAddressIn) {
             return $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
                 return connect(socketFd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))

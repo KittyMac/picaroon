@@ -1,15 +1,6 @@
 {
   "pins" : [
     {
-      "identity" : "bitbytedata",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tsolomko/BitByteData",
-      "state" : {
-        "revision" : "36df26fe4586b4f23d76cfd8b47076998343a2b2",
-        "version" : "2.0.3"
-      }
-    },
-    {
       "identity" : "chronometer",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Chronometer.git",
@@ -32,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Flynn.git",
       "state" : {
-        "revision" : "bfea8ea52724291efa5320c9c954458c6f66f87c",
-        "version" : "0.4.81"
+        "revision" : "e0910553fad31cc6a7b3e498ecb8af76dae167b0",
+        "version" : "0.4.82"
       }
     },
     {
@@ -79,15 +70,6 @@
       "state" : {
         "revision" : "f56ddf21dd83cbbbb4a839e678384ed74a8cc0fc",
         "version" : "0.0.11"
-      }
-    },
-    {
-      "identity" : "swcompression",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/KittyMac/SWCompression.git",
-      "state" : {
-        "revision" : "cd39ca0a3b269173bab06f68b182b72fa690765c",
-        "version" : "4.8.5"
       }
     }
   ],
