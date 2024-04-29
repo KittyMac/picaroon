@@ -23,7 +23,7 @@ public enum HTTPSessionPriority {
 
 public class HTTPSessionManager: Actor {
     public static let shared = HTTPSessionManager()
-    private override init() {        
+    private override init() {
         for _ in 0..<maxConcurrentSessions {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 20.0
@@ -32,14 +32,18 @@ public class HTTPSessionManager: Actor {
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             config.httpCookieAcceptPolicy = .always
             config.httpShouldUsePipelining = true
-            
+
             waitingURLSessions.append(
                 URLSession(configuration: config)
             )
         }
     }
     
+    #if os(Windows)
+    private let maxConcurrentSessions = 16
+    #else
     private let maxConcurrentSessions = max(Flynn.cores * 3, 4)
+    #endif
     
     private var waitingURLSessions: [URLSession] = []
     

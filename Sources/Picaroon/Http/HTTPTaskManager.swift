@@ -15,7 +15,11 @@ internal class HTTPTaskManager: Actor {
     internal static let shared = HTTPTaskManager()
     private override init() { }
     
+    #if os(Windows)
+    private let maxConcurrentTasks = 16
+    #else
     private let maxConcurrentTasks = max(Flynn.cores * 4, 4)
+    #endif
     
     private var waitingTasks: [DataTask] = []
     private var activeTasks: [DataTask] = []

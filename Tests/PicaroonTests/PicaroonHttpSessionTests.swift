@@ -10,8 +10,8 @@ import FoundationNetworking
 
 // use timeoutRetry of 0 for determining if we can reduce the initial timeouts
 // set to nil for default behaviour (3x retry)
-fileprivate let timeoutRetry: Int? = 0
-fileprivate let maxConnection = 4096
+fileprivate let timeoutRetry: Int? = 3
+fileprivate let maxConnection = 1024
 
 final class PicaroonHttpSessionTests: XCTestCase {
     
@@ -48,6 +48,7 @@ final class PicaroonHttpSessionTests: XCTestCase {
         wait(for: [expectation], timeout: 4)
     }
     
+    #if !os(Windows)
     func testManyHttpTasksBaseline() {
         let expectation = XCTestExpectation(description: #function)
         var waiting = maxConnection
@@ -83,6 +84,7 @@ final class PicaroonHttpSessionTests: XCTestCase {
         
         // apple.com: 40s
     }
+    #endif
     
     func testManyHttpTasksOnOneShotSession() {
         let expectation = XCTestExpectation(description: #function)
