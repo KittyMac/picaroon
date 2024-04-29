@@ -32,9 +32,6 @@ func checkWAS() -> Bool {
 }
 
 public class Socket {
-    let AF_INET: Int32 = 0
-    let SOCK_STREAM: Int32 = 1
-    let IPPROTO_TCP: Int32 = 6
     
     @usableFromInline
     var socketFd: Int32
@@ -53,7 +50,7 @@ public class Socket {
     public init?(udp: Bool = true) {
         guard checkWAS() else { return nil }
         
-        socketFd = Int32(socket(AF_INET, SOCK_DGRAM, IPPROTO_TCP))
+        socketFd = Int32(socket(AF_INET, SOCK_DGRAM, 0))
         if (socketFd == INVALID_SOCKET) {
             return nil
         }
@@ -67,7 +64,7 @@ public class Socket {
     public init?(blocking: Bool = true) {
         guard checkWAS() else { return nil }
         
-        socketFd = Int32(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))
+        socketFd = Int32(socket(AF_INET, SOCK_STREAM, 0))
         if (socketFd == INVALID_SOCKET) {
             return nil
         }
@@ -202,6 +199,7 @@ public class Socket {
             self.close()
             return -1
         }
+        
         return Int(bytesRead)
     }
     
@@ -215,7 +213,7 @@ public class Socket {
         
         var sockAddressIn = sockaddr_in()
         let sockAddrInSize = socklen_t(MemoryLayout<sockaddr_in>.size)
-                                       
+
         sockAddressIn.sin_family = ADDRESS_FAMILY(AF_INET)
         inet_pton(AF_INET, address, &(sockAddressIn.sin_addr))
         sockAddressIn.sin_port = UInt16(clamping: port).bigEndian
@@ -225,7 +223,7 @@ public class Socket {
                 return bind(UInt64(socketFd), $0, sockAddrInSize)
             }
         }
-                
+        
         if result < 0 {
             return -1
         }
