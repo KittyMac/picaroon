@@ -68,8 +68,8 @@ public class Socket {
 
         guard socketFd >= 0 else { return nil }
         
-        setWriteTimeout(milliseconds: 1000)
-        setWriteTimeout(milliseconds: 1000)
+        setReadTimeout(milliseconds: 2000)
+        setWriteTimeout(milliseconds: 2000)
     }
         
     public init?(blocking: Bool = true) {

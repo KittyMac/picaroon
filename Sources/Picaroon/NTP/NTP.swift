@@ -11,7 +11,13 @@ public class NTP {
     private static var didAttemptSyncOnce: Bool = false
     private static var ntpOffset: TimeInterval? = nil
     
+    private static var lastSyncDate = Date.distantPast
+    
     private static func sync(domain: String = "pool.ntp.org") {
+        guard abs(lastSyncDate.timeIntervalSinceNow) > 5 * 60 else { return }
+        
+        lastSyncDate = Date()
+        
         let dns = DNS.resolve(domain: domain)
         guard let address = dns.addresses.first else { return }
         
@@ -42,10 +48,7 @@ public class NTP {
     }
     
     public static func date() -> Date {
-        if (didAttemptSyncOnce == false) {
-            didAttemptSyncOnce = true
-            sync()
-        }
+        sync()
         guard let ntpOffset = ntpOffset else { return Date() }
         return Date(timeIntervalSinceNow: ntpOffset)
     }
