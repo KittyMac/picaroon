@@ -62,6 +62,10 @@ extension HTTPSession {
                        proxy: nil,
                        body: body,
                        self) { data, response, error in
+            if error == "http 403" {
+                NTP.reset()
+            }
+            
             returnCallback(data, response, error)
         }
     }

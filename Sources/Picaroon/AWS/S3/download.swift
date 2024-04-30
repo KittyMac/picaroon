@@ -107,6 +107,10 @@ extension HTTPSession {
                        proxy: nil,
                        body: nil,
                        self) { data, response, error in
+            if error == "http 403" {
+                NTP.reset()
+            }
+            
             returnCallback(data, response, error)
         }
     }
@@ -176,6 +180,10 @@ extension HTTPSession {
                        proxy: nil,
                        body: nil,
                        self) { data, response, error in
+            
+            if error == "http 403" {
+                NTP.reset()
+            }
             
             if error == "http 304" {
                 if let data = try? Data(contentsOf: fileUrl) {

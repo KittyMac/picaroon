@@ -47,6 +47,10 @@ public class NTP {
         ntpOffset = TimeInterval(integer + delta + decimal) - Date().timeIntervalSince1970
     }
     
+    public static func reset() {
+        lastSyncDate = Date.distantPast
+    }
+    
     public static func date() -> Date {
         sync()
         guard let ntpOffset = ntpOffset else { return Date() }
