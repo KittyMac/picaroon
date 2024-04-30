@@ -17,8 +17,6 @@ import FoundationNetworking
 // Note: WE MUST BE ABLE TO SUPPORT MULTIPLE CONCURRENT URLSESSIONS, as that is the only way we have separated cookie storage
 // Note: We also want to support "one shot" url tasks which are ephemeral, have cookies disabled, and can share a single url session
 
-private var firstTimeCalled = true
-
 public class HTTPSession: Actor {
     public static let oneshot: HTTPSession = HTTPSession(oneshot: true)
     public static let longshot: HTTPSession = HTTPSession(longshot: true)
@@ -32,6 +30,8 @@ public class HTTPSession: Actor {
     internal var safeS3Secret: String?
     
     private var outstandingRequests = 0
+    
+    private var firstTimeCalled = true
     
     public init(cookies: [HTTPCookie],
                 _ returnCallback: @escaping (HTTPSession) -> ()) {
