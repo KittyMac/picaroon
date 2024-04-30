@@ -51,17 +51,9 @@ public class Socket {
     
     public init?(udp: Bool) {
         #if os(Android)
-        if blocking {
-            socketFd = socket(AF_INET, SOCK_DGRAM, 0)
-        } else {
-            socketFd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, 0)
-        }
+        socketFd = socket(AF_INET, SOCK_DGRAM, 0)
         #elseif os(Linux)
-        if blocking {
-            socketFd = socket(AF_INET, Int32(SOCK_DGRAM.rawValue), 0)
-        } else {
-            socketFd = socket(AF_INET, Int32(SOCK_DGRAM.rawValue | SOCK_NONBLOCK.rawValue), 0)
-        }
+        socketFd = socket(AF_INET, Int32(SOCK_DGRAM.rawValue), 0)
         #else
         socketFd = socket(AF_INET, SOCK_DGRAM, 0)
         #endif
