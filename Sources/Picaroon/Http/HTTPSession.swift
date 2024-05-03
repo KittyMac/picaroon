@@ -241,7 +241,7 @@ public class HTTPSession: Actor {
         // To help work around this, we give the first network call a small timeout value
         if firstTimeCalled {
             firstTimeCalled = false
-            request.timeoutInterval = 4
+            request.timeoutInterval = 2
         }
         #endif
         

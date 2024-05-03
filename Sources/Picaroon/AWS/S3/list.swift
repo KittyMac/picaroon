@@ -131,7 +131,7 @@ extension HTTPSession {
         }
         
         self.beRequest(request: request,
-                       timeoutRetry: nil,
+                       timeoutRetry: 10,
                        proxy: nil,
                        self) { data, response, error in
             

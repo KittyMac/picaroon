@@ -139,12 +139,15 @@ internal class HTTPTaskManager: Actor {
                     #endif
                     
                     session.flush {
-                        self.beResume(session: session,
-                                      request: newRequest,
-                                      proxy: proxy,
-                                      timeoutRetry: timeoutRetry - 1,
-                                      self,
-                                      returnCallback)
+                        Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
+                            guard let self = self else { return returnCallback(nil, nil, nil) }
+                            self.beResume(session: session,
+                                          request: newRequest,
+                                          proxy: proxy,
+                                          timeoutRetry: timeoutRetry - 1,
+                                          self,
+                                          returnCallback)
+                        }
                     }
                     return
                 }
