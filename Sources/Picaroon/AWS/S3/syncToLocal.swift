@@ -80,79 +80,77 @@ extension HTTPSession {
             marker = nil
         }
         
-        HTTPSessionManager.shared.beNew(priority: priority, self) { session in
-            session.beListAllKeysFromS3(credentials: credentials,
-                                        keyPrefix: keyPrefix,
-                                        marker: marker,
-                                        priority: priority,
-                                        self) { objects, continuationMarker, error in
-                if let error = error { return returnCallback(objects, [], continuationMarker, error) }
-                
-                var mutableObjectsByKey: [String: S3Object] = [:]
-                for object in objects {
-                    mutableObjectsByKey[object.key] = object
+        beListAllKeysFromS3(credentials: credentials,
+                            keyPrefix: keyPrefix,
+                            marker: marker,
+                            priority: priority,
+                            self) { objects, continuationMarker, error in
+            if let error = error { return returnCallback(objects, [], continuationMarker, error) }
+            
+            var mutableObjectsByKey: [String: S3Object] = [:]
+            for object in objects {
+                mutableObjectsByKey[object.key] = object
+            }
+            
+            
+            var lastError: String? = nil
+            
+            var modifiedObjects: [S3Object] = []
+            
+            // Remove any extra local files, remove any object we don't need to download
+            for localFile in localFiles where marker == nil || localFile.s3Key > marker! {
+                // Does this file exist on the s3?
+                if mutableObjectsByKey[localFile.s3Key] != nil {
+                    mutableObjectsByKey[localFile.s3Key] = nil
+                } else {
+                    try? FileManager.default.removeItem(atPath: localFile.path)
                 }
-                
-                
-                var lastError: String? = nil
-                
-                var modifiedObjects: [S3Object] = []
-                
-                // Remove any extra local files, remove any object we don't need to download
-                for localFile in localFiles where marker == nil || localFile.s3Key > marker! {
-                    // Does this file exist on the s3?
-                    if mutableObjectsByKey[localFile.s3Key] != nil {
-                        mutableObjectsByKey[localFile.s3Key] = nil
-                    } else {
-                        try? FileManager.default.removeItem(atPath: localFile.path)
-                    }
-                }
-                
-                let group = DispatchGroup()
-                
-                for object in mutableObjectsByKey.values {
-                    group.enter()
-                    HTTPSessionManager.shared.beNew(priority: priority, self) { session in
-                        session.beDownloadFromS3(credentials: credentials,
-                                                 key: object.key,
-                                                 contentType: .any,
-                                                 self) { data, response, error in
-                            if let error = error {
-                                lastError = error
-                            }
-                            
-                            if let data = data,
-                               error == nil {
-                                let objectKey = makeRelativePath(key: object.key)
-                                
-                                let fileUrl = localDirectoryUrl.appendingPathComponent(objectKey)
-                                if (try? data.write(to: fileUrl)) == nil {
-                                    // probably directory does not exist...
-                                    try? FileManager.default.createDirectory(at: fileUrl.deletingLastPathComponent(),
-                                                                             withIntermediateDirectories: true)
-                                    try? data.write(to: fileUrl)
-                                }
-                                
-                                // Update the modification date of the file to match the date of the s3 object
-                                try? FileManager.default.setAttributes([
-                                    FileAttributeKey.creationDate: object.modifiedDate,
-                                ], ofItemAtPath: fileUrl.path)
-                                
-                                try? FileManager.default.setAttributes([
-                                    FileAttributeKey.modificationDate: object.modifiedDate,
-                                ], ofItemAtPath: fileUrl.path)
-                                
-                                modifiedObjects.append(object)
-                            }
-                            
-                            group.leave()
+            }
+            
+            let group = DispatchGroup()
+            
+            for object in mutableObjectsByKey.values {
+                group.enter()
+                HTTPSessionManager.shared.beNew(priority: priority, self) { session in
+                    session.beDownloadFromS3(credentials: credentials,
+                                             key: object.key,
+                                             contentType: .any,
+                                             self) { data, response, error in
+                        if let error = error {
+                            lastError = error
                         }
+                        
+                        if let data = data,
+                           error == nil {
+                            let objectKey = makeRelativePath(key: object.key)
+                            
+                            let fileUrl = localDirectoryUrl.appendingPathComponent(objectKey)
+                            if (try? data.write(to: fileUrl)) == nil {
+                                // probably directory does not exist...
+                                try? FileManager.default.createDirectory(at: fileUrl.deletingLastPathComponent(),
+                                                                         withIntermediateDirectories: true)
+                                try? data.write(to: fileUrl)
+                            }
+                            
+                            // Update the modification date of the file to match the date of the s3 object
+                            try? FileManager.default.setAttributes([
+                                FileAttributeKey.creationDate: object.modifiedDate,
+                            ], ofItemAtPath: fileUrl.path)
+                            
+                            try? FileManager.default.setAttributes([
+                                FileAttributeKey.modificationDate: object.modifiedDate,
+                            ], ofItemAtPath: fileUrl.path)
+                            
+                            modifiedObjects.append(object)
+                        }
+                        
+                        group.leave()
                     }
                 }
-                
-                group.notify(actor: self) {
-                    returnCallback(objects, modifiedObjects, continuationMarker, lastError)
-                }
+            }
+            
+            group.notify(actor: self) {
+                returnCallback(objects, modifiedObjects, continuationMarker, lastError)
             }
         }
     }
