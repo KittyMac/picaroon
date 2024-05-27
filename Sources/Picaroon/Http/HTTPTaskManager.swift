@@ -90,7 +90,9 @@ internal class HTTPTaskManager: Actor {
                    (error.code == .timedOut ||
                     error.code == .networkConnectionLost ||
                     error.errorCode == 104 ||
-                    error.errorCode == -1001) {
+                    error.errorCode == -1001 ||
+                    error.errorCode == -1003 ||
+                    error.errorCode == -1005) {
                     shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 
@@ -101,7 +103,9 @@ internal class HTTPTaskManager: Actor {
                     error.code == .ECONNRESET ||
                     error.errorCode == 54 ||
                     error.errorCode == 104 ||
-                    error.errorCode == -1001) {
+                    error.errorCode == -1001 ||
+                    error.errorCode == -1003 ||
+                    error.errorCode == -1005) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 #else
@@ -109,7 +113,9 @@ internal class HTTPTaskManager: Actor {
                    (error.code == .ENOSPC ||
                     error.errorCode == 104 ||
                     error.errorCode == 104 ||
-                    error.errorCode == -1001) {
+                    error.errorCode == -1001 ||
+                    error.errorCode == -1003 ||
+                    error.errorCode == -1005) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 #endif
