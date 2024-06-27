@@ -35,6 +35,8 @@ public class DNS: Actor {
     public static func resolve(domain: String) -> DNS.Results {
         guard let hp = gethostbyname(domain) else { return DNS.Results() }
         
+        guard hp.pointee.h_addrtype == AF_INET, hp.pointee.h_length > 0 else { return DNS.Results() }
+        
         var aliases: [String] = []
         var addresses: [String] = []
         
@@ -44,12 +46,11 @@ public class DNS: Actor {
         defer { free(scratch_ptr) }
         
         
-        var idx = 0
-        while true {
-            guard let alias_ptr = hp.pointee.h_aliases[idx] else { break }
-            guard let alias = String(utf8String: alias_ptr) else { break }
-            aliases.append(alias)
-            idx += 1
+        var aliasPointer = hp.pointee.h_aliases
+        while let alias = aliasPointer?.pointee {
+            let aliasString = String(cString: alias)
+            aliases.append(aliasString)
+            aliasPointer = aliasPointer?.successor()
         }
 
         let inetType = hp.pointee.h_addrtype
