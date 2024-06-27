@@ -125,9 +125,9 @@ public class Server<T: UserSession> {
         guard !listening else { return }
 
         listening = true
-        DispatchQueue.global(qos: .background).async {
+        Thread {
             self.loop()
-        }
+        }.start()
     }
 
     public func stop() {
