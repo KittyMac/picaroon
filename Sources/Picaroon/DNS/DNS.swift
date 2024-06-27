@@ -33,7 +33,20 @@ public class DNS: Actor {
     }
     
     public static func resolve(domain: String) -> DNS.Results {
+        // NOTE: gethostbyname is not very safe on Linux (we've observed multiple memory crashes
+        // related to aliases, so we are using gethostbyname_r instead
+#if os(Linux)
+        var result: hostent = hostent()
+        var resultPointer: UnsafeMutablePointer<hostent>? = UnsafeMutablePointer<hostent>(mutating: nil)
+        let bufferSize = 4096
+        var buffer = [CChar](repeating: 0, count: bufferSize)
+        var hErrno: Int32 = 0
+
+        let status = gethostbyname_r(domain, &result, &buffer, bufferSize, &resultPointer, &hErrno)
+        guard status == 0, let hp = resultPointer else { return DNS.Results() }
+#else
         guard let hp = gethostbyname(domain) else { return DNS.Results() }
+#endif
         
         guard hp.pointee.h_addrtype == AF_INET, hp.pointee.h_length > 0 else { return DNS.Results() }
         
