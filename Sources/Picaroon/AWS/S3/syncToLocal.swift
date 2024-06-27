@@ -107,7 +107,7 @@ extension HTTPSession {
                 }
             }
             
-            let group = DispatchGroup()
+            let group = Flynn.Group()
             
             for object in mutableObjectsByKey.values {
                 group.enter()

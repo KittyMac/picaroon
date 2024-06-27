@@ -292,7 +292,7 @@ public class HTTPSession: Actor {
             return (nil, nil, error ?? "unknown error")
         }
 
-        let group = DispatchGroup()
+        let group = Flynn.Group()
         group.enter()
         
         var returnData: Data? = nil

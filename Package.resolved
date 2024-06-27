@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Flynn.git",
       "state" : {
-        "revision" : "e0910553fad31cc6a7b3e498ecb8af76dae167b0",
-        "version" : "0.4.82"
+        "revision" : "1301632a0eb26c8d704128d2a1751f9abab207a0",
+        "version" : "0.4.89"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Hitch.git",
       "state" : {
-        "revision" : "733c8e04e04813bc6e3cc105850a4eb657bdacfb",
-        "version" : "0.4.133"
+        "revision" : "328211598c24f356fccbcb5451cc48e21071a963",
+        "version" : "0.4.139"
       }
     },
     {
@@ -52,6 +52,15 @@
       "state" : {
         "revision" : "52a77d0bce0210cf9557faef7fd0adb9a6da02fb",
         "version" : "0.4.31"
+      }
+    },
+    {
+      "identity" : "sourcekitten",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jpsim/SourceKitten",
+      "state" : {
+        "revision" : "817dfa6f2e09b0476f3a6c9dbc035991f02f0241",
+        "version" : "0.32.0"
       }
     },
     {
@@ -70,6 +79,33 @@
       "state" : {
         "revision" : "f56ddf21dd83cbbbb4a839e678384ed74a8cc0fc",
         "version" : "0.0.11"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser",
+      "state" : {
+        "revision" : "0fbc8848e389af3bb55c182bc19ca9d5dc2f255b",
+        "version" : "1.4.0"
+      }
+    },
+    {
+      "identity" : "swxmlhash",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/drmohundro/SWXMLHash.git",
+      "state" : {
+        "revision" : "6469881a3f30417c5bb02404ea4b69207f297592",
+        "version" : "6.0.0"
+      }
+    },
+    {
+      "identity" : "yams",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jpsim/Yams.git",
+      "state" : {
+        "revision" : "9ff1cc9327586db4e0c8f46f064b6a82ec1566fa",
+        "version" : "4.0.6"
       }
     }
   ],
