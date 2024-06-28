@@ -73,7 +73,7 @@ public class Connection: Actor, AnyConnection {
         watchRunning = true
         
         Thread {
-            Thread.current.name = "Picaroon.Connection"
+            Flynn.threadSetName("Picaroon.Connection")
             while true {
                 autoreleasepool {
                     watchLock.lock()
