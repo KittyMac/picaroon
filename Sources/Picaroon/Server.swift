@@ -126,6 +126,7 @@ public class Server<T: UserSession> {
 
         listening = true
         Thread {
+            Thread.current.name = "Picaroon.Server"
             self.loop()
         }.start()
     }
