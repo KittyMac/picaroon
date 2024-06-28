@@ -86,9 +86,9 @@ internal class HTTPTaskManager: Actor {
                 var shouldBeRetried: String? = nil
                 
                 // Allow specific AWS calls to be retried on 403/401 errors
-                if request.url?.host?.contains("amazonaws") == true,
+                if request.url?.absoluteString.contains("amazonaws") == true,
                    let httpResponse = response as? HTTPURLResponse,
-                   httpResponse.statusCode == 403 || httpResponse.statusCode == 401 {
+                   httpResponse.statusCode == 403 {
                     shouldBeRetried = "aws http \(httpResponse.statusCode) detected, retying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 
@@ -127,7 +127,7 @@ internal class HTTPTaskManager: Actor {
                 }
                 #endif
                 
-                // If we timeout out, go ahead and retry it.
+                // Retries on specific error string content
                 if let errorString = error?.localizedDescription,
                    timeoutRetry > 0 {
                     let retryErrorStrings = [
@@ -139,6 +139,7 @@ internal class HTTPTaskManager: Actor {
                     }
                 }
                 
+                // If we timeout out, go ahead and retry it.
                 if let shouldBeRetried = shouldBeRetried,
                    timeoutRetry > 0 {
                     print(shouldBeRetried)

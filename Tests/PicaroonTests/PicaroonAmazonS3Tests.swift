@@ -132,12 +132,12 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                               contentType: .txt,
                               body: data,
                               Flynn.any) { data, response, error in
-            XCTAssertNotNil(error)
+            XCTAssertEqual(error, "http 403")
         }.then().doDownloadFromS3(credentials: credentials,
                                   key: badPath,
                                   contentType: .txt,
                                   Flynn.any) { data, response, error in
-            XCTAssertNotNil(error)
+            XCTAssertEqual(error, "http 403")
         }.then().doListFromS3(credentials: credentials,
                               keyPrefix: "/",
                               marker: nil,
