@@ -86,12 +86,12 @@ internal class HTTPTaskManager: Actor {
                 var shouldBeRetried: String? = nil
                 
                 // Allow specific AWS calls to be retried on 403/401 errors
-                if request.url?.absoluteString.contains("amazonaws") == true,
-                   let httpResponse = response as? HTTPURLResponse,
-                   httpResponse.statusCode == 403 {
-                    shouldBeRetried = "aws http \(httpResponse.statusCode) detected, retying \(request.url?.absoluteString ?? "unknown url")..."
-                }
-                
+                // if request.url?.absoluteString.contains("amazonaws") == true,
+                //    let httpResponse = response as? HTTPURLResponse,
+                //    httpResponse.statusCode == 403 {
+                //     shouldBeRetried = "aws http \(httpResponse.statusCode) detected, retying \(request.url?.absoluteString ?? "unknown url")..."
+                // }
+                   
                 // Allow specific error to be retried
                 if let error = error as? URLError,
                    (error.code == .timedOut ||
@@ -136,6 +136,19 @@ internal class HTTPTaskManager: Actor {
                     
                     for retryErrorString in retryErrorStrings where errorString.contains(retryErrorString) {
                         shouldBeRetried = "\(retryErrorString) \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                    }
+                }
+                
+                if let httpResponse = response as? HTTPURLResponse,
+                   httpResponse.statusCode == 403 {
+                    shouldBeRetried = "aws http \(httpResponse.statusCode) detected, retying \(request.url?.absoluteString ?? "unknown url")..."
+                }
+                
+                if let data = data {
+                    let content = HalfHitch(data: data)
+                    if content.contains(">AccessDenied<"),
+                       content.contains("<HostId>") {
+                        shouldBeRetried = "aws http 403 detected (by content), retying \(request.url?.absoluteString ?? "unknown url")..."
                     }
                 }
                 
