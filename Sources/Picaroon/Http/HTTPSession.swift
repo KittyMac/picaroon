@@ -375,6 +375,23 @@ fileprivate func handleTaskResponse(data: Data?,
     if httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299 {
         return (data, httpResponse, nil)
     } else {
+        
+        print("** http \(httpResponse.statusCode) ocurred")
+        print("** \(response)")
+        print("** \(data)")
+        print("** \(error)")
+        
+        if let httpResponse = response as? HTTPURLResponse,
+           httpResponse.statusCode == 403 {
+            print("*** aws http \(httpResponse.statusCode) detected")
+        }
+        
+        let content = HalfHitch(data: data)
+        if content.contains(">AccessDenied<"),
+           content.contains("<HostId>") {
+            print("*** aws http 403 detected (by content)")
+        }
+        
         return (data, httpResponse, "http \(httpResponse.statusCode)")
     }
 }
