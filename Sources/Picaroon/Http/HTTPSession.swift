@@ -376,10 +376,12 @@ fileprivate func handleTaskResponse(data: Data?,
         return (data, httpResponse, nil)
     } else {
         
-        print("** http \(httpResponse.statusCode) ocurred")
-        print("** \(response)")
-        print("** \(data)")
-        print("** \(error)")
+        if httpResponse.statusCode != 304 {
+            print("** http \(httpResponse.statusCode) ocurred")
+            print("** \(response)")
+            print("** \(data)")
+            print("** \(error)")
+        }
         
         if let httpResponse = response as? HTTPURLResponse,
            httpResponse.statusCode == 403 {
