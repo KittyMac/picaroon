@@ -139,12 +139,6 @@ internal class HTTPTaskManager: Actor {
                     }
                 }
                 
-                if error != nil,
-                   request.url?.absoluteString.contains("amazonaws") == true {
-                    print("*** potential aws http 403 detected")
-                    print(response)
-                }
-                   
                 if let httpResponse = response as? HTTPURLResponse,
                    request.url?.absoluteString.contains("amazonaws") == true,
                    httpResponse.statusCode == 403 {
