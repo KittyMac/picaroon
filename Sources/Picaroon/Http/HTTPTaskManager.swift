@@ -100,7 +100,7 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1001 ||
                     error.errorCode == -1003 ||
                     error.errorCode == -1005) {
-                    shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                    shouldBeRetried = "timeout detected0 \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 
                 // If we timeout out, go ahead and retry it.
