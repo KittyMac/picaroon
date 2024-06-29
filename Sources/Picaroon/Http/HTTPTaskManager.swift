@@ -100,7 +100,7 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1001 ||
                     error.errorCode == -1003 ||
                     error.errorCode == -1005) {
-                    shouldBeRetried = "timeout detected0 \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                    shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 
                 // If we timeout out, go ahead and retry it.
@@ -142,6 +142,7 @@ internal class HTTPTaskManager: Actor {
                 if let httpResponse = response as? HTTPURLResponse,
                    httpResponse.statusCode == 403 {
                     shouldBeRetried = "aws http \(httpResponse.statusCode) detected, retying \(request.url?.absoluteString ?? "unknown url")..."
+                    print("*** aws http \(httpResponse.statusCode) detected, retry \(timeoutRetry)")
                 }
                 
                 if let data = data {
@@ -149,6 +150,7 @@ internal class HTTPTaskManager: Actor {
                     if content.contains(">AccessDenied<"),
                        content.contains("<HostId>") {
                         shouldBeRetried = "aws http 403 detected (by content), retying \(request.url?.absoluteString ?? "unknown url")..."
+                        print("*** aws http 403 detected (by content), retry \(timeoutRetry)")
                     }
                 }
                 
