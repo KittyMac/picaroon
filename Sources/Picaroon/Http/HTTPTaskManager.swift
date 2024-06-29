@@ -139,19 +139,18 @@ internal class HTTPTaskManager: Actor {
                     }
                 }
                 
+                if data?.count == 0,
+                   error == nil,
+                   request.url?.absoluteString.contains("amazonaws") == true {
+                    print("*** potential aws http 403 detected")
+                    print(request)
+                }
+                   
                 if let httpResponse = response as? HTTPURLResponse,
+                   request.url?.absoluteString.contains("amazonaws") == true,
                    httpResponse.statusCode == 403 {
                     shouldBeRetried = "aws http \(httpResponse.statusCode) detected, retying \(request.url?.absoluteString ?? "unknown url")..."
                     print("*** aws http \(httpResponse.statusCode) detected, retry \(timeoutRetry)")
-                }
-                
-                if let data = data {
-                    let content = HalfHitch(data: data)
-                    if content.contains(">AccessDenied<"),
-                       content.contains("<HostId>") {
-                        shouldBeRetried = "aws http 403 detected (by content), retying \(request.url?.absoluteString ?? "unknown url")..."
-                        print("*** aws http 403 detected (by content), retry \(timeoutRetry)")
-                    }
                 }
                 
                 // If we timeout out, go ahead and retry it.
