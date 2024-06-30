@@ -113,7 +113,7 @@ extension HTTPSession {
                 if retry > 0 {
                     Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, self) { [weak self] timer in
                         guard let self = self else { return }
-                        fputs("aws download http 403, retrying \(retry)\n", stderr)
+                        // fputs("aws download http 403, retrying \(retry)\n", stderr)
                         self.performDownloadFromS3(credentials: credentials,
                                                    key: key,
                                                    contentType: contentType,
@@ -213,7 +213,7 @@ extension HTTPSession {
                 if retry > 0 {
                     Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, self) { [weak self] timer in
                         guard let self = self else { return }
-                        fputs("aws download http 403, retrying \(retry)\n", stderr)
+                        // fputs("aws download http 403, retrying \(retry)\n", stderr)
                         self.performDownloadFromS3(toFilePath: toFilePath,
                                                    credentials: credentials,
                                                    key: key,

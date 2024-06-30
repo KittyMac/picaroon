@@ -68,7 +68,7 @@ extension HTTPSession {
                 if retry > 0 {
                     Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, self) { [weak self] timer in
                         guard let self = self else { return }
-                        fputs("aws upload http 403, retrying \(retry)\n", stderr)
+                        // fputs("aws upload http 403, retrying \(retry)\n", stderr)
                         self.performUploadToS3(credentials: credentials,
                                                acl: acl,
                                                storageType: storageType,
