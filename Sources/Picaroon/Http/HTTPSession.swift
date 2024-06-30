@@ -376,32 +376,11 @@ fileprivate func handleTaskResponse(data: Data?,
         return (data, httpResponse, nil)
     } else {
         
-        if httpResponse.statusCode != 304 {
-            Swift.print("** http \(httpResponse.statusCode) ocurred")
-            Swift.print("** \(response)")
-            Swift.print("** \(data)")
-            Swift.print("** \(error)")
-        }
+        fputs("** http \(httpResponse.statusCode) ocurred", stderr)
+        fputs("** \(response)", stderr)
+        fputs("** \(data)", stderr)
+        fputs("** \(error)", stderr)
         
-        if let httpResponse = response as? HTTPURLResponse,
-           httpResponse.statusCode == 403 {
-            Swift.print("*** aws http \(httpResponse.statusCode) detected")
-        }
-        
-        let content = HalfHitch(data: data)
-        if content.contains(">AccessDenied<"),
-           content.contains("<HostId>") {
-            Swift.print("*** aws http 403 detected (by content)")
-        }
-        
-        let errorString = "http \(httpResponse.statusCode)"
-        if errorString == "http 403" {
-            Swift.print("** http \(httpResponse.statusCode) ocurred")
-            Swift.print("** \(response)")
-            Swift.print("** \(data)")
-            Swift.print("** \(error)")
-        }
-        
-        return (data, httpResponse, errorString)
+        return (data, httpResponse, "http \(httpResponse.statusCode)")
     }
 }

@@ -144,6 +144,7 @@ internal class HTTPTaskManager: Actor {
                    httpResponse.statusCode == 403 {
                     shouldBeRetried = "aws http \(httpResponse.statusCode) detected, retying \(request.url?.absoluteString ?? "unknown url")..."
                     print("*** aws http \(httpResponse.statusCode) detected, retry \(timeoutRetry)")
+                    fputs(("*** aws http \(httpResponse.statusCode) detected, retry \(timeoutRetry)"), stderr)
                 }
                 
                 // If we timeout out, go ahead and retry it.
