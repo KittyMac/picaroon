@@ -375,14 +375,6 @@ fileprivate func handleTaskResponse(data: Data?,
     if httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299 {
         return (data, httpResponse, nil)
     } else {
-        
-        if httpResponse.statusCode != 304 {
-            fputs("** http \(httpResponse.statusCode) ocurred", stderr)
-            fputs("** \(response)", stderr)
-            fputs("** \(data)", stderr)
-            fputs("** \(error)", stderr)
-        }
-        
         return (data, httpResponse, "http \(httpResponse.statusCode)")
     }
 }
