@@ -27,11 +27,11 @@ public class HTTPSessionManager: Actor {
         for _ in 0..<maxConcurrentSessions {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 20.0
-            config.httpMaximumConnectionsPerHost = max(Flynn.cores * 1, 4)
+            config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             config.httpCookieAcceptPolicy = .always
-            config.httpShouldUsePipelining = false
+            config.httpShouldUsePipelining = true
 
             waitingURLSessions.append(
                 URLSession(configuration: config)
@@ -42,7 +42,7 @@ public class HTTPSessionManager: Actor {
     #if os(Windows)
     private let maxConcurrentSessions = 16
     #else
-    private let maxConcurrentSessions = max(Flynn.cores * 1, 4)
+    private let maxConcurrentSessions = min(max(Flynn.cores * 3, 4), 32)
     #endif
     
     private var waitingURLSessions: [URLSession] = []
