@@ -63,7 +63,7 @@ extension HTTPSession {
                        proxy: nil,
                        body: body,
                        self) { data, response, error in
-            if error == "http 403" {
+            if error == "http 403" || error == "http 503" {
                 NTP.reset()
                 if retry > 0 {
                     Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, self) { [weak self] timer in
