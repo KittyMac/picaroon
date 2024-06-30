@@ -63,11 +63,12 @@ public enum HttpSource {
 }
 
 extension HTTPSession {
-            
-    internal func _beDownloadFromS3(credentials: S3Credentials,
-                                    key: String,
-                                    contentType: HttpContentType,
-                                    _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+    
+    private func performDownloadFromS3(credentials: S3Credentials,
+                                       key: String,
+                                       contentType: HttpContentType,
+                                       retry: Int,
+                                       _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
         let baseDomain = credentials.baseDomain
@@ -109,24 +110,50 @@ extension HTTPSession {
                        self) { data, response, error in
             if error == "http 403" {
                 NTP.reset()
+                if retry > 0 {
+                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, self) { [weak self] timer in
+                        guard let self = self else { return }
+                        fputs("aws download http 403, retrying \(retry)\n", stderr)
+                        self.performDownloadFromS3(credentials: credentials,
+                                                   key: key,
+                                                   contentType: contentType,
+                                                   retry: retry - 1,
+                                                   returnCallback)
+                    }
+                    return
+                }
             }
             
             returnCallback(data, response, error)
         }
     }
-    
-    internal func _beDownloadFromS3(toFilePath: String,
-                                    credentials: S3Credentials,
+            
+    internal func _beDownloadFromS3(credentials: S3Credentials,
                                     key: String,
                                     contentType: HttpContentType,
-                                    cacheTime: TimeInterval,
-                                _ returnCallback: @escaping (Data?, HttpSource?, HTTPURLResponse?, String?) -> Void) {
+                                    _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+        return performDownloadFromS3(credentials: credentials,
+                                     key: key,
+                                     contentType: contentType,
+                                     retry: 3,
+                                     returnCallback)
+    }
+    
+    
+    private func performDownloadFromS3(toFilePath: String,
+                                       credentials: S3Credentials,
+                                       key: String,
+                                       contentType: HttpContentType,
+                                       cacheTime: TimeInterval,
+                                       retry: Int,
+                                       _ returnCallback: @escaping (Data?, HttpSource?, HTTPURLResponse?, String?) -> Void) {
         // Download data smartly from S3:
         // - if file does not exit at path, then downloads, store it there, and set modification date
         // - if file exists at path and it was modified less than cacheTime ago, then just return the cached data
         // - if file exists at path and it is older than cacheTime ago, make S3 request with If-Modified-Since header
         //  - if response is http 304, load an return cached data
         //  - if reponse is success, save new data to cache location and set modification date
+        
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
         let baseDomain = credentials.baseDomain
@@ -183,6 +210,20 @@ extension HTTPSession {
             
             if error == "http 403" {
                 NTP.reset()
+                if retry > 0 {
+                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, self) { [weak self] timer in
+                        guard let self = self else { return }
+                        fputs("aws download http 403, retrying \(retry)\n", stderr)
+                        self.performDownloadFromS3(toFilePath: toFilePath,
+                                                   credentials: credentials,
+                                                   key: key,
+                                                   contentType: contentType,
+                                                   cacheTime: cacheTime,
+                                                   retry: retry - 1,
+                                                   returnCallback)
+                    }
+                    return
+                }
             }
             
             if error == "http 304" {
@@ -223,6 +264,21 @@ extension HTTPSession {
             
             return returnCallback(data, .network, response, error)
         }
+    }
+    
+    internal func _beDownloadFromS3(toFilePath: String,
+                                    credentials: S3Credentials,
+                                    key: String,
+                                    contentType: HttpContentType,
+                                    cacheTime: TimeInterval,
+                                    _ returnCallback: @escaping (Data?, HttpSource?, HTTPURLResponse?, String?) -> Void) {
+        performDownloadFromS3(toFilePath: toFilePath,
+                              credentials: credentials,
+                              key: key,
+                              contentType: contentType,
+                              cacheTime: cacheTime,
+                              retry: 3,
+                              returnCallback)
     }
     
 }

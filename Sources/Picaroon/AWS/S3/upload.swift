@@ -8,14 +8,15 @@ import FoundationNetworking
 #endif
 
 extension HTTPSession {
-        
-    internal func _beUploadToS3(credentials: S3Credentials,
-                                acl: String?,
-                                storageType: String?,
-                                key: String,
-                                contentType: HttpContentType,
-                                body: Data,
-                                _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+    
+    private func performUploadToS3(credentials: S3Credentials,
+                                   acl: String?,
+                                   storageType: String?,
+                                   key: String,
+                                   contentType: HttpContentType,
+                                   body: Data,
+                                   retry: Int,
+                                   _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
         let baseDomain = credentials.baseDomain
@@ -64,10 +65,42 @@ extension HTTPSession {
                        self) { data, response, error in
             if error == "http 403" {
                 NTP.reset()
+                if retry > 0 {
+                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, self) { [weak self] timer in
+                        guard let self = self else { return }
+                        fputs("aws upload http 403, retrying \(retry)\n", stderr)
+                        self.performUploadToS3(credentials: credentials,
+                                               acl: acl,
+                                               storageType: storageType,
+                                               key: key,
+                                               contentType: contentType,
+                                               body: body,
+                                               retry: retry - 1,
+                                               returnCallback)
+                    }
+                    return
+                }
             }
             
             returnCallback(data, response, error)
         }
+    }
+        
+    internal func _beUploadToS3(credentials: S3Credentials,
+                                acl: String?,
+                                storageType: String?,
+                                key: String,
+                                contentType: HttpContentType,
+                                body: Data,
+                                _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+        performUploadToS3(credentials: credentials,
+                          acl: acl,
+                          storageType: storageType,
+                          key: key,
+                          contentType: contentType,
+                          body: body,
+                          retry: 3,
+                          returnCallback)
     }
     
 }

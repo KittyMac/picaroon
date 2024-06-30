@@ -84,7 +84,6 @@ internal class HTTPTaskManager: Actor {
                 }
                 
                 var shouldBeRetried: String? = nil
-                var shouldBeRetriedDelay = 1.0
                                    
                 // Allow specific error to be retried
                 if let error = error as? URLError,
@@ -133,21 +132,10 @@ internal class HTTPTaskManager: Actor {
                     }
                 }
                 
-                if let httpResponse = response as? HTTPURLResponse,
-                   request.url?.absoluteString.contains("amazonaws") == true,
-                   httpResponse.statusCode == 403 {
-                    NTP.reset()
-                    shouldBeRetriedDelay = 3.0
-                    shouldBeRetried = "aws http \(httpResponse.statusCode) detected \(timeoutRetry), retying \(request.url?.absoluteString ?? "unknown url")..."
-                }
-                
                 // If we timeout out, go ahead and retry it.
                 if let shouldBeRetried = shouldBeRetried,
                    timeoutRetry > 0 {
                     print(shouldBeRetried)
-                    #if os(Linux)
-                    fputs(shouldBeRetried, stderr)
-                    #endif
                     
                     var newRequest = request
                     
@@ -158,7 +146,7 @@ internal class HTTPTaskManager: Actor {
                     #endif
                     
                     session.flush {
-                        Flynn.Timer(timeInterval: shouldBeRetriedDelay, immediate: false, repeats: false, self) { [weak self] timer in
+                        Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
                             guard let self = self else { return returnCallback(nil, nil, nil) }
                             self.beResume(session: session,
                                           request: newRequest,
