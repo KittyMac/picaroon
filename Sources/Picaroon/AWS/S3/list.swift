@@ -196,6 +196,43 @@ extension HTTPSession {
         
         requestMore(marker: marker)
     }
+    
+    internal func beListAllKeysFromS3(credentials: S3Credentials,
+                                      keyPrefix: String,
+                                      marker: String?,
+                                      priority: HTTPSessionPriority,
+                                      progressCallback: @escaping ([S3Object]) -> Void,
+                                      _ sender: Actor,
+                                      _ returnCallback: @escaping ([S3Object], String?, String?) -> Void) {
+        unsafeSend { _ in
+            var allObjects: [S3Object] = []
+            
+            func requestMore(marker: String?) {
+                // Like beListFromS3(), but gives parsed results and will keep listing until all returns have been discovered
+                HTTPSessionManager.shared.beNew(priority: priority, self) { session in
+                    session.beListFromS3(credentials: credentials,
+                                         keyPrefix: keyPrefix,
+                                         marker: marker,
+                                         self) { moreObjects, continuationMarker, isDone, error in
+                        allObjects.append(contentsOf: moreObjects)
+                        
+                        sender.unsafeSend { _ in
+                            progressCallback(moreObjects)
+                            if isDone || error != nil {
+                                returnCallback(allObjects, continuationMarker, error)
+                            }
+                        }
+                        
+                        if isDone == false {
+                            return requestMore(marker: continuationMarker)
+                        }
+                    }
+                }
+            }
+            
+            requestMore(marker: marker)
+        }
+    }
 }
 
 extension URLRequest {

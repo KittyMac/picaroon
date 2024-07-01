@@ -80,22 +80,21 @@ extension HTTPSession {
             marker = nil
         }
         
-        beListAllKeysFromS3(credentials: credentials,
-                            keyPrefix: keyPrefix,
-                            marker: marker,
-                            priority: priority,
-                            self) { objects, continuationMarker, error in
-            if let error = error { return returnCallback(objects, [], continuationMarker, error) }
+        var allObjects: [S3Object] = []
+        var modifiedObjects: [S3Object] = []
+        var lastError: String? = nil
+        var continuationMarker: String? = nil
+        
+        let group = DispatchGroup()
+        
+        let processObjects: ([S3Object]) -> () = { objects in
             
             var mutableObjectsByKey: [String: S3Object] = [:]
             for object in objects {
                 mutableObjectsByKey[object.key] = object
             }
             
-            
-            var lastError: String? = nil
-            
-            var modifiedObjects: [S3Object] = []
+            allObjects.append(contentsOf: objects)
             
             // Remove any extra local files, remove any object we don't need to download
             for localFile in localFiles where marker == nil || localFile.s3Key > marker! {
@@ -106,8 +105,6 @@ extension HTTPSession {
                     try? FileManager.default.removeItem(atPath: localFile.path)
                 }
             }
-            
-            let group = DispatchGroup()
             
             for object in mutableObjectsByKey.values {
                 group.enter()
@@ -148,10 +145,22 @@ extension HTTPSession {
                     }
                 }
             }
-            
-            group.notify(actor: self) {
-                returnCallback(objects, modifiedObjects, continuationMarker, lastError)
-            }
+        }
+        
+        group.enter()
+        beListAllKeysFromS3(credentials: credentials,
+                            keyPrefix: keyPrefix,
+                            marker: marker,
+                            priority: priority,
+                            progressCallback: processObjects,
+                            self) { objects, localContinuationMarker, error in
+            if let error = error { return returnCallback(objects, [], localContinuationMarker, error) }
+            continuationMarker = localContinuationMarker
+            group.leave()
+        }
+        
+        group.notify(actor: self) {
+            returnCallback(allObjects, modifiedObjects, continuationMarker, lastError)
         }
     }
     
