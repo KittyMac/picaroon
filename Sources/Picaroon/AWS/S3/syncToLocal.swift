@@ -48,7 +48,8 @@ extension HTTPSession {
             }
             
             let localDirectoryUrl = URL(fileURLWithPath: localDirectory)
-            var localFiles: [LocalFile] = []
+            var localFilesByS3Key: [String: LocalFile] = [:]
+            var localFilesSorted: [LocalFile] = []
             if let enumerator = FileManager.default.enumerator(at: localDirectoryUrl,
                                                                includingPropertiesForKeys: [.isRegularFileKey],
                                                                options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
@@ -61,13 +62,16 @@ extension HTTPSession {
                     var s3Key = keyPrefix + relativePath
                     s3Key = s3Key.replacingOccurrences(of: "//", with: "/")
                     
-                    localFiles.append(LocalFile(name: fileURL.lastPathComponent,
-                                                path: fileURL.path,
-                                                s3Key: s3Key))
+                    let localFile = LocalFile(name: fileURL.lastPathComponent,
+                                              path: fileURL.path,
+                                              s3Key: s3Key)
+                    
+                    localFilesByS3Key[s3Key] = localFile
+                    localFilesSorted.append(localFile)
                 }
             }
             
-            localFiles.sort()
+            localFilesSorted.sort()
                     
             var marker: String? = nil
             
@@ -75,8 +79,8 @@ extension HTTPSession {
             // where the last file left off. However, given time drift of user devices it is entirely
             // possible that the sorting will leave gaps. To combat this, we allow up to one extra list
             // API call for continuous pulls.
-            if localFiles.count >= 999 {
-                marker = localFiles[localFiles.count - 999].s3Key
+            if localFilesSorted.count >= 999 {
+                marker = localFilesSorted[localFilesSorted.count - 999].s3Key
             }
             
             if continuous == false {
@@ -84,6 +88,7 @@ extension HTTPSession {
             }
             
             var allObjects: [S3Object] = []
+            var allObjectsByKey: [String: S3Object] = [:]
             var modifiedObjects: [S3Object] = []
             var lastError: String? = nil
             var continuationMarker: String? = nil
@@ -94,21 +99,15 @@ extension HTTPSession {
             
             let processObjects: ([S3Object]) -> () = { objects in
                 
-                var mutableObjectsByKey: [String: S3Object] = [:]
-                for object in objects {
-                    mutableObjectsByKey[object.key] = object
-                }
-                
+                // Record the delta objects into all objects
                 allObjects.append(contentsOf: objects)
                 
-                // Remove any extra local files, remove any object we don't need to download
-                for localFile in localFiles where marker == nil || localFile.s3Key > marker! {
-                    // Does this file exist on the s3?
-                    if mutableObjectsByKey[localFile.s3Key] != nil {
-                        mutableObjectsByKey[localFile.s3Key] = nil
-                        downloadCount += 1
-                    } else {
-                        try? FileManager.default.removeItem(atPath: localFile.path)
+                // Make a quick look up table of delta s3 objects by their key
+                var mutableObjectsByKey: [String: S3Object] = [:]
+                for object in objects {
+                    allObjectsByKey[object.key] = object
+                    if localFilesByS3Key[object.key] == nil {
+                        mutableObjectsByKey[object.key] = object
                     }
                 }
                 
@@ -177,6 +176,14 @@ extension HTTPSession {
                     return
                 }
                 continuationMarker = localContinuationMarker
+                
+                // Delete any local files we have which are not on the S3
+                for localFile in localFilesSorted where marker == nil || localFile.s3Key > marker! {
+                    if allObjectsByKey[localFile.s3Key] == nil {
+                        try? FileManager.default.removeItem(atPath: localFile.path)
+                    }
+                }
+                
                 group.leave()
             }
             

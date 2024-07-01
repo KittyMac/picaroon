@@ -42,8 +42,9 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         HTTPSession.oneshot.beSyncToLocal(credentials: credentials,
                                           keyPrefix: "v1/many/",
                                           localDirectory: "/tmp/many/",
-                                          continuous: true,
+                                          continuous: false,
                                           priority: .low,
+                                          progressCallback: { count, total in print("\(count) of \(total)") },
                                           Flynn.any) { allObjects, newObjects, continuationMarker, error in
             XCTAssertNil(error)
             XCTAssertNotNil(continuationMarker)

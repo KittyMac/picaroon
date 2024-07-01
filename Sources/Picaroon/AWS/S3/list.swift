@@ -8,8 +8,8 @@ import Studding
 import FoundationNetworking
 #endif
 
-public struct S3Object: Equatable {
-    public static func == (lhs: Self, rhs: Self) -> Bool {
+public class S3Object: Equatable {
+    public static func == (lhs: S3Object, rhs: S3Object) -> Bool {
         return lhs.key == rhs.key
     }
     
