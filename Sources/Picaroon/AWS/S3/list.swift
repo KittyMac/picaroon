@@ -197,13 +197,13 @@ extension HTTPSession {
         requestMore(marker: marker)
     }
     
-    internal func beListAllKeysFromS3(credentials: S3Credentials,
-                                      keyPrefix: String,
-                                      marker: String?,
-                                      priority: HTTPSessionPriority,
-                                      progressCallback: @escaping ([S3Object]) -> Void,
-                                      _ sender: Actor,
-                                      _ returnCallback: @escaping ([S3Object], String?, String?) -> Void) {
+    public func beListAllKeysFromS3(credentials: S3Credentials,
+                                    keyPrefix: String,
+                                    marker: String?,
+                                    priority: HTTPSessionPriority,
+                                    progressCallback: @escaping ([S3Object]) -> Void,
+                                    _ sender: Actor,
+                                    _ returnCallback: @escaping ([S3Object], String?, String?) -> Void) {
         unsafeSend { _ in
             var allObjects: [S3Object] = []
             

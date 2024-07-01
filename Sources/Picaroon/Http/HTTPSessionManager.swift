@@ -19,6 +19,14 @@ public enum HTTPSessionPriority {
     case low
     case medium
     case high
+    
+    func increment() -> HTTPSessionPriority {
+        switch self {
+        case .low: return .medium
+        case .medium: return .high
+        default: return .high
+        }
+    }
 }
 
 public class HTTPSessionManager: Actor {
