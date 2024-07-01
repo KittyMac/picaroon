@@ -101,10 +101,6 @@ extension HTTPSession {
                 
                 allObjects.append(contentsOf: objects)
                 
-                sender.unsafeSend { _ in
-                    progressCallback(downloadCount, allObjects.count)
-                }
-                
                 // Remove any extra local files, remove any object we don't need to download
                 for localFile in localFiles where marker == nil || localFile.s3Key > marker! {
                     // Does this file exist on the s3?
@@ -114,6 +110,10 @@ extension HTTPSession {
                     } else {
                         try? FileManager.default.removeItem(atPath: localFile.path)
                     }
+                }
+                
+                sender.unsafeSend { _ in
+                    progressCallback(downloadCount, allObjects.count)
                 }
                 
                 for object in mutableObjectsByKey.values {
@@ -128,6 +128,10 @@ extension HTTPSession {
                             }
                             
                             downloadCount += 1
+                            
+                            sender.unsafeSend { _ in
+                                progressCallback(downloadCount, allObjects.count)
+                            }
                             
                             if let data = data,
                                error == nil {
