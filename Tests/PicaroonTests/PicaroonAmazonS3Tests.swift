@@ -44,7 +44,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                                           localDirectory: "/tmp/many/",
                                           continuous: false,
                                           priority: .low,
-                                          progressCallback: { count, total in print("\(count) of \(total)") },
+                                          progressCallback: { skipped, downloaded, total in print(" skipped: \(skipped), downloaded: \(downloaded), total: \(total)") },
                                           Flynn.any) { allObjects, newObjects, continuationMarker, error in
             XCTAssertNil(error)
             XCTAssertNotNil(continuationMarker)

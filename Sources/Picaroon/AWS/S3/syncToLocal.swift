@@ -27,7 +27,7 @@ extension HTTPSession {
                               localDirectory: String,
                               continuous: Bool,
                               priority: HTTPSessionPriority,
-                              progressCallback: @escaping (Int, Int) -> (),
+                              progressCallback: @escaping (Int, Int, Int) -> (),
                               _ sender: Actor,
                               _ returnCallback: @escaping ([S3Object], [S3Object], String?, String?) -> Void) {
         unsafeSend { _ in
@@ -96,6 +96,7 @@ extension HTTPSession {
             let group = DispatchGroup()
             
             var downloadCount = 0
+            var skippedCount = 0
             
             let processObjects: ([S3Object]) -> () = { objects in
                 
@@ -108,11 +109,13 @@ extension HTTPSession {
                     allObjectsByKey[object.key] = object
                     if localFilesByS3Key[object.key] == nil {
                         mutableObjectsByKey[object.key] = object
+                    } else {
+                        skippedCount += 1
                     }
                 }
                 
                 sender.unsafeSend { _ in
-                    progressCallback(downloadCount, allObjects.count)
+                    progressCallback(skippedCount, downloadCount, allObjects.count)
                 }
                 
                 for object in mutableObjectsByKey.values {
@@ -129,7 +132,7 @@ extension HTTPSession {
                             downloadCount += 1
                             
                             sender.unsafeSend { _ in
-                                progressCallback(downloadCount, allObjects.count)
+                                progressCallback(skippedCount, downloadCount, allObjects.count)
                             }
                             
                             if let data = data,
