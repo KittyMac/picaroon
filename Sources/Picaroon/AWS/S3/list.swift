@@ -223,7 +223,7 @@ extension HTTPSession {
                             }
                         }
                         
-                        if isDone == false {
+                        if isDone == false && error == nil {
                             return requestMore(marker: continuationMarker)
                         }
                     }

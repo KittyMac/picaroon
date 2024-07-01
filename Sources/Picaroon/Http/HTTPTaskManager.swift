@@ -18,7 +18,7 @@ internal class HTTPTaskManager: Actor {
     #if os(Windows)
     private let maxConcurrentTasks = 16
     #else
-    private let maxConcurrentTasks = min(max(Flynn.cores * 4, 4), 128)
+    private let maxConcurrentTasks = min(max(Flynn.cores * 4, 4), 64)
     #endif
     
     private var waitingTasks: [DataTask] = []
