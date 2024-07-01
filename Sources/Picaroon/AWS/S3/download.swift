@@ -1,3 +1,5 @@
+// flynn:ignore Weak Timer Violation
+
 import Foundation
 import Flynn
 import Hitch
@@ -76,7 +78,7 @@ extension HTTPSession {
         let region = credentials.region
         let bucket = credentials.bucket
         
-        let path = key.hasPrefix("/") ? key : "/" + key
+        let path = (key.hasPrefix("/") ? key : "/" + key).replacingOccurrences(of: " ", with: "+")
                 
         let date = NTP.date().toRFC2822()
         
@@ -111,14 +113,16 @@ extension HTTPSession {
             if error == "http 403" || error == "http 503" {
                 NTP.reset()
                 if retry > 0 {
-                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, self) { [weak self] timer in
-                        guard let self = self else { return }
-                        // fputs("aws download http 403, retrying \(retry)\n", stderr)
-                        self.performDownloadFromS3(credentials: credentials,
-                                                   key: key,
-                                                   contentType: contentType,
-                                                   retry: retry - 1,
-                                                   returnCallback)
+                    let actor = Actor()
+                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
+                        HTTPSessionManager.shared.beNew(actor) { session in
+                            // fputs("aws download http 403, retrying \(retry)\n", stderr)
+                            session.performDownloadFromS3(credentials: credentials,
+                                                          key: key,
+                                                          contentType: contentType,
+                                                          retry: retry - 1,
+                                                          returnCallback)
+                        }
                     }
                     return
                 }
@@ -161,7 +165,7 @@ extension HTTPSession {
         let region = credentials.region
         let bucket = credentials.bucket
         
-        let path = key.hasPrefix("/") ? key : "/" + key
+        let path = (key.hasPrefix("/") ? key : "/" + key).replacingOccurrences(of: " ", with: "+")
                 
         let date = NTP.date().toRFC2822()
         
@@ -211,16 +215,18 @@ extension HTTPSession {
             if error == "http 403" || error == "http 503" {
                 NTP.reset()
                 if retry > 0 {
-                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, self) { [weak self] timer in
-                        guard let self = self else { return }
-                        // fputs("aws download http 403, retrying \(retry)\n", stderr)
-                        self.performDownloadFromS3(toFilePath: toFilePath,
-                                                   credentials: credentials,
-                                                   key: key,
-                                                   contentType: contentType,
-                                                   cacheTime: cacheTime,
-                                                   retry: retry - 1,
-                                                   returnCallback)
+                    let actor = Actor()
+                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
+                        HTTPSessionManager.shared.beNew(actor) { session in
+                            // fputs("aws download http 403, retrying \(retry)\n", stderr)
+                            session.performDownloadFromS3(toFilePath: toFilePath,
+                                                          credentials: credentials,
+                                                          key: key,
+                                                          contentType: contentType,
+                                                          cacheTime: cacheTime,
+                                                          retry: retry - 1,
+                                                          returnCallback)
+                        }
                     }
                     return
                 }

@@ -1,3 +1,5 @@
+// flynn:ignore Weak Timer Violation
+
 import Foundation
 import Flynn
 import Hitch
@@ -24,7 +26,7 @@ extension HTTPSession {
         let region = credentials.region
         let bucket = credentials.bucket
 
-        let path = key.hasPrefix("/") ? key : "/" + key
+        let path = (key.hasPrefix("/") ? key : "/" + key).replacingOccurrences(of: " ", with: "+")
         
         let acl = acl ?? "private"
         let storageType = storageType ?? "STANDARD"
@@ -66,17 +68,19 @@ extension HTTPSession {
             if error == "http 403" || error == "http 503" {
                 NTP.reset()
                 if retry > 0 {
-                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, self) { [weak self] timer in
-                        guard let self = self else { return }
-                        // fputs("aws upload http 403, retrying \(retry)\n", stderr)
-                        self.performUploadToS3(credentials: credentials,
-                                               acl: acl,
-                                               storageType: storageType,
-                                               key: key,
-                                               contentType: contentType,
-                                               body: body,
-                                               retry: retry - 1,
-                                               returnCallback)
+                    let actor = Actor()
+                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
+                        HTTPSessionManager.shared.beNew(actor) { session in
+                            // fputs("aws upload http 403, retrying \(retry)\n", stderr)
+                            session.performUploadToS3(credentials: credentials,
+                                                      acl: acl,
+                                                      storageType: storageType,
+                                                      key: key,
+                                                      contentType: contentType,
+                                                      body: body,
+                                                      retry: retry - 1,
+                                                      returnCallback)
+                        }
                     }
                     return
                 }
