@@ -42,7 +42,7 @@ public class HTTPSessionManager: Actor {
     #if os(Windows)
     private let maxConcurrentSessions = 16
     #else
-    private let maxConcurrentSessions = min(max(Flynn.cores * 3, 4), 32)
+    private let maxConcurrentSessions = min(max(Flynn.cores * 4, 4), 256)
     #endif
     
     private var waitingURLSessions: [URLSession] = []
