@@ -12,8 +12,13 @@ public class NTP {
     private static var ntpOffset: TimeInterval? = nil
     
     private static var lastSyncDate = Date.distantPast
+    private static let lock = NSLock()
+    private static var disabled = false
     
     private static func sync(domain: String = "pool.ntp.org") {
+        lock.lock(); defer { lock.unlock() }
+
+        guard disabled == false else { return }
         guard abs(lastSyncDate.timeIntervalSinceNow) > 5 * 60 else { return }
         
         lastSyncDate = Date()
@@ -23,7 +28,13 @@ public class NTP {
         
         guard let socket = Socket(udp: true) else { return }
         
-        guard socket.connectTo(address: address, port: 123) == 0 else { return }
+        socket.setWriteTimeout(milliseconds: 5000)
+        socket.setReadTimeout(milliseconds: 5000)
+        
+        guard socket.connectTo(address: address, port: 123) == 0 else {
+            disabled = true
+            return
+        }
         
         let msg = Hitch(garbage: 48)
         guard let raw = msg.mutableRaw() else { return }
@@ -32,9 +43,15 @@ public class NTP {
             raw[idx] = 0
         }
         raw[0] = 0x1B
-        guard socket.send(hitch: msg) > 0 else { return }
+        guard socket.send(hitch: msg) > 0 else {
+            disabled = true
+            return
+        }
         
-        guard socket.recv(bytes: raw, count: 48) > 0 else { return }
+        guard socket.recv(bytes: raw, count: 48) > 0 else {
+            disabled = true
+            return
+        }
         
         let time = UInt64((raw + 40).withMemoryRebound(to: UInt64.self, capacity: 1) {
             $0.pointee
