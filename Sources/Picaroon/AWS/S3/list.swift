@@ -214,16 +214,27 @@ extension HTTPSession {
                                          keyPrefix: keyPrefix,
                                          marker: marker,
                                          self) { moreObjects, continuationMarker, isDone, error in
+                        
+                        if let error = error {
+                            sender.unsafeSend { _ in
+                                returnCallback(allObjects, continuationMarker, error)
+                            }
+                            return
+                        }
+
+                        
                         allObjects.append(contentsOf: moreObjects)
                         
                         sender.unsafeSend { _ in
                             progressCallback(moreObjects)
-                            if isDone || error != nil {
-                                returnCallback(allObjects, continuationMarker, error)
-                            }
                         }
                         
-                        if isDone == false && error == nil {
+                        if isDone {
+                            sender.unsafeSend { _ in
+                                returnCallback(allObjects, continuationMarker, nil)
+                            }
+                            return
+                        } else {
                             return requestMore(marker: continuationMarker)
                         }
                     }
