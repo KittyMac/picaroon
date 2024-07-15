@@ -29,7 +29,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                                                 Flynn.any) { objects, continuationMarker, error in
             XCTAssertNil(error)
             XCTAssertNotNil(continuationMarker)
-            XCTAssertEqual(objects.count, 1349)
+            XCTAssertEqual(objects.count, 2345)
             expectation.fulfill()
         }
         

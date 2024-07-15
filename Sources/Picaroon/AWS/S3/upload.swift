@@ -65,7 +65,7 @@ extension HTTPSession {
                        proxy: nil,
                        body: body,
                        self) { data, response, error in
-            if error == "http 403" || error == "http 503" {
+            if error == "http 403" || error == "http 503" || error == "http 500" {
                 NTP.reset()
                 if retry > 0 {
                     let actor = Actor()
