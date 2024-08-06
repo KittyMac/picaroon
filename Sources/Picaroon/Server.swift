@@ -106,12 +106,12 @@ public class Server<T: UserSession> {
         repeat {
             autoreleasepool {
                 var clientAddress = ""
-                if config.debug {
-                    fputs("accept on \(config.address.description) \(config.port)\n", stderr)
+                if self.config.debug {
+                    fputs("accept on \(self.config.address.description) \(self.config.port)\n", stderr)
                 }
                 if let newSocket = serverSocket.accept(blocking: true, clientAddress: &clientAddress) {
-                    if config.debug {
-                        fputs("read on \(config.address.description) \(config.port)\n", stderr)
+                    if self.config.debug {
+                        fputs("read on \(self.config.address.description) \(self.config.port)\n", stderr)
                     }
                     ConnectionManager.shared.beOpen(socket: newSocket,
                                                     clientAddress: clientAddress,
