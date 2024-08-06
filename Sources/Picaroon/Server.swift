@@ -97,14 +97,22 @@ public class Server<T: UserSession> {
     @discardableResult
     private func loop() -> Bool {
         guard let serverSocket = Socket(blocking: true) else { return false }
-        
+        if config.debug {
+            fputs("listen on \(config.address.description) \(config.port)\n", stderr)
+        }
         serverSocket.listen(address: config.address.description,
                             port: config.port)
 
         repeat {
             autoreleasepool {
                 var clientAddress = ""
+                if config.debug {
+                    fputs("accept on \(config.address.description) \(config.port)\n", stderr)
+                }
                 if let newSocket = serverSocket.accept(blocking: true, clientAddress: &clientAddress) {
+                    if config.debug {
+                        fputs("read on \(config.address.description) \(config.port)\n", stderr)
+                    }
                     ConnectionManager.shared.beOpen(socket: newSocket,
                                                     clientAddress: clientAddress,
                                                     config: self.config,
