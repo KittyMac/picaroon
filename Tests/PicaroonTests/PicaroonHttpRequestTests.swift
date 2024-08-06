@@ -33,6 +33,48 @@ final class picaroonHttpRequestTests: XCTestCase {
         XCTAssertTrue(request == nil)
     }
     
+    func testLowerCaseHeaders() {
+        let content: HalfHitch = """
+        POST /? HTTP/1.1\r
+        host: 127.0.0.1:49509\r
+        accept: */*\r
+        authorization: Bearer HelloWorld\r
+        cache-control: no-cache\r
+        user-agent: xctest/18143 CFNetwork/1237 Darwin/20.4.0\r
+        connection: keep-alive\r
+        cookie: FABE1A47-B2FD-4CC3-AB92-D1F570002158=6AF73CB5-4D6A-4CBD-A893-89074F1F51CF\r
+        session-id: 6AF73CB5-4D6A-4CBD-A893-89074F1F51CF\r
+        device-id: 0123456789\r
+        x-forwarded-for: 192.168.1.1\r
+        waiting-count: 3\r
+        active-count: 7\r
+        max-concurrent: 20\r
+        accept-language: en-us\r
+        accept-encoding: gzip, deflate\r\n\r\n
+        """
+        
+        let request = HttpRequest(config: serverConfig,
+                                  request: content.raw()!,
+                                  size: content.count)!
+        
+        XCTAssertEqual(request.method, HttpMethod.POST)
+        XCTAssertEqual(request.url, "/")
+        XCTAssertEqual(request.userAgent, "xctest/18143 CFNetwork/1237 Darwin/20.4.0")
+        XCTAssertEqual(request.authorization, "Bearer HelloWorld")
+        XCTAssertEqual(request.connection, "keep-alive")
+        XCTAssertEqual(request.cookie, "FABE1A47-B2FD-4CC3-AB92-D1F570002158=6AF73CB5-4D6A-4CBD-A893-89074F1F51CF")
+        XCTAssertEqual(request.cookies["FABE1A47-B2FD-4CC3-AB92-D1F570002158"], "6AF73CB5-4D6A-4CBD-A893-89074F1F51CF")
+        XCTAssertEqual(request.sid, nil)
+        XCTAssertEqual(request.sessionId, "6AF73CB5-4D6A-4CBD-A893-89074F1F51CF")
+        XCTAssertEqual(request.xForwardedFor, "192.168.1.1")
+        XCTAssertEqual(request.deviceId, "0123456789")
+        XCTAssertEqual(request.waitingCount, "3")
+        XCTAssertEqual(request.activeCount, "7")
+        XCTAssertEqual(request.maxConcurrent, "20")
+        XCTAssertEqual(request.acceptLanguage, "en-us")
+        XCTAssertEqual(request.acceptEncoding, "gzip, deflate")
+    }
+    
     func testCookies() {
         let content: HalfHitch = """
         POST /? HTTP/1.1\r
