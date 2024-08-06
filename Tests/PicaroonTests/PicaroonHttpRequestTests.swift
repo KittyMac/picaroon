@@ -7,6 +7,32 @@ final class picaroonHttpRequestTests: XCTestCase {
     
     let serverConfig = ServerConfig(address: "127.0.0.1", port: 8080)
     
+    func testNonCompliantPacket1() {
+        let content: HalfHitch = """
+        nklmabhdfkjbskldfbslblsb dlcvbladbcfladbc\r
+        \r
+        Hello World
+        """
+        
+        let request: HttpRequest? = HttpRequest(config: serverConfig,
+                                                request: content.raw()!,
+                                                size: content.count)
+        
+        XCTAssertTrue(request == nil)
+    }
+    
+    func testNonCompliantPacket2() {
+        let content: HalfHitch = """
+        POST /? HTTP/1.1\r
+        """
+        
+        let request: HttpRequest? = HttpRequest(config: serverConfig,
+                                                request: content.raw()!,
+                                                size: content.count)
+        
+        XCTAssertTrue(request == nil)
+    }
+    
     func testCookies() {
         let content: HalfHitch = """
         POST /? HTTP/1.1\r

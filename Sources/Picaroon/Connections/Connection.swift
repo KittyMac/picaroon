@@ -266,11 +266,26 @@ public class Connection: Actor, AnyConnection {
         let bytesRead = socket.recv(bytes: currentPtr,
                                     count: (endPtr - currentPtr))
         if bytesRead < 0 {
+            if config.debug {
+                fputs("Connection unexpectedly closed\n", stderr)
+            }
+
             return
         }
         if bytesRead == 0 {
             if (isProcessingRequest == true && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > serverTimeout) ||
                 (isProcessingRequest == false && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > clientTimeout) {
+                
+                if config.debug {
+                    if (isProcessingRequest == true && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > serverTimeout) {
+                        fputs("Connection failed: server timeout\n", stderr)
+                    } else if (isProcessingRequest == false && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > clientTimeout) {
+                        fputs("Connection failed: client timeout\n", stderr)
+                    } else {
+                        fputs("Connection failed: unknown end of data\n", stderr)
+                    }
+                }
+                
                 _beSendInternalError()
                 ConnectionManager.shared.beClose(connection: self)
                 return
@@ -284,6 +299,10 @@ public class Connection: Actor, AnyConnection {
 
         // if we're reading more data than our buffer allows, end the connection
         if currentPtr >= endPtr {
+            if config.debug {
+                fputs("Connection failed: incoming packet too large\n", stderr)
+            }
+            
             _beSendInternalError()
             ConnectionManager.shared.beClose(connection: self)
             return
@@ -296,6 +315,11 @@ public class Connection: Actor, AnyConnection {
             // We have an incomplete https request, wait for more data and try again
             self.unsafePriority = 99
             return
+        }
+        
+        if config.debug,
+           let desc = httpRequest.description{
+            fputs("\(desc)\n", stderr)
         }
         
         self.unsafeClientAddress = socket.clientAddress()
@@ -312,6 +336,11 @@ public class Connection: Actor, AnyConnection {
         // will need to ensure the return passes back the correct session UUIDs
         if  let staticStorageHandler = self.staticStorageHandler,
             let httpResponse = staticStorageHandler(self, config, httpRequest) {
+            
+            if config.debug {
+                fputs("Connection request handled via static handler\n", stderr)
+            }
+            
             _beSendIfModified(httpRequest: httpRequest,
                               httpResponse: httpResponse)
             return
@@ -341,9 +370,16 @@ public class Connection: Actor, AnyConnection {
                                                                 oldJavascriptSessionUUID, newJavascriptSessionUUID) {
                 self.unsafeUserSession = userSession
                 
+                if config.debug {
+                    fputs("Connection request handled via new user session\n", stderr)
+                }
+                
                 userSession.beHandleRequest(connection: self,
                                             httpRequest: httpRequest)
                 return
+            }
+            if config.debug {
+                fputs("Connection failed: failed sessionUUID\n", stderr)
             }
             return _beSendInternalError()
         }
@@ -352,6 +388,10 @@ public class Connection: Actor, AnyConnection {
             if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
                                                                 oldJavascriptSessionUUID, oldJavascriptSessionUUID) {
                 self.unsafeUserSession = userSession
+                
+                if config.debug {
+                    fputs("Connection request handled via user session reassociation\n", stderr)
+                }
                 
                 userSession.beHandleRequest(connection: self,
                                             httpRequest: httpRequest)
@@ -367,9 +407,17 @@ public class Connection: Actor, AnyConnection {
         if let userSession = userSessionManager.get(cookieSessionUUID, javascriptSessionUUID) {
             self.unsafeUserSession = userSession
             
+            if config.debug {
+                fputs("Connection request handled via user session\n", stderr)
+            }
+            
             userSession.beHandleRequest(connection: self,
                                         httpRequest: httpRequest)
             return
+        }
+        
+        if config.debug {
+            fputs("Connection failed: failed to attach sessionUUID to actor\n", stderr)
         }
 
         return _beSendInternalError()
