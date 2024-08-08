@@ -56,8 +56,8 @@ public class HTTPSession: Actor {
     
     fileprivate init(longshot: Bool) {
         let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 120.0
-        config.timeoutIntervalForResource = 120.0
+        config.timeoutIntervalForRequest = 300.0
+        config.timeoutIntervalForResource = 300.0
         config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
