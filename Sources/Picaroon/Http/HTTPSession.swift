@@ -44,7 +44,7 @@ public class HTTPSession: Actor {
     fileprivate init(oneshot: Bool) {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 20.0
-        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+        config.httpMaximumConnectionsPerHost = 1
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
         config.httpCookieStorage = nil
@@ -58,13 +58,13 @@ public class HTTPSession: Actor {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 120.0
         config.timeoutIntervalForResource = 120.0
-        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+        config.httpMaximumConnectionsPerHost = 1
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
         config.httpCookieStorage = nil
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        config.httpShouldUsePipelining = true
+        config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
     }
     

@@ -145,7 +145,7 @@ internal class HTTPTaskManager: Actor {
                     }
                     #endif
                     
-                    session.flush {
+                    //session.reset {
                         Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
                             guard let self = self else { return returnCallback(nil, nil, nil) }
                             self.beResume(session: session,
@@ -155,7 +155,7 @@ internal class HTTPTaskManager: Actor {
                                           self,
                                           returnCallback)
                         }
-                    }
+                    //}
                     return
                 }
                 

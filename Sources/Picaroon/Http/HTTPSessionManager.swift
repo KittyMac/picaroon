@@ -35,7 +35,7 @@ public class HTTPSessionManager: Actor {
         for _ in 0..<maxConcurrentSessions {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 20.0
-            config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+            config.httpMaximumConnectionsPerHost = 1
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             config.httpCookieAcceptPolicy = .always
@@ -79,12 +79,12 @@ public class HTTPSessionManager: Actor {
         guard let httpSession = httpSession else { return }
         
         httpSession.beBegin(urlSession: urlSession) {
-            urlSession.reset {
+            //urlSession.reset {
                 self.unsafeSend { _ in
                     self.waitingURLSessions.append(urlSession)
                     self.checkForMoreSessions()
                 }
-            }
+            //}
         }
     }
     
