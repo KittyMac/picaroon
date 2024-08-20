@@ -200,6 +200,10 @@ public class Connection: Actor, AnyConnection {
     internal func _beSendInternalError() {
         _beSend(httpResponse: HttpStaticResponse.internalServerError)
     }
+    
+    internal func _beSendTooLargeError() {
+        _beSend(httpResponse: HttpStaticResponse.requestTooLarge)
+    }
 
     internal func _beSendServiceUnavailable() {
         _beSend(httpResponse: HttpStaticResponse.serviceUnavailable)
@@ -254,6 +258,9 @@ public class Connection: Actor, AnyConnection {
         // Whether we process one or not, we call beNextCommand() to check again in
         // the future for another command.
         if socket.isClosed() {
+            if config.debug {
+                fputs(" dropping already closed connection\n", stderr)
+            }
             ConnectionManager.shared.beClose(connection: self)
             return
         }
@@ -269,7 +276,6 @@ public class Connection: Actor, AnyConnection {
             if config.debug {
                 fputs("Connection unexpectedly closed \(bytesRead)\n", stderr)
             }
-
             return
         }
         if bytesRead == 0 {
@@ -303,7 +309,7 @@ public class Connection: Actor, AnyConnection {
                 fputs("Connection failed: incoming packet too large\n", stderr)
             }
             
-            _beSendInternalError()
+            _beSendTooLargeError()
             ConnectionManager.shared.beClose(connection: self)
             return
         }
@@ -312,13 +318,16 @@ public class Connection: Actor, AnyConnection {
         guard let httpRequest = HttpRequest(config: config,
                                             request: buffer,
                                             size: currentPtr - buffer) else {
+            if config.debug {
+                fputs(" failed parsing packet of \(currentPtr - buffer) bytes; expect more data\n", stderr)
+            }
             // We have an incomplete https request, wait for more data and try again
             self.unsafePriority = 99
             return
         }
         
         if config.debug,
-           let desc = httpRequest.description{
+           let desc = httpRequest.description {
             fputs("\(desc)\n", stderr)
         }
         
