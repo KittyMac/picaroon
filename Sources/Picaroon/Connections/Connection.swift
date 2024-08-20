@@ -267,7 +267,7 @@ public class Connection: Actor, AnyConnection {
                                     count: (endPtr - currentPtr))
         if bytesRead < 0 {
             if config.debug {
-                fputs("Connection unexpectedly closed\n", stderr)
+                fputs("Connection unexpectedly closed \(bytesRead)\n", stderr)
             }
 
             return
