@@ -33,8 +33,8 @@ benchmark:
 	/opt/homebrew/bin/wrk -t 4 -c 100 http://localhost:8080/hello/world
 
 release:
-	-docker buildx create --name cluster_builder203
-	-DOCKER_HOST=ssh://rjbowli@192.168.111.203 docker buildx create --name cluster_builder203 --platform linux/amd64 --append
+	-DOCKER_HOST=ssh://rjbowli@192.168.111.203 docker buildx create --name cluster_builder203 --platform linux/amd64
+	-docker buildx create --name cluster_builder203 --platform linux/arm64 --append
 	-docker buildx use cluster_builder203
 	-docker buildx inspect --bootstrap
 	-docker login
