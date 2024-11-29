@@ -36,8 +36,8 @@ public class Socket {
     @usableFromInline
     var socketFd: Int32
         
-    private init?(socketFd: Int32,
-                  blocking: Bool = true) {
+    public init?(socketFd: Int32,
+                 blocking: Bool = true) {
         guard checkWAS() else { return nil }
         
         self.socketFd = socketFd

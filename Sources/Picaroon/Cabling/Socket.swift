@@ -40,8 +40,8 @@ public class Socket {
     @usableFromInline
     var socketFd: Int32
         
-    private init?(socketFd: Int32,
-                  blocking: Bool = true) {
+    public init?(socketFd: Int32,
+                 blocking: Bool = true) {
         self.socketFd = socketFd
         
         guard socketFd >= 0 else { return nil }
