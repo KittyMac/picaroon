@@ -293,4 +293,11 @@ public class HttpResponse {
                 socket: socket,
                 userSession: userSession)
     }
+    
+    public func send(socket: SocketSendable) {
+        process(config: nil,
+                hitch: nil,
+                socket: socket,
+                userSession: nil)
+    }
 }
