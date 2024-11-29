@@ -68,6 +68,8 @@ public class TestConnection: AnyConnection {
     public func beSendSuccess(_ message: String) -> Self { return self }
     public func beSendError(_ error: String) -> Self { return self }
     public func beSendNotModified() -> Self { return self }
+    
+    public func unsafeFileDescriptor() -> Int32 { return 0 }
 }
 
 final class picaroonServicesTests: XCTestCase {

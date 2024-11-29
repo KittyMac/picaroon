@@ -25,6 +25,8 @@ public protocol AnyConnection {
     @discardableResult func beSendError(_ error: String) -> Self
     
     @discardableResult func beSendNotModified() -> Self
+    
+    func unsafeFileDescriptor() -> Int32
 }
 
 public class Connection: Actor, AnyConnection {
@@ -163,6 +165,10 @@ public class Connection: Actor, AnyConnection {
 
     deinit {
         buffer.deallocate()
+    }
+    
+    public func unsafeFileDescriptor() -> Int32 {
+        return socket.fd()
     }
     
     internal func _beSend(httpResponse: HttpResponse) {
