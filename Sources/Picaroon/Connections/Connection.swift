@@ -8,7 +8,7 @@ import Hitch
 // swiftlint:disable line_length
 // swiftlint:disable cyclomatic_complexity
 
-public protocol AnyConnection {
+public protocol AnyConnection: Codable {
     @discardableResult func beSend(httpResponse: HttpResponse) -> Self
     @discardableResult func beSendIfModified(httpRequest: HttpRequest,
                                              httpResponse: HttpResponse) -> Self
@@ -25,6 +25,11 @@ public protocol AnyConnection {
     @discardableResult func beSendError(_ error: String) -> Self
     
     @discardableResult func beSendNotModified() -> Self
+}
+
+extension AnyConnection {
+    public func encode(to encoder: Encoder) throws { }
+    public init(from decoder: Decoder) throws { try self.init(from: decoder) }
 }
 
 public class Connection: Actor, AnyConnection {
