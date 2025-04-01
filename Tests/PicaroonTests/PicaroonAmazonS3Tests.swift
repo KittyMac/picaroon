@@ -17,7 +17,8 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                                     baseDomain: "amazonaws.com",
                                     service: "s3",
                                     region: "us-west-2",
-                                    bucket: "sp-rover-unittest-west")
+                                    bucket: "sp-rover-unittest-west",
+                                    cloudfront: "d3dqa4kn9803od.cloudfront.net")
     
     func testListAll() {
         let expectation = XCTestExpectation(description: #function)
