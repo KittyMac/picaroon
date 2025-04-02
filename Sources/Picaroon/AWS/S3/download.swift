@@ -137,7 +137,7 @@ extension HTTPSession {
                         session.performDownloadFromS3(credentials: credentials,
                                                       key: key,
                                                       contentType: contentType,
-                                                      retry: retry,
+                                                      retry: 3,
                                                       returnCallback)
                     }
                     return
@@ -313,7 +313,7 @@ extension HTTPSession {
                                                       key: key,
                                                       contentType: contentType,
                                                       cacheTime: cacheTime,
-                                                      retry: retry,
+                                                      retry: 3,
                                                       returnCallback)
                     }
                     return
