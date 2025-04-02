@@ -121,7 +121,7 @@ extension HTTPSession {
                 for object in mutableObjectsByKey.values {
                     group.enter()
                     HTTPSessionManager.shared.beNew(priority: priority, self) { session in
-                        session.beDownloadFromS3(credentials: credentials,
+                        session.beDownloadFromS3(credentials: credentials.noCloudFront(),
                                                  key: object.key,
                                                  contentType: .any,
                                                  self) { data, source, response, error in

@@ -37,6 +37,17 @@ public struct S3Credentials: Codable {
         self.bucket = bucket
         self.cloudfront = cloudfront
     }
+    
+    public func noCloudFront() -> S3Credentials {
+        return S3Credentials(url: url,
+                             accessKey: accessKey,
+                             secretKey: secretKey,
+                             baseDomain: baseDomain,
+                             service: service,
+                             region: region,
+                             bucket: bucket,
+                             cloudfront: nil)
+    }
 }
 
 extension URL {
