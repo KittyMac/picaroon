@@ -124,7 +124,7 @@ extension HTTPSession {
                         session.beDownloadFromS3(credentials: credentials,
                                                  key: object.key,
                                                  contentType: .any,
-                                                 self) { data, response, error in
+                                                 self) { data, source, response, error in
                             if let error = error {
                                 lastError = error
                             }

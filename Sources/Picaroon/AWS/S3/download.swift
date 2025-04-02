@@ -74,7 +74,7 @@ extension HTTPSession {
                                                key: String,
                                                contentType: HttpContentType,
                                                retry: Int,
-                                               _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+                                               _ returnCallback: @escaping (Data?, HttpSource?, HTTPURLResponse?, String?) -> Void) {
         guard let cloudfront = credentials.cloudfront else {
             return performDownloadFromS3(credentials: credentials,
                                          key: key,
@@ -133,7 +133,7 @@ extension HTTPSession {
                 }
             }
             
-            returnCallback(data, response, error)
+            returnCallback(data, .cloudfront, response, error)
         }
     }
     
@@ -141,7 +141,7 @@ extension HTTPSession {
                                        key: String,
                                        contentType: HttpContentType,
                                        retry: Int,
-                                       _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+                                       _ returnCallback: @escaping (Data?, HttpSource?, HTTPURLResponse?, String?) -> Void) {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
         let baseDomain = credentials.baseDomain
@@ -165,7 +165,7 @@ extension HTTPSession {
                                 "/{0}{1}" << [bucket, path])
         
         guard let signature = try? HMAC(key: secretKey, variant: .sha1).authenticate(auth.dataNoCopy().bytes).toBase64() else {
-            return returnCallback(nil, nil, "Failed to generate authorization token")
+            return returnCallback(nil, nil, nil, "Failed to generate authorization token")
         }
         
         // print("[s3] download \(retry) from \(url)")
@@ -201,14 +201,14 @@ extension HTTPSession {
                 }
             }
             
-            returnCallback(data, response, error)
+            returnCallback(data, .s3, response, error)
         }
     }
             
     internal func _beDownloadFromS3(credentials: S3Credentials,
                                     key: String,
                                     contentType: HttpContentType,
-                                    _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+                                    _ returnCallback: @escaping (Data?, HttpSource?, HTTPURLResponse?, String?) -> Void) {
         return performDownloadFromCloudfront(credentials: credentials,
                                              key: key,
                                              contentType: contentType,
