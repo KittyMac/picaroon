@@ -77,8 +77,10 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                     print ("LOADED FROM CACHE WITHOUT REQUEST")
                 case .notModified:
                     print ("LOADED FROM CACHE NOT MODIFIED")
-                case .network:
-                    print ("LOADED FROM NETWORK")
+                case .s3:
+                    print ("LOADED FROM S3")
+                case .cloudfront:
+                    print ("LOADED FROM CLOUDFRONT")
                 }
             }
             

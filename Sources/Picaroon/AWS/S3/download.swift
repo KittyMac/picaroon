@@ -64,7 +64,8 @@ extension URL {
 public enum HttpSource {
     case cache
     case notModified
-    case network
+    case s3
+    case cloudfront
 }
 
 extension HTTPSession {
@@ -344,7 +345,7 @@ extension HTTPSession {
                 ], ofItemAtPath: fileUrl.path)
             }
             
-            return returnCallback(data, .network, response, error)
+            return returnCallback(data, .cloudfront, response, error)
         }
     }
     
@@ -474,7 +475,7 @@ extension HTTPSession {
                 ], ofItemAtPath: fileUrl.path)
             }
             
-            return returnCallback(data, .network, response, error)
+            return returnCallback(data, .s3, response, error)
         }
     }
     
