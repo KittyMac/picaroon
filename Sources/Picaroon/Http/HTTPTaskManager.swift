@@ -70,6 +70,7 @@ internal class HTTPTaskManager: Actor {
                             request: URLRequest,
                             proxy: String?,
                             timeoutRetry: Int,
+                            retryAnyError: Bool,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
 
         let task = session.dataTask(with: request) { data, response, error in
@@ -120,6 +121,18 @@ internal class HTTPTaskManager: Actor {
                 }
                 #endif
                 
+                if retryAnyError {
+                    // Any transport error
+                    if let error = error {
+                        shouldBeRetried = "retry any error: \(error)"
+                    }
+                    // Any non-success HTTP error
+                    if let httpResponse = response as? HTTPURLResponse,
+                       httpResponse.statusCode < 200 || httpResponse.statusCode > 299 {
+                        shouldBeRetried = "retry any error: http \(httpResponse.statusCode)"
+                    }
+                }
+                
                 // Retries on specific error string content
                 if let errorString = error?.localizedDescription,
                    timeoutRetry > 0 {
@@ -152,6 +165,7 @@ internal class HTTPTaskManager: Actor {
                                           request: newRequest,
                                           proxy: proxy,
                                           timeoutRetry: timeoutRetry - 1,
+                                          retryAnyError: retryAnyError,
                                           self,
                                           returnCallback)
                         }

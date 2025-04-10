@@ -378,4 +378,25 @@ final class PicaroonHttpSessionTests: XCTestCase {
         
         wait(for: [expectation], timeout: 600)
     }
+    
+    func testLongshotRetryOnAnyError() {
+        let expectation = XCTestExpectation(description: #function)
+        
+        HTTPSession.longshot.beRequest(url: "https://httpstat.us/502",
+                          httpMethod: "GET",
+                          params: [:],
+                          headers: [:],
+                          cookies: nil,
+                          timeoutRetry: timeoutRetry,
+                          proxy: nil,
+                          body: nil,
+                          Flynn.any) { data, response, error in
+            XCTAssertEqual(error, "http 502")
+            XCTAssertNotNil(data)
+            
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 600)
+    }
 }

@@ -34,11 +34,13 @@ public class HTTPSession: Actor {
     private var outstandingRequests = 0
     
     private var firstTimeCalled = true
+    private let retryAnyError: Bool
     
     public init(cookies: [HTTPCookie],
                 _ returnCallback: @escaping (HTTPSession) -> ()) {
         sessionCookies = cookies
         beginCallback = returnCallback
+        retryAnyError = false
     }
     
     fileprivate init(oneshot: Bool) {
@@ -52,6 +54,7 @@ public class HTTPSession: Actor {
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
+        retryAnyError = false
     }
     
     fileprivate init(longshot: Bool) {
@@ -66,6 +69,7 @@ public class HTTPSession: Actor {
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         config.httpShouldUsePipelining = true
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
+        retryAnyError = true
     }
     
     private func releaseUrlSession() {
@@ -121,6 +125,7 @@ public class HTTPSession: Actor {
                                         request: request,
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
+                                        retryAnyError: retryAnyError,
                                         self) { data, response, error in
             let (data2, respose2, error2) = handleTaskResponse(data: data,
                                                                response: response,
@@ -168,6 +173,7 @@ public class HTTPSession: Actor {
                                         request: request,
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
+                                        retryAnyError: retryAnyError,
                                         self) { data, response, error in
             let (data2, respose2, error2) = handleTaskResponse(data: data,
                                                                response: response,
