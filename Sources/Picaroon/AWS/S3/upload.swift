@@ -46,7 +46,7 @@ extension HTTPSession {
                                 storageType,
                                 "/{0}{1}" << [bucket, path])
         
-        guard let signature = try? HMAC(key: secretKey, variant: .sha1).authenticate(auth.dataNoCopy().bytes).toBase64() else {
+        guard let signature = try? HMAC(key: secretKey, variant: .sha1).authenticate(auth.dataNoCopy().byteArray).toBase64() else {
             return returnCallback(nil, nil, "Failed to generate authorization token")
         }
                             
