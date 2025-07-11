@@ -50,7 +50,7 @@ public class HTTPSessionManager: Actor {
     #if os(Windows)
     private let maxConcurrentSessions = 16
     #elseif os(Linux)
-    private let maxConcurrentSessions = 512
+    private let maxConcurrentSessions = 128
     #else
     private let maxConcurrentSessions = min(max(Flynn.cores * 4, 4), 64)
     #endif
