@@ -13,7 +13,12 @@ fileprivate struct DataTask: Equatable {
 
 internal class HTTPTaskManager: Actor {
     internal static let shared = HTTPTaskManager()
-    private override init() { }
+    private override init() {
+        super.init()
+        
+        unsafePriority = 9999
+        unsafeMessageBatchSize = 9999
+    }
     
     #if os(Windows)
     private let maxConcurrentTasks = 16

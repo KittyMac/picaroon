@@ -41,6 +41,10 @@ public class HTTPSession: Actor {
         sessionCookies = cookies
         beginCallback = returnCallback
         retryAnyError = false
+        
+        super.init()
+        unsafePriority = 9999
+        unsafeMessageBatchSize = 9999
     }
     
     fileprivate init(oneshot: Bool) {
@@ -55,6 +59,10 @@ public class HTTPSession: Actor {
         config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
         retryAnyError = false
+        
+        super.init()
+        unsafePriority = 9999
+        unsafeMessageBatchSize = 9999
     }
     
     fileprivate init(longshot: Bool) {
@@ -70,6 +78,10 @@ public class HTTPSession: Actor {
         config.httpShouldUsePipelining = true
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
         retryAnyError = true
+        
+        super.init()
+        unsafePriority = 9999
+        unsafeMessageBatchSize = 9999
     }
     
     private func releaseUrlSession() {
