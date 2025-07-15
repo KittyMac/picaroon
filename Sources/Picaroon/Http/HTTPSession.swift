@@ -44,7 +44,7 @@ public class HTTPSession: Actor {
         
         super.init()
         unsafePriority = 9999
-        unsafeMessageBatchSize = 9999
+        unsafeMessageBatchSize = 100
     }
     
     fileprivate init(oneshot: Bool) {
@@ -62,7 +62,7 @@ public class HTTPSession: Actor {
         
         super.init()
         unsafePriority = 9999
-        unsafeMessageBatchSize = 9999
+        unsafeMessageBatchSize = 100
     }
     
     fileprivate init(longshot: Bool) {
@@ -81,7 +81,7 @@ public class HTTPSession: Actor {
         
         super.init()
         unsafePriority = 9999
-        unsafeMessageBatchSize = 9999
+        unsafeMessageBatchSize = 100
     }
     
     private func releaseUrlSession() {
