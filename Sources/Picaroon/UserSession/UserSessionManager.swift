@@ -70,9 +70,9 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
             ConnectionManager.shared.beClose(session: userSession)
         }
         
-        // Remove the most inactive sessions until we get back under our maximum
+        // Remove the sessions with the shorted inactivity timeouts
         if sessionsByCombinedSessionUUID.count > config.maximumSessions {
-            var sorted = sessionsByCombinedSessionUUID.values.sorted(by: {  $0.unsafeLastActivity() < $1.unsafeLastActivity() })
+            var sorted = sessionsByCombinedSessionUUID.values.sorted(by: {  $0.unsafeActivityTimeoutEpoch() < $1.unsafeActivityTimeoutEpoch() })
             while sessionsByCombinedSessionUUID.count > config.maximumSessions && sorted.count > 0 {
                 let userSession = sorted.removeFirst()
                 userSession.unsafeExpirationCode = 2

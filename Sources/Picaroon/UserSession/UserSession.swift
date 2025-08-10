@@ -49,24 +49,19 @@ open class UserSession: Actor {
     
     var unsafeSessionHeaders: [Hitch] = []
     
-    private let lastActivityLock = NSLock()
-    private var lastActivity: Date = Date()
+    private var lastActivityEpoch: TimeInterval = Date().timeIntervalSince1970
     public var safeSessionActivityTimeout: TimeInterval
     
     public var unsafeExpirationCode: Int = 0
     
     func unsafeIsExpired() -> Bool {
-        lastActivityLock.lock(); defer { lastActivityLock.unlock() }
-        return abs(lastActivity.timeIntervalSinceNow) > safeSessionActivityTimeout
+        return Date().timeIntervalSince1970 > (lastActivityEpoch + safeSessionActivityTimeout)
     }
     
-    func unsafeLastActivity() -> Date {
-        lastActivityLock.lock();
-        let date = lastActivity
-        lastActivityLock.unlock()
-        return date
+    func unsafeActivityTimeoutEpoch() -> TimeInterval {
+        return lastActivityEpoch + safeSessionActivityTimeout
     }
-
+    
     func unsafeReassociationIsAllowed() -> Bool {
         guard let date = allowReassociationFromDate else { return false }
         allowReassociationFromDate = nil
@@ -112,7 +107,7 @@ open class UserSession: Actor {
                                    httpRequest: HttpRequest) {
         if safeHandleServiceRequest(connection: connection,
                                     httpRequest: httpRequest) {
-            lastActivity = Date()
+            lastActivityEpoch = Date().timeIntervalSince1970
             return
         }
         
