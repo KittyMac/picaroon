@@ -63,6 +63,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         
         // Remove any inactive sessions
         for userSession in sessionsByCombinedSessionUUID.values where userSession.unsafeIsExpired() {
+            userSession.unsafeExpirationCode = 1
             sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
             sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
             sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
@@ -74,6 +75,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
             var sorted = sessionsByCombinedSessionUUID.values.sorted(by: {  $0.unsafeLastActivity() < $1.unsafeLastActivity() })
             while sessionsByCombinedSessionUUID.count > config.maximumSessions && sorted.count > 0 {
                 let userSession = sorted.removeFirst()
+                userSession.unsafeExpirationCode = 2
                 sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
                 sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
                 sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
@@ -103,6 +105,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
             // let newSessionUUID = Self.combined(newCookieSessionUUID, newJavascriptSessionUUID)
             //print("REASSOCIATING SESSION: \(userSession.unsafeSessionUUID) -> \(newCookieSessionUUID)")
 
+            userSession.unsafeExpirationCode = 3
             sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
             sessionsByJavascriptSessionUUID.removeValue(forKey: oldJavascriptSessionUUID)
             sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
@@ -177,6 +180,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
     public func end(_ userSession: UserSession) {
         lock.lock()
 
+        userSession.unsafeExpirationCode = 4
         sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
         sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
         sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)

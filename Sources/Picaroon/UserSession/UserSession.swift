@@ -53,6 +53,8 @@ open class UserSession: Actor {
     private var lastActivity: Date = Date()
     public var safeSessionActivityTimeout: TimeInterval
     
+    public var unsafeExpirationCode: Int = 0
+    
     func unsafeIsExpired() -> Bool {
         lastActivityLock.lock(); defer { lastActivityLock.unlock() }
         return abs(lastActivity.timeIntervalSinceNow) > safeSessionActivityTimeout
