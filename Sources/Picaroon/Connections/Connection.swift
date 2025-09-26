@@ -129,6 +129,8 @@ public class Connection: Actor, AnyConnection {
     private let config: ServerConfig
 
     private let connectionMaxBackoff: Double
+    
+    private var closeNextSend: Bool = false
 
     init(socket: Socket,
          clientAddress: String,
@@ -175,6 +177,10 @@ public class Connection: Actor, AnyConnection {
         httpResponse.send(config: config,
                           socket: socket,
                           userSession: unsafeUserSession)
+        
+        if closeNextSend {
+            socket.close()
+        }
     }
 
     internal func _beSendIfModified(httpRequest: HttpRequest,
@@ -186,6 +192,11 @@ public class Connection: Actor, AnyConnection {
             httpResponse.send(config: config,
                               socket: socket,
                               userSession: unsafeUserSession)
+            
+            if closeNextSend {
+                socket.close()
+            }
+            
         } else {
             _beSendNotModified()
         }
@@ -335,6 +346,10 @@ public class Connection: Actor, AnyConnection {
         if config.debug,
            let desc = httpRequest.description {
             fputs("\(desc)\n", stderr)
+        }
+        
+        if httpRequest.connection == "close" {
+            closeNextSend = true
         }
         
         self.unsafeClientAddress = socket.clientAddress()
