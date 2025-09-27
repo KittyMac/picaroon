@@ -90,11 +90,9 @@ public class HTTPSessionManager: Actor {
         guard let httpSession = httpSession else { return }
         
         httpSession.beBegin(urlSession: urlSession) {
-            urlSession.reset {
-                self.unsafeSend { _ in
-                    self.waitingURLSessions.append(urlSession)
-                    self.checkForMoreSessions()
-                }
+            self.unsafeSend { _ in
+                self.waitingURLSessions.append(urlSession)
+                self.checkForMoreSessions()
             }
         }
     }
