@@ -25,7 +25,7 @@ internal class HTTPTaskManager: Actor {
     #elseif os(Linux)
     private let maxConcurrentTasks = 512
     #elseif os(Android)
-    private let maxConcurrentTasks = 16
+    private let maxConcurrentTasks = 8
     #else
     private let maxConcurrentTasks = min(max(Flynn.cores * 4, 4), 64)
     #endif

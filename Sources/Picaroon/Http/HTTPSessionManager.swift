@@ -59,7 +59,7 @@ public class HTTPSessionManager: Actor {
     #elseif os(Linux)
     private let maxConcurrentSessions = 128
     #elseif os(Android)
-    private let maxConcurrentSessions = 16
+    private let maxConcurrentSessions = 8
     #else
     private let maxConcurrentSessions = min(max(Flynn.cores * 4, 4), 64)
     #endif
@@ -90,19 +90,12 @@ public class HTTPSessionManager: Actor {
         guard let httpSession = httpSession else { return }
         
         httpSession.beBegin(urlSession: urlSession) {
-#if os(Android)
-            self.unsafeSend { _ in
-                self.waitingURLSessions.append(urlSession)
-                self.checkForMoreSessions()
-            }
-#else
             urlSession.reset {
                 self.unsafeSend { _ in
                     self.waitingURLSessions.append(urlSession)
                     self.checkForMoreSessions()
                 }
             }
-#endif
         }
     }
     
