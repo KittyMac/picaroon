@@ -35,7 +35,9 @@ public class HTTPSessionManager: Actor {
         for _ in 0..<maxConcurrentSessions {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 20.0
+#if !os(Android)
             config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+#endif
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             config.httpCookieAcceptPolicy = .always
@@ -56,6 +58,8 @@ public class HTTPSessionManager: Actor {
     private let maxConcurrentSessions = 16
     #elseif os(Linux)
     private let maxConcurrentSessions = 128
+    #elseif os(Android)
+    private let maxConcurrentSessions = 16
     #else
     private let maxConcurrentSessions = min(max(Flynn.cores * 4, 4), 64)
     #endif
@@ -86,12 +90,19 @@ public class HTTPSessionManager: Actor {
         guard let httpSession = httpSession else { return }
         
         httpSession.beBegin(urlSession: urlSession) {
+#if os(Android)
+            self.unsafeSend { _ in
+                self.waitingURLSessions.append(urlSession)
+                self.checkForMoreSessions()
+            }
+#else
             urlSession.reset {
                 self.unsafeSend { _ in
                     self.waitingURLSessions.append(urlSession)
                     self.checkForMoreSessions()
                 }
             }
+#endif
         }
     }
     

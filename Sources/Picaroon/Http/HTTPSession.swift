@@ -50,7 +50,9 @@ public class HTTPSession: Actor {
     fileprivate init(oneshot: Bool) {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 20.0
+#if !os(Android)
         config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+#endif
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
         config.httpCookieStorage = nil
@@ -69,7 +71,9 @@ public class HTTPSession: Actor {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 120.0
         config.timeoutIntervalForResource = 120.0
+#if !os(Android)
         config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+#endif
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
         config.httpCookieStorage = nil
