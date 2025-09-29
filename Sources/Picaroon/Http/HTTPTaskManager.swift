@@ -6,6 +6,16 @@ import Hitch
 import FoundationNetworking
 #endif
 
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(Android)
+import Android
+#else
+#error("Unknown platform")
+#endif
+
 fileprivate struct DataTask: Equatable {
     let task: URLSessionDataTask
     let proxy: String?
@@ -167,11 +177,12 @@ internal class HTTPTaskManager: Actor {
                     }
                     #endif
                     
+                    let localNewRequest = newRequest
                     session.flush {
                         Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
                             guard let self = self else { return returnCallback(nil, nil, nil) }
                             self.beResume(session: session,
-                                          request: newRequest,
+                                          request: localNewRequest,
                                           proxy: proxy,
                                           timeoutRetry: timeoutRetry - 1,
                                           retryAnyError: retryAnyError,

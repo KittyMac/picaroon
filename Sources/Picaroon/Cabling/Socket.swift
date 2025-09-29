@@ -9,28 +9,31 @@ import FoundationNetworking
 #endif
 
 #if canImport(Glibc)
-private let posix_gethostbyname = Glibc.gethostbyname
-private let posix_inet_ntop = Glibc.inet_ntop
-private let posix_shutdown = Glibc.shutdown
+import Glibc
 private let posix_close = Glibc.close
 private let posix_send = Glibc.send
 private let posix_recv = Glibc.recv
+private let posix_poll = Glibc.poll
 private let posix_listen = Glibc.listen
 private let posix_accept = Glibc.accept
-private let posix_getpeername = Glibc.getpeername
-private let posix_poll = Glibc.poll
-#endif
-#if canImport(Darwin)
-private let posix_gethostbyname = Darwin.gethostbyname
-private let posix_inet_ntop = Darwin.inet_ntop
-private let posix_shutdown = Darwin.shutdown
+#elseif canImport(Darwin)
+import Darwin
 private let posix_close = Darwin.close
 private let posix_send = Darwin.send
 private let posix_recv = Darwin.recv
+private let posix_poll = Darwin.poll
 private let posix_listen = Darwin.listen
 private let posix_accept = Darwin.accept
-private let posix_getpeername = Darwin.getpeername
-private let posix_poll = Darwin.poll
+#elseif canImport(Android)
+import Android
+private let posix_close = Android.close
+private let posix_send = Android.send
+private let posix_recv = Android.recv
+private let posix_poll = Android.poll
+private let posix_listen = Android.listen
+private let posix_accept = Android.accept
+#else
+#error("Unknown platform")
 #endif
 
 
@@ -143,7 +146,7 @@ public class Socket {
     
     public func close() {
         guard socketFd >= 0 else { return }
-        _ = posix_shutdown(socketFd, Int32(SHUT_RDWR))
+        _ = shutdown(socketFd, Int32(SHUT_RDWR))
         _ = posix_close(socketFd)
         socketFd = -1
     }
@@ -290,7 +293,7 @@ public class Socket {
         
         _ = withUnsafeMutablePointer(to: &clientAddr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                posix_getpeername(clientFd, $0, &sockAddrInSize)
+                getpeername(clientFd, $0, &sockAddrInSize)
             }
         }
 
@@ -316,7 +319,7 @@ public class Socket {
         
         _ = withUnsafeMutablePointer(to: &clientAddr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                posix_getpeername(socketFd, $0, &sockAddrInSize)
+                getpeername(socketFd, $0, &sockAddrInSize)
             }
         }
 

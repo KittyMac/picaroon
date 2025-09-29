@@ -8,6 +8,16 @@ import Hitch
 import FoundationNetworking
 #endif
 
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(Android)
+import Android
+#else
+#error("Unknown platform")
+#endif
+
 // Note: we cannot have too many concurrent URLSession (or we will get "No space left on device")
 // https://stackoverflow.com/questions/67318867/error-domain-nsposixerrordomain-code-28-no-space-left-on-device-userinfo-kcf
 

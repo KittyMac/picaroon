@@ -4,15 +4,20 @@ import Hitch
 
 import Foundation
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 #if !os(Windows)
 
 #if canImport(Glibc)
-private let gethostbyname = Glibc.gethostbyname
-private let inet_ntop = Glibc.inet_ntop
-#endif
-#if canImport(Darwin)
-private let gethostbyname = Darwin.gethostbyname
-private let inet_ntop = Darwin.inet_ntop
+import Glibc
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(Android)
+import Android
+#else
+#error("Unknown platform")
 #endif
 
 public class DNS: Actor {
