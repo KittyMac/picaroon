@@ -39,6 +39,10 @@ final class picaroonConnectionTests: XCTestCase {
         XCTAssertTrue(abs(correctedDate.timeIntervalSinceNow) < 5.0)
     }
     
+    func testIPAddress() {
+        XCTAssertEqual(DNS.localIPAddress(), "192.168.111.116")
+    }
+    
     func testDNSResolver0() {
         let expectation = XCTestExpectation(description: "success")
         

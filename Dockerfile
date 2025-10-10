@@ -20,5 +20,5 @@ COPY ./Package.swift ./Package.swift
 COPY ./Sources ./Sources
 COPY ./Tests ./Tests
 
-RUN swift test
-#RUN swift build --configuration release
+#RUN swift test
+RUN swift build --configuration release
