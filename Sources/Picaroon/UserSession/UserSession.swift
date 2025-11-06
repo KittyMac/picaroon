@@ -102,6 +102,10 @@ open class UserSession: Actor {
                                 httpRequest: HttpRequest) {
         connection.beSendInternalError()
     }
+    
+    internal func _beSetSessionHeaders(headers: [Hitch]) {
+        unsafeSessionHeaders = headers
+    }
 
     internal func _beHandleRequest(connection: AnyConnection,
                                    httpRequest: HttpRequest) {

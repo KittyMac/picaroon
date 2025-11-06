@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Flynn.git",
       "state" : {
-        "revision" : "442559aa92e1b011591ee8231c5c13fa952d299a",
-        "version" : "0.4.127"
+        "revision" : "b4f068d75b1f9536e60fa45ea33958f2bc0d2d01",
+        "version" : "0.4.131"
       }
     },
     {
@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/GzipSwift.git",
       "state" : {
-        "revision" : "e8b7039c1d8268ebb1d806cb00e9011e4c33e1eb",
-        "version" : "5.3.7"
+        "revision" : "b891754ab0fde629b4269f8e0120574f6d6465a1",
+        "version" : "5.3.8"
       }
     },
     {
