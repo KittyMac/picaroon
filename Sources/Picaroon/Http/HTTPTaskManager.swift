@@ -140,6 +140,10 @@ internal class HTTPTaskManager: Actor {
                 }
                 #endif
                 
+                if error.debugDescription.contains("hostname could not be found") {
+                    shouldBeRetried = nil
+                }
+                
                 if retryAnyError {
                     // Any transport error
                     if let error = error {

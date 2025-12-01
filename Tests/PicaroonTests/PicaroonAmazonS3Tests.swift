@@ -12,8 +12,8 @@ final class PicaroonAmazonS3Tests: XCTestCase {
     let badPath = "/test.txt"
     
     let credentials = S3Credentials(url: nil,
-                                    accessKey: try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_key.txt"),
-                                    secretKey: try! String(contentsOfFile: "/Users/rjbowli/Development/data/passwords/s3_secret.txt"),
+                                    accessKey: try! String(contentsOfFile: "/Volumes/GoStorage/data/passwords/s3_key.txt"),
+                                    secretKey: try! String(contentsOfFile: "/Volumes/GoStorage/data/passwords/s3_secret.txt"),
                                     baseDomain: "amazonaws.com",
                                     service: "s3",
                                     region: "us-west-2",

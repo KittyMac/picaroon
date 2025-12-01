@@ -117,33 +117,22 @@ extension HTTPSession {
                        proxy: nil,
                        body: nil,
                        self) { data, response, error in
-            if error == "http 403" || error == "http 503" || error == "http 500" {
-                NTP.reset()
-                if retry > 0 && error != "http 403" {
-                    let actor = Actor()
-                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
-                        HTTPSessionManager.shared.beNew(actor) { session in
-                            // fputs("aws download http 403, retrying \(retry)\n", stderr)
-                            session.performDownloadFromCloudfront(credentials: credentials,
-                                                                  key: key,
-                                                                  contentType: contentType,
-                                                                  retry: retry - 1,
-                                                                  returnCallback)
-                        }
-                    }
-                    return
-                } else {
-                    HTTPSessionManager.shared.beNew(self) { session in
-                        session.performDownloadFromS3(credentials: credentials,
-                                                      key: key,
-                                                      contentType: contentType,
-                                                      retry: 3,
-                                                      returnCallback)
-                    }
-                    return
-                }
-            }
             
+            
+            if error != nil {
+                NTP.reset()
+                
+                // if we fail for any reason to download from cloudfront we should always fallback to the S3
+                HTTPSessionManager.shared.beNew(self) { session in
+                    session.performDownloadFromS3(credentials: credentials,
+                                                  key: key,
+                                                  contentType: contentType,
+                                                  retry: 3,
+                                                  returnCallback)
+                }
+                return
+            }
+                        
             returnCallback(data, .cloudfront, response, error)
         }
     }
@@ -289,37 +278,6 @@ extension HTTPSession {
                        body: nil,
                        self) { data, response, error in
             
-            if error == "http 403" || error == "http 503" || error == "http 500" {
-                NTP.reset()
-                if retry > 0 && error != "http 403" {
-                    let actor = Actor()
-                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
-                        HTTPSessionManager.shared.beNew(actor) { session in
-                            // fputs("aws download http 403, retrying \(retry)\n", stderr)
-                            session.performDownloadFromCloudfront(toFilePath: toFilePath,
-                                                                  credentials: credentials,
-                                                                  key: key,
-                                                                  contentType: contentType,
-                                                                  cacheTime: cacheTime,
-                                                                  retry: retry - 1,
-                                                                  returnCallback)
-                        }
-                    }
-                    return
-                } else {
-                    HTTPSessionManager.shared.beNew(self) { session in
-                        session.performDownloadFromS3(toFilePath: toFilePath,
-                                                      credentials: credentials,
-                                                      key: key,
-                                                      contentType: contentType,
-                                                      cacheTime: cacheTime,
-                                                      retry: 3,
-                                                      returnCallback)
-                    }
-                    return
-                }
-            }
-            
             if error == "http 304" {
                 if let data = try? Data(contentsOf: fileUrl) {
                     // Update the modification date of the file to match the date we sent
@@ -336,6 +294,22 @@ extension HTTPSession {
                     return returnCallback(data, .notModified, response, nil)
                 }
                 return returnCallback(nil, nil, response, "http 304 but cached file is missing")
+            }
+            
+            // if we fail for any reason to download from cloudfront we should always fallback to the S3
+            if error != nil {
+                NTP.reset()
+                
+                HTTPSessionManager.shared.beNew(self) { session in
+                    session.performDownloadFromS3(toFilePath: toFilePath,
+                                                  credentials: credentials,
+                                                  key: key,
+                                                  contentType: contentType,
+                                                  cacheTime: cacheTime,
+                                                  retry: 3,
+                                                  returnCallback)
+                }
+                return
             }
             
             if error == nil,
