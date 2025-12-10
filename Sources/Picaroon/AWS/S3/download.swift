@@ -322,11 +322,11 @@ extension HTTPSession {
                 
                 // Update the modification date of the file to match the date of the s3 object
                 try? FileManager.default.setAttributes([
-                    FileAttributeKey.creationDate: lastModifiedDate,
+                    FileAttributeKey.creationDate: lastModifiedDate.addingTimeInterval(2.0),
                 ], ofItemAtPath: fileUrl.path)
                 
                 try? FileManager.default.setAttributes([
-                    FileAttributeKey.modificationDate: lastModifiedDate,
+                    FileAttributeKey.modificationDate: lastModifiedDate.addingTimeInterval(2.0),
                 ], ofItemAtPath: fileUrl.path)
             }
             
@@ -452,11 +452,11 @@ extension HTTPSession {
                 
                 // Update the modification date of the file to match the date of the s3 object
                 try? FileManager.default.setAttributes([
-                    FileAttributeKey.creationDate: lastModifiedDate,
+                    FileAttributeKey.creationDate: lastModifiedDate.addingTimeInterval(2.0),
                 ], ofItemAtPath: fileUrl.path)
                 
                 try? FileManager.default.setAttributes([
-                    FileAttributeKey.modificationDate: lastModifiedDate,
+                    FileAttributeKey.modificationDate: lastModifiedDate.addingTimeInterval(2.0),
                 ], ofItemAtPath: fileUrl.path)
             }
             
