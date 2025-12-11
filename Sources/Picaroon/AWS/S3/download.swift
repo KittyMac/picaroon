@@ -313,20 +313,18 @@ extension HTTPSession {
             }
             
             if error == nil,
-               let data = data,
-               let lastModifiedString = response?.allHeaderFields["Last-Modified"] as? String,
-               let lastModifiedDate = lastModifiedString.fromRFC2822() {
+               let data = data {
                
                 // we received data; save it to disk and set its modification date
                 try? data.write(to: fileUrl)
                 
                 // Update the modification date of the file to match the date of the s3 object
                 try? FileManager.default.setAttributes([
-                    FileAttributeKey.creationDate: lastModifiedDate,
+                    FileAttributeKey.creationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
                 
                 try? FileManager.default.setAttributes([
-                    FileAttributeKey.modificationDate: lastModifiedDate,
+                    FileAttributeKey.modificationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
             }
             
@@ -443,20 +441,18 @@ extension HTTPSession {
             }
             
             if error == nil,
-               let data = data,
-               let lastModifiedString = response?.allHeaderFields["Last-Modified"] as? String,
-               let lastModifiedDate = lastModifiedString.fromRFC2822() {
+               let data = data {
                
                 // we received data; save it to disk and set its modification date
                 try? data.write(to: fileUrl)
                 
                 // Update the modification date of the file to match the date of the s3 object
                 try? FileManager.default.setAttributes([
-                    FileAttributeKey.creationDate: lastModifiedDate,
+                    FileAttributeKey.creationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
                 
                 try? FileManager.default.setAttributes([
-                    FileAttributeKey.modificationDate: lastModifiedDate,
+                    FileAttributeKey.modificationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
             }
             
