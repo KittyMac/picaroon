@@ -19,6 +19,12 @@ class TestSocket: SocketSendable {
         return data.count
     }
     
+    func send(chunked bytes: UnsafePointer<UInt8>?, count: Int) -> Int {
+        guard let bytes = bytes else { return 0 }
+        sent.append(Hitch(bytes: bytes, offset: 0, count: count))
+        return count
+    }
+    
     func send(bytes: UnsafePointer<UInt8>?, count: Int) -> Int {
         guard let bytes = bytes else { return 0 }
         sent.append(Hitch(bytes: bytes, offset: 0, count: count))

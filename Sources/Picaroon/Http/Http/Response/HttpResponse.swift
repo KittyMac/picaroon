@@ -3,6 +3,7 @@ import Foundation
 import Hitch
 import Spanker
 
+private let hitchTransferEncodingChunked: Hitch = "Transfer-Encoding: chunked"
 private let hitchContentLength: Hitch = "Content-Length: "
 private let hitchNewLine: Hitch = "\r\n"
 
@@ -25,6 +26,8 @@ private let hitchContentType: Hitch = "Content-Type: "
 public protocol SocketSendable {
     @discardableResult func send(hitch: Hitch) -> Int
     @discardableResult func send(data: Data) -> Int
+    @discardableResult func send(chunked: UnsafePointer<UInt8>?,
+                                 count: Int) -> Int
     @discardableResult func send(bytes: UnsafePointer<UInt8>?,
                                  count: Int) -> Int
 }
@@ -258,14 +261,18 @@ public class HttpResponse {
                     combined.append(hitchNewLine)
                 }
                 
-                combined.append(hitchContentLength)
-                combined.append(number: count)
+                //combined.append(hitchContentLength)
+                //combined.append(number: count)
+                //combined.append(hitchNewLine)
+                
+                combined.append(hitchTransferEncodingChunked)
                 combined.append(hitchNewLine)
+                
                 combined.append(hitchNewLine)
                 socket?.send(hitch: combined)
                 
                 if let bytes = bytes {
-                    socket?.send(bytes: bytes, count: count)
+                    socket?.send(chunked: bytes, count: count)
                     hitch?.append(bytes, count: count)
                 }
             }

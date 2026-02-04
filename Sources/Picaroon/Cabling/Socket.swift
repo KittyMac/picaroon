@@ -179,6 +179,57 @@ public class Socket {
     }
     
     @discardableResult
+    public func send(chunked bytes: UnsafePointer<UInt8>?,
+                     count: Int) -> Int {
+        guard let bytes = bytes else { return -1 }
+        guard socketFd >= 0 else { return -1 }
+        var cptr = bytes
+        let startPtr = bytes
+        let endPtr = startPtr + count
+        
+        let hexCountHitch = Hitch(capacity: 128)
+        guard let hexCountHitchRaw = hexCountHitch.mutableRaw() else { self.close(); return -1 }
+        
+        let newLineHitch = Hitch(string: "\r\n")
+        guard let newLineHitchRaw = newLineHitch.raw() else { self.close(); return -1 }
+        
+        let endHitch = Hitch(string: "0\r\n\r\n")
+        guard let endHitchRaw = endHitch.raw() else { self.close(); return -1 }
+
+        while endPtr - cptr > 0 {
+            let chunkSize = min(1024 * 1024, endPtr - cptr)
+            
+            var idx = hexCountHitch.capacity-1
+            
+            hexCountHitchRaw[idx] = .newLine
+            idx -= 1
+            hexCountHitchRaw[idx] = .carriageReturn
+            idx -= 1
+            
+            var hexChunkSize = chunkSize
+            while hexChunkSize > 0 {
+                hexCountHitchRaw[idx] = hex2(UInt32(hexChunkSize & 0xF))
+                hexChunkSize >>= 4
+                idx -= 1
+            }
+            idx += 1
+            
+            guard send(bytes: hexCountHitchRaw + idx, count: hexCountHitch.capacity - idx) == hexCountHitch.capacity - idx else { self.close(); return -1 }
+            
+            guard send(bytes: cptr, count: chunkSize) == chunkSize else { self.close(); return -1 }
+            
+            guard send(bytes: newLineHitchRaw, count: newLineHitch.count) == newLineHitch.count else { self.close(); return -1 }
+
+            cptr += chunkSize
+        }
+        
+        guard send(bytes: endHitchRaw, count: endHitch.count) == endHitch.count else { self.close(); return -1 }
+
+        
+        return cptr - startPtr
+    }
+    
+    @discardableResult
     public func send(bytes: UnsafePointer<UInt8>?,
                      count: Int) -> Int {
         guard let bytes = bytes else { return -1 }
