@@ -164,17 +164,21 @@ public class HttpResponse {
         
     public var description: Hitch {
         let combined = Hitch()
-        process(config: nil,
-                hitch: combined,
-                socket: nil,
-                userSession: nil)
+        processHeaders(config: nil,
+                       hitch: combined,
+                       socket: nil,
+                       userSession: nil)
+        processPayload(config: nil,
+                       hitch: combined,
+                       socket: nil,
+                       userSession: nil)
         return combined
     }
     
-    func process(config: ServerConfig?,
-                 hitch: Hitch?,
-                 socket: SocketSendable?,
-                 userSession: UserSession?) {
+    func processHeaders(config: ServerConfig?,
+                        hitch: Hitch?,
+                        socket: SocketSendable?,
+                        userSession: UserSession?) {
         // Multifunctional method. Can be to put the data directly to a socket, or can be used
         // to bake it to a hitch.  Or both.
         
@@ -270,11 +274,6 @@ public class HttpResponse {
                 
                 combined.append(hitchNewLine)
                 socket?.send(hitch: combined)
-                
-                if let bytes = bytes {
-                    socket?.send(chunked: bytes, count: count)
-                    hitch?.append(bytes, count: count)
-                }
             }
         } else {
             
@@ -292,19 +291,59 @@ public class HttpResponse {
         }
     }
     
+    func processPayload(config: ServerConfig?,
+                        hitch: Hitch?,
+                        socket: SocketSendable?,
+                        userSession: UserSession?) {
+        if let payload = payload {
+            payload.using { bytes, count in
+                if let bytes = bytes {
+                    socket?.send(chunked: bytes, count: count)
+                    hitch?.append(bytes, count: count)
+                }
+            }
+        }
+    }
+    
     func send(config: ServerConfig,
               socket: SocketSendable,
               userSession: UserSession?) {
-        process(config: config,
-                hitch: nil,
-                socket: socket,
-                userSession: userSession)
+        processHeaders(config: config,
+                       hitch: nil,
+                       socket: socket,
+                       userSession: userSession)
+        processPayload(config: config,
+                       hitch: nil,
+                       socket: socket,
+                       userSession: userSession)
+    }
+    
+    func sendHeaders(config: ServerConfig,
+                     socket: SocketSendable,
+                     userSession: UserSession?) {
+        processHeaders(config: config,
+                       hitch: nil,
+                       socket: socket,
+                       userSession: userSession)
+    }
+    
+    func sendPayload(config: ServerConfig,
+                     socket: SocketSendable,
+                     userSession: UserSession?) {
+        processPayload(config: config,
+                       hitch: nil,
+                       socket: socket,
+                       userSession: userSession)
     }
     
     public func send(socket: SocketSendable) {
-        process(config: nil,
-                hitch: nil,
-                socket: socket,
-                userSession: nil)
+        processHeaders(config: nil,
+                       hitch: nil,
+                       socket: socket,
+                       userSession: nil)
+        processPayload(config: nil,
+                       hitch: nil,
+                       socket: socket,
+                       userSession: nil)
     }
 }
