@@ -282,8 +282,6 @@ extension HTTPSession {
                 if let data = try? Data(contentsOf: fileUrl) {
                     // Update the modification date of the file to match the date we sent
                     // We do this so that we can piggy back on the date for caching purposes
-                    
-                    /*
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.creationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
@@ -291,7 +289,6 @@ extension HTTPSession {
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.modificationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
-                     */
                     
                     // file has not changed, we can return the data from disk
                     return returnCallback(data, .notModified, response, nil)
@@ -429,8 +426,6 @@ extension HTTPSession {
                 if let data = try? Data(contentsOf: fileUrl) {
                     // Update the modification date of the file to match the date we sent
                     // We do this so that we can piggy back on the date for caching purposes
-                    
-                    /*
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.creationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
@@ -438,7 +433,6 @@ extension HTTPSession {
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.modificationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
-                     */
                     
                     // file has not changed, we can return the data from disk
                     return returnCallback(data, .notModified, response, nil)

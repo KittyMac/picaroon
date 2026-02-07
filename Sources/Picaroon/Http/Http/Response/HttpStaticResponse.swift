@@ -19,14 +19,10 @@ public final class HttpStaticResponse: HttpResponse {
     let baked = Hitch()
     
     override func postInit() {
-        processHeaders(config: nil,
-                       hitch: baked,
-                       socket: nil,
-                       userSession: nil)
-        processPayload(config: nil,
-                       hitch: baked,
-                       socket: nil,
-                       userSession: nil)
+        process(config: nil,
+                hitch: baked,
+                socket: nil,
+                userSession: nil)
     }
     
     override func send(config: ServerConfig,

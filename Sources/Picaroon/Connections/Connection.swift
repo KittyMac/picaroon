@@ -176,26 +176,6 @@ public class Connection: Actor, AnyConnection {
         return socket.fd()
     }
     
-    internal func _beSendHeaders(httpResponse: HttpResponse) {
-        httpResponse.sendHeaders(config: config,
-                                 socket: socket,
-                                 userSession: unsafeUserSession)
-        
-        if closeNextSend {
-            socket.close()
-        }
-    }
-    
-    internal func _beSendPayload(httpResponse: HttpResponse) {
-        httpResponse.sendPayload(config: config,
-                                 socket: socket,
-                                 userSession: unsafeUserSession)
-        
-        if closeNextSend {
-            socket.close()
-        }
-    }
-    
     internal func _beSend(httpResponse: HttpResponse) {
         httpResponse.send(config: config,
                           socket: socket,
