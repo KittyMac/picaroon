@@ -54,6 +54,9 @@ class TestServicesSession: UserServiceableSession {
 }
 
 public class TestConnection: AnyConnection {
+    public func beSendHeaders(httpResponse: HttpResponse) -> Self { return self }
+    public func beSendPayload(httpResponse: HttpResponse) -> Self { return self }
+
     public func beSend(httpResponse: HttpResponse) -> Self { return self }
     public func beSendIfModified(httpRequest: HttpRequest,
                                  httpResponse: HttpResponse) -> Self { return self }
