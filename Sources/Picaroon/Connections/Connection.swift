@@ -9,9 +9,6 @@ import Hitch
 // swiftlint:disable cyclomatic_complexity
 
 public protocol AnyConnection {
-    @discardableResult func beSendHeaders(httpResponse: HttpResponse) -> Self
-    @discardableResult func beSendPayload(httpResponse: HttpResponse) -> Self
-
     @discardableResult func beSend(httpResponse: HttpResponse) -> Self
     @discardableResult func beSendIfModified(httpRequest: HttpRequest,
                                              httpResponse: HttpResponse) -> Self
