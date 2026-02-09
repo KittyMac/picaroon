@@ -59,7 +59,7 @@ public class HTTPSessionManager: Actor {
     #if os(Windows)
     private let maxConcurrentSessions = 16
     #elseif os(Linux)
-    private let maxConcurrentSessions = 256
+    private let maxConcurrentSessions = 128
     #elseif os(Android)
     private let maxConcurrentSessions = 8
     #else
