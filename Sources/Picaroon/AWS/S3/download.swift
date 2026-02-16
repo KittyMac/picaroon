@@ -281,8 +281,6 @@ extension HTTPSession {
             if error == "http 304" {
                 if let data = try? Data(contentsOf: fileUrl) {
                     
-                    // NOTE: I am 90% certain this is wrong so we are testing on less important platforms first
-                    #if os(iOS) || os(Android)
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.creationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
@@ -290,7 +288,6 @@ extension HTTPSession {
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.modificationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
-                    #endif
                     
                     // file has not changed, we can return the data from disk
                     return returnCallback(data, .notModified, response, nil)
@@ -320,8 +317,6 @@ extension HTTPSession {
                 // we received data; save it to disk and set its modification date
                 try? data.write(to: fileUrl)
                 
-                // NOTE: I am 90% certain this is wrong so we are testing on less important platforms first
-                #if os(iOS) || os(Android)
                 try? FileManager.default.setAttributes([
                     FileAttributeKey.creationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
@@ -329,7 +324,6 @@ extension HTTPSession {
                 try? FileManager.default.setAttributes([
                     FileAttributeKey.modificationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
-                #endif
                 
             }
             
@@ -430,8 +424,6 @@ extension HTTPSession {
             if error == "http 304" {
                 if let data = try? Data(contentsOf: fileUrl) {
                     
-                    // NOTE: I am 90% certain this is wrong so we are testing on less important platforms first
-                    #if os(iOS) || os(Android)
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.creationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
@@ -439,7 +431,6 @@ extension HTTPSession {
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.modificationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
-                    #endif
                     
                     // file has not changed, we can return the data from disk
                     return returnCallback(data, .notModified, response, nil)
@@ -453,8 +444,6 @@ extension HTTPSession {
                 // we received data; save it to disk and set its modification date
                 try? data.write(to: fileUrl)
                 
-                // NOTE: I am 90% certain this is wrong so we are testing on less important platforms first
-                #if os(iOS) || os(Android)
                 try? FileManager.default.setAttributes([
                     FileAttributeKey.creationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
@@ -462,7 +451,6 @@ extension HTTPSession {
                 try? FileManager.default.setAttributes([
                     FileAttributeKey.modificationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
-                #endif
             }
             
             return returnCallback(data, .s3, response, error)
