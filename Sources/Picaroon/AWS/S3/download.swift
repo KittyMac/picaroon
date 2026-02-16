@@ -280,8 +280,9 @@ extension HTTPSession {
             
             if error == "http 304" {
                 if let data = try? Data(contentsOf: fileUrl) {
-                    // Update the modification date of the file to match the date we sent
-                    // We do this so that we can piggy back on the date for caching purposes
+                    
+                    // NOTE: I am 90% certain this is wrong so we are testing on less important platforms first
+                    #if os(iOS) || os(Android)
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.creationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
@@ -289,6 +290,7 @@ extension HTTPSession {
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.modificationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
+                    #endif
                     
                     // file has not changed, we can return the data from disk
                     return returnCallback(data, .notModified, response, nil)
@@ -318,7 +320,8 @@ extension HTTPSession {
                 // we received data; save it to disk and set its modification date
                 try? data.write(to: fileUrl)
                 
-                // Update the modification date of the file to match the date of the s3 object
+                // NOTE: I am 90% certain this is wrong so we are testing on less important platforms first
+                #if os(iOS) || os(Android)
                 try? FileManager.default.setAttributes([
                     FileAttributeKey.creationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
@@ -326,6 +329,8 @@ extension HTTPSession {
                 try? FileManager.default.setAttributes([
                     FileAttributeKey.modificationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
+                #endif
+                
             }
             
             return returnCallback(data, .cloudfront, response, error)
@@ -424,8 +429,9 @@ extension HTTPSession {
             
             if error == "http 304" {
                 if let data = try? Data(contentsOf: fileUrl) {
-                    // Update the modification date of the file to match the date we sent
-                    // We do this so that we can piggy back on the date for caching purposes
+                    
+                    // NOTE: I am 90% certain this is wrong so we are testing on less important platforms first
+                    #if os(iOS) || os(Android)
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.creationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
@@ -433,6 +439,7 @@ extension HTTPSession {
                     try? FileManager.default.setAttributes([
                         FileAttributeKey.modificationDate: requestDate,
                     ], ofItemAtPath: fileUrl.path)
+                    #endif
                     
                     // file has not changed, we can return the data from disk
                     return returnCallback(data, .notModified, response, nil)
@@ -446,7 +453,8 @@ extension HTTPSession {
                 // we received data; save it to disk and set its modification date
                 try? data.write(to: fileUrl)
                 
-                // Update the modification date of the file to match the date of the s3 object
+                // NOTE: I am 90% certain this is wrong so we are testing on less important platforms first
+                #if os(iOS) || os(Android)
                 try? FileManager.default.setAttributes([
                     FileAttributeKey.creationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
@@ -454,6 +462,7 @@ extension HTTPSession {
                 try? FileManager.default.setAttributes([
                     FileAttributeKey.modificationDate: requestDate,
                 ], ofItemAtPath: fileUrl.path)
+                #endif
             }
             
             return returnCallback(data, .s3, response, error)
