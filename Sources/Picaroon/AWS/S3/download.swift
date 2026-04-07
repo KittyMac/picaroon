@@ -225,6 +225,8 @@ extension HTTPSession {
                                                cacheTime: TimeInterval,
                                                retry: Int,
                                                _ returnCallback: @escaping (Data?, HttpSource?, HTTPURLResponse?, String?) -> Void) {
+        Flynn.syslog("TAG", "performDownloadFromCloudfront A")
+        
         guard let cloudfront = credentials.cloudfront else {
             return performDownloadFromS3(toFilePath: toFilePath,
                                          credentials: credentials,
@@ -243,8 +245,10 @@ extension HTTPSession {
         //  - if reponse is success, save new data to cache location and set modification date
                 
         let path = (key.hasPrefix("/") ? key : "/" + key).replacingOccurrences(of: " ", with: "+")
-                
+            
+        Flynn.syslog("TAG", "performDownloadFromCloudfront B")
         let date = NTP.date().toRFC2822()
+        Flynn.syslog("TAG", "performDownloadFromCloudfront C")
         
         var url = "https://{0}{1}" << [cloudfront, path]
         if let overrideUrl = credentials.url {

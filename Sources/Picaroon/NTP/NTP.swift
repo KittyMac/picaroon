@@ -16,7 +16,8 @@ public class NTP {
     private static var disabled = false
     
     private static func sync(domain: String = "pool.ntp.org") {
-        lock.lock(); defer { lock.unlock() }
+        guard lock.try() == true else { return }
+        defer { lock.unlock() }
 
         guard disabled == false else { return }
         guard abs(lastSyncDate.timeIntervalSinceNow) > 5 * 60 else { return }
