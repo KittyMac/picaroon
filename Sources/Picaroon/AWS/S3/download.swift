@@ -264,11 +264,12 @@ extension HTTPSession {
             
             if abs(fileModificationDate.timeIntervalSinceNow) < cacheTime,
                let data = try? Data(contentsOf: fileUrl) {
+                Flynn.syslog("TAG", "[s3] use from file cache from \(url)")
                 return returnCallback(data, .cache, nil, nil)
             }
         }
         
-        // print("[cloudfront] download \(retry) from \(url)")
+        Flynn.syslog("TAG", "[cloudfront] download \(retry) from \(url)")
         
         self.beRequest(url: url.toString(),
                        httpMethod: "GET",
@@ -292,6 +293,7 @@ extension HTTPSession {
                     ], ofItemAtPath: fileUrl.path)
                     
                     // file has not changed, we can return the data from disk
+                    Flynn.syslog("TAG", "[s3] use from file cache (not modified) from \(url)")
                     return returnCallback(data, .notModified, response, nil)
                 }
                 return returnCallback(nil, nil, response, "http 304 but cached file is missing")
@@ -387,11 +389,12 @@ extension HTTPSession {
             
             if abs(fileModificationDate.timeIntervalSinceNow) < cacheTime,
                let data = try? Data(contentsOf: fileUrl) {
+                Flynn.syslog("TAG", "[s3] use from file cache from \(url)")
                 return returnCallback(data, .cache, nil, nil)
             }
         }
         
-        // print("[s3] download \(retry) from \(url)")
+        Flynn.syslog("TAG", "[s3] download \(retry) from \(url)")
         
         self.beRequest(url: url.toString(),
                        httpMethod: "GET",
@@ -435,6 +438,7 @@ extension HTTPSession {
                     ], ofItemAtPath: fileUrl.path)
                     
                     // file has not changed, we can return the data from disk
+                    Flynn.syslog("TAG", "[s3] use from file cache (not modified) from \(url)")
                     return returnCallback(data, .notModified, response, nil)
                 }
                 return returnCallback(nil, nil, response, "http 304 but cached file is missing")
