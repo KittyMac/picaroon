@@ -103,7 +103,7 @@ extension HTTPSession {
             url = "{0}{1}" << [overrideUrl, path]
         }
         
-        // print("[cloudfront] download \(retry) from \(url)")
+        Flynn.syslog("TAG", "before [cloudfront] download \(retry) from \(url)")
                             
         self.beRequest(url: url.toString(),
                        httpMethod: "GET",
@@ -117,7 +117,7 @@ extension HTTPSession {
                        proxy: nil,
                        body: nil,
                        self) { data, response, error in
-            
+            Flynn.syslog("TAG", "after [cloudfront] download \(retry) from \(url) error: \(error)")
             
             if error != nil {
                 NTP.reset()
@@ -168,7 +168,7 @@ extension HTTPSession {
             return returnCallback(nil, nil, nil, "Failed to generate authorization token")
         }
         
-        // print("[s3] download \(retry) from \(url)")
+        Flynn.syslog("TAG", "before [s3] download \(retry) from \(url)")
         
         self.beRequest(url: url.toString(),
                        httpMethod: "GET",
@@ -183,13 +183,15 @@ extension HTTPSession {
                        proxy: nil,
                        body: nil,
                        self) { data, response, error in
+            Flynn.syslog("TAG", "after [s3] download \(retry) from \(url) error: \(error)")
+            
             if error == "http 403" || error == "http 503" || error == "http 500" {
                 NTP.reset()
                 if retry > 0 {
                     let actor = Actor()
                     Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
                         HTTPSessionManager.shared.beNew(actor) { session in
-                            // fputs("aws download http 403, retrying \(retry)\n", stderr)
+                            Flynn.syslog("TAG", "aws download http 403, retrying \(retry)\n")
                             session.performDownloadFromS3(credentials: credentials,
                                                           key: key,
                                                           contentType: contentType,
@@ -407,7 +409,7 @@ extension HTTPSession {
                     let actor = Actor()
                     Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
                         HTTPSessionManager.shared.beNew(actor) { session in
-                            // fputs("aws download http 403, retrying \(retry)\n", stderr)
+                            Flynn.syslog("TAG", "aws download http 403, retrying \(retry)\n")
                             session.performDownloadFromS3(toFilePath: toFilePath,
                                                           credentials: credentials,
                                                           key: key,
