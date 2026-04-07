@@ -268,7 +268,7 @@ extension HTTPSession {
             
             if abs(fileModificationDate.timeIntervalSinceNow) < cacheTime,
                let data = try? Data(contentsOf: fileUrl) {
-                Flynn.syslog("TAG", "[s3] use from file cache from \(url)")
+                Flynn.syslog("TAG", "[cloudfront] use from file cache from \(url)")
                 return returnCallback(data, .cache, nil, nil)
             }
         }
@@ -346,6 +346,8 @@ extension HTTPSession {
                                        cacheTime: TimeInterval,
                                        retry: Int,
                                        _ returnCallback: @escaping (Data?, HttpSource?, HTTPURLResponse?, String?) -> Void) {
+        Flynn.syslog("TAG", "performDownloadFromS3 A")
+
         // Download data smartly from S3:
         // - if file does not exit at path, then downloads, store it there, and set modification date
         // - if file exists at path and it was modified less than cacheTime ago, then just return the cached data
@@ -361,8 +363,10 @@ extension HTTPSession {
         let bucket = credentials.bucket
         
         let path = (key.hasPrefix("/") ? key : "/" + key).replacingOccurrences(of: " ", with: "+")
-                
+        
+        Flynn.syslog("TAG", "performDownloadFromS3 B")
         let date = NTP.date().toRFC2822()
+        Flynn.syslog("TAG", "performDownloadFromS3 C")
         
         var url = "https://{0}.{1}.{2}.{3}{4}" << [bucket, service, region, baseDomain, path]
         if let overrideUrl = credentials.url {
