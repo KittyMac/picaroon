@@ -103,7 +103,7 @@ extension HTTPSession {
             url = "{0}{1}" << [overrideUrl, path]
         }
         
-        Flynn.syslog("TAG", "before [cloudfront] download \(retry) from \(url)")
+        // Flynn.syslog("TAG", "before [cloudfront] download \(retry) from \(url)")
                             
         self.beRequest(url: url.toString(),
                        httpMethod: "GET",
@@ -117,7 +117,7 @@ extension HTTPSession {
                        proxy: nil,
                        body: nil,
                        self) { data, response, error in
-            Flynn.syslog("TAG", "after [cloudfront] download \(retry) from \(url) error: \(error)")
+            // Flynn.syslog("TAG", "after [cloudfront] download \(retry) from \(url) error: \(error)")
             
             if error != nil {
                 NTP.reset()
@@ -168,7 +168,7 @@ extension HTTPSession {
             return returnCallback(nil, nil, nil, "Failed to generate authorization token")
         }
         
-        Flynn.syslog("TAG", "before [s3] download \(retry) from \(url)")
+        // Flynn.syslog("TAG", "before [s3] download \(retry) from \(url)")
         
         self.beRequest(url: url.toString(),
                        httpMethod: "GET",
@@ -183,7 +183,7 @@ extension HTTPSession {
                        proxy: nil,
                        body: nil,
                        self) { data, response, error in
-            Flynn.syslog("TAG", "after [s3] download \(retry) from \(url) error: \(error)")
+            // Flynn.syslog("TAG", "after [s3] download \(retry) from \(url) error: \(error)")
             
             if error == "http 403" || error == "http 503" || error == "http 500" {
                 NTP.reset()
@@ -191,7 +191,7 @@ extension HTTPSession {
                     let actor = Actor()
                     Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
                         HTTPSessionManager.shared.beNew(actor) { session in
-                            Flynn.syslog("TAG", "aws download http 403, retrying \(retry)\n")
+                            // Flynn.syslog("TAG", "aws download http 403, retrying \(retry)\n")
                             session.performDownloadFromS3(credentials: credentials,
                                                           key: key,
                                                           contentType: contentType,
@@ -225,7 +225,7 @@ extension HTTPSession {
                                                cacheTime: TimeInterval,
                                                retry: Int,
                                                _ returnCallback: @escaping (Data?, HttpSource?, HTTPURLResponse?, String?) -> Void) {
-        Flynn.syslog("TAG", "performDownloadFromCloudfront A")
+        // Flynn.syslog("TAG", "performDownloadFromCloudfront A")
         
         guard let cloudfront = credentials.cloudfront else {
             return performDownloadFromS3(toFilePath: toFilePath,
@@ -246,9 +246,9 @@ extension HTTPSession {
                 
         let path = (key.hasPrefix("/") ? key : "/" + key).replacingOccurrences(of: " ", with: "+")
             
-        Flynn.syslog("TAG", "performDownloadFromCloudfront B")
+        // Flynn.syslog("TAG", "performDownloadFromCloudfront B")
         let date = NTP.date().toRFC2822()
-        Flynn.syslog("TAG", "performDownloadFromCloudfront C")
+        // Flynn.syslog("TAG", "performDownloadFromCloudfront C")
         
         var url = "https://{0}{1}" << [cloudfront, path]
         if let overrideUrl = credentials.url {
@@ -268,12 +268,12 @@ extension HTTPSession {
             
             if abs(fileModificationDate.timeIntervalSinceNow) < cacheTime,
                let data = try? Data(contentsOf: fileUrl) {
-                Flynn.syslog("TAG", "[cloudfront] use from file cache from \(url)")
+                // Flynn.syslog("TAG", "[cloudfront] use from file cache from \(url)")
                 return returnCallback(data, .cache, nil, nil)
             }
         }
         
-        Flynn.syslog("TAG", "[cloudfront] download \(retry) from \(url)")
+        // Flynn.syslog("TAG", "[cloudfront] download \(retry) from \(url)")
         
         self.beRequest(url: url.toString(),
                        httpMethod: "GET",
@@ -297,7 +297,7 @@ extension HTTPSession {
                     ], ofItemAtPath: fileUrl.path)
                     
                     // file has not changed, we can return the data from disk
-                    Flynn.syslog("TAG", "[s3] use from file cache (not modified) from \(url)")
+                    // Flynn.syslog("TAG", "[cloudfront] use from file cache (not modified) from \(url)")
                     return returnCallback(data, .notModified, response, nil)
                 }
                 return returnCallback(nil, nil, response, "http 304 but cached file is missing")
@@ -346,7 +346,7 @@ extension HTTPSession {
                                        cacheTime: TimeInterval,
                                        retry: Int,
                                        _ returnCallback: @escaping (Data?, HttpSource?, HTTPURLResponse?, String?) -> Void) {
-        Flynn.syslog("TAG", "performDownloadFromS3 A")
+        // Flynn.syslog("TAG", "performDownloadFromS3 A")
 
         // Download data smartly from S3:
         // - if file does not exit at path, then downloads, store it there, and set modification date
@@ -364,9 +364,9 @@ extension HTTPSession {
         
         let path = (key.hasPrefix("/") ? key : "/" + key).replacingOccurrences(of: " ", with: "+")
         
-        Flynn.syslog("TAG", "performDownloadFromS3 B")
+        // Flynn.syslog("TAG", "performDownloadFromS3 B")
         let date = NTP.date().toRFC2822()
-        Flynn.syslog("TAG", "performDownloadFromS3 C")
+        // Flynn.syslog("TAG", "performDownloadFromS3 C")
         
         var url = "https://{0}.{1}.{2}.{3}{4}" << [bucket, service, region, baseDomain, path]
         if let overrideUrl = credentials.url {
@@ -397,12 +397,12 @@ extension HTTPSession {
             
             if abs(fileModificationDate.timeIntervalSinceNow) < cacheTime,
                let data = try? Data(contentsOf: fileUrl) {
-                Flynn.syslog("TAG", "[s3] use from file cache from \(url)")
+                // Flynn.syslog("TAG", "[s3] use from file cache from \(url)")
                 return returnCallback(data, .cache, nil, nil)
             }
         }
         
-        Flynn.syslog("TAG", "[s3] download \(retry) from \(url)")
+        // Flynn.syslog("TAG", "[s3] download \(retry) from \(url)")
         
         self.beRequest(url: url.toString(),
                        httpMethod: "GET",
@@ -420,7 +420,7 @@ extension HTTPSession {
                     let actor = Actor()
                     Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
                         HTTPSessionManager.shared.beNew(actor) { session in
-                            Flynn.syslog("TAG", "aws download http 403, retrying \(retry)\n")
+                            // Flynn.syslog("TAG", "aws download http 403, retrying \(retry)\n")
                             session.performDownloadFromS3(toFilePath: toFilePath,
                                                           credentials: credentials,
                                                           key: key,
@@ -446,7 +446,7 @@ extension HTTPSession {
                     ], ofItemAtPath: fileUrl.path)
                     
                     // file has not changed, we can return the data from disk
-                    Flynn.syslog("TAG", "[s3] use from file cache (not modified) from \(url)")
+                    // Flynn.syslog("TAG", "[s3] use from file cache (not modified) from \(url)")
                     return returnCallback(data, .notModified, response, nil)
                 }
                 return returnCallback(nil, nil, response, "http 304 but cached file is missing")

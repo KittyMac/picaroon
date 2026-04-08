@@ -63,6 +63,8 @@ public class NTP {
         let decimal = TimeInterval(time & 0xffffffff) / 4294967296.0
         ntpOffset = TimeInterval(integer + delta + decimal) - Date().timeIntervalSince1970
         
+        socket.close()
+        
         return ntpOffset
     }
     
