@@ -88,10 +88,24 @@ public class DNS: Actor {
         return address
     }
     
-    public static func resolve(domain: String) -> DNS.Results {
-        // NOTE: gethostbyname is not very safe on Linux (we've observed multiple memory crashes
-        // related to aliases, so we are using gethostbyname_r instead
-#if os(Linux)
+    public static func resolve(domain: String, timeoutSeconds: Double = 5.0) -> DNS.Results {
+        let semaphore = DispatchSemaphore(value: 0)
+        var results = DNS.Results()
+        
+        DispatchQueue.global(qos: .utility).async {
+            results = _resolveBlocking(domain: domain)
+            semaphore.signal()
+        }
+        
+        if semaphore.wait(timeout: .now() + timeoutSeconds) == .timedOut {
+            return DNS.Results()
+        }
+        
+        return results
+    }
+
+    private static func _resolveBlocking(domain: String) -> DNS.Results {
+    #if os(Linux)
         var result: hostent = hostent()
         var resultPointer: UnsafeMutablePointer<hostent>? = UnsafeMutablePointer<hostent>(mutating: nil)
         let bufferSize = 4096
@@ -100,9 +114,9 @@ public class DNS: Actor {
 
         let status = gethostbyname_r(domain, &result, &buffer, bufferSize, &resultPointer, &hErrno)
         guard status == 0, let hp = resultPointer else { return DNS.Results() }
-#else
+    #else
         guard let hp = gethostbyname(domain) else { return DNS.Results() }
-#endif
+    #endif
         
         guard hp.pointee.h_addrtype == AF_INET, hp.pointee.h_length > 0 else { return DNS.Results() }
         
@@ -113,7 +127,6 @@ public class DNS: Actor {
         guard let scratch_ptr = malloc(capacity)?.bindMemory(to: CChar.self, capacity: capacity) else { return DNS.Results() }
         
         defer { free(scratch_ptr) }
-        
         
         var aliasPointer = hp.pointee.h_aliases
         while let alias = aliasPointer?.pointee {
