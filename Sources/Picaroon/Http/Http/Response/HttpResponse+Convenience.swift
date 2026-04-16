@@ -174,6 +174,37 @@ public extension HttpResponse {
         }
     }
     
+    convenience init(rss: Payloadable,
+                     headers: [HalfHitch]? = nil,
+                     encoding: HalfHitch? = nil,
+                     lastModified: Date? = nil,
+                     cacheMaxAge: Int = 0,
+                     cacheRevalidateAge: Int = 0,
+                     eTag: HalfHitch? = nil,
+                     request: HttpRequest? = nil) {
+        if request?.supportsGzip == true {
+            self.init(status: .ok,
+                      type: .rss,
+                      payload: (try? rss.gzipped(level: .bestSpeed)) ?? rss,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        } else {
+            self.init(status: .ok,
+                      type: .rss,
+                      payload: rss,
+                      headers: headers,
+                      encoding: encoding,
+                      lastModified: lastModified,
+                      cacheMaxAge: cacheMaxAge,
+                      cacheRevalidateAge: cacheRevalidateAge,
+                      eTag: eTag)
+        }
+    }
+    
     convenience init(json: Payloadable,
                      headers: [HalfHitch]? = nil,
                      encoding: HalfHitch? = nil,

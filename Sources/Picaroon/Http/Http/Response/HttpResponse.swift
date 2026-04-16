@@ -261,18 +261,24 @@ public class HttpResponse {
                     combined.append(hitchNewLine)
                 }
                 
-                //combined.append(hitchContentLength)
-                //combined.append(number: count)
-                //combined.append(hitchNewLine)
                 
-                combined.append(hitchTransferEncodingChunked)
+                if socket == nil {
+                    combined.append(hitchContentLength)
+                    combined.append(number: count)
+                    combined.append(hitchNewLine)
+                } else {
+                    combined.append(hitchTransferEncodingChunked)
+                }
+                
                 combined.append(hitchNewLine)
                 
                 combined.append(hitchNewLine)
                 socket?.send(hitch: combined)
                 
                 if let bytes = bytes {
-                    socket?.send(chunked: bytes, count: count)
+                    if socket != nil {
+                        socket?.send(chunked: bytes, count: count)
+                    }
                     hitch?.append(bytes, count: count)
                 }
             }
