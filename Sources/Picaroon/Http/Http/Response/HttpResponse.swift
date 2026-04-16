@@ -264,7 +264,7 @@ public class HttpResponse {
                 
                 if socket == nil {
                     combined.append(hitchContentLength)
-                    combined.append(number: count)
+                    combined.append(number: count + 2)
                     combined.append(hitchNewLine)
                 } else {
                     combined.append(hitchTransferEncodingChunked)
