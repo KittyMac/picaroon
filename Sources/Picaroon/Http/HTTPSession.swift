@@ -256,7 +256,7 @@ public class HTTPSession: Actor {
                                         timeoutRetry: timeoutRetry ?? 3,
                                         retryAnyError: retryAnyError,
                                         self) { response, error in
-            let (data2, respose2, error2) = handleTaskResponse(data: Data(),
+            let (data2, respose2, error2) = handleTaskResponse(data: try? Data(contentsOf: URL(fileURLWithPath: toFilePath)),
                                                                response: response,
                                                                error: error)
             returnCallback(data2, respose2, error2)
