@@ -17,7 +17,7 @@ import Android
 #endif
 
 fileprivate struct DataTask: Equatable {
-    let task: URLSessionDataTask
+    let task: URLSessionTask
     let proxy: String?
 }
 
@@ -199,6 +199,143 @@ internal class HTTPTaskManager: Actor {
                 
                 self.checkForMoreTasks()
                 returnCallback(data, response, error)
+            }
+        }
+        
+        waitingTasks.append(DataTask(task: task,
+                                     proxy: proxy))
+        self.checkForMoreTasks()
+    }
+    
+    internal func _beResume(toFilePath: String,
+                            session: URLSession,
+                            request: URLRequest,
+                            proxy: String?,
+                            timeoutRetry: Int,
+                            retryAnyError: Bool,
+                            _ returnCallback: @escaping (URLResponse?, Error?) -> ()) {
+
+        let task = session.downloadTask(with: request) { tempURL, response, error in
+#if os(Linux) || os(Android)
+            _ = signal(SIGPIPE, SIG_IGN)
+#endif
+            
+            self.unsafeSend { _ in
+                for task in self.activeTasks where task.task.response == response {
+                    self.activeTasks.removeOne(task)
+                    break
+                }
+                
+                var shouldBeRetried: String? = nil
+                                   
+                // Allow specific error to be retried
+                if let error = error as? URLError,
+                   (error.code == .timedOut ||
+                    error.code == .networkConnectionLost ||
+                    error.errorCode == 104 ||
+                    error.errorCode == -1001 ||
+                    error.errorCode == -1003 ||
+                    error.errorCode == -1005) {
+                    shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                }
+                
+                // If we timeout out, go ahead and retry it.
+                #if !os(Windows)
+                if let error = error as? POSIXError,
+                   (error.code == .ENOSPC ||
+                    error.code == .ECONNRESET ||
+                    error.errorCode == 54 ||
+                    error.errorCode == 104 ||
+                    error.errorCode == -1001 ||
+                    error.errorCode == -1003 ||
+                    error.errorCode == -1005) {
+                    shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                }
+                #else
+                if let error = error as? POSIXError,
+                   (error.code == .ENOSPC ||
+                    error.errorCode == 104 ||
+                    error.errorCode == 104 ||
+                    error.errorCode == -1001 ||
+                    error.errorCode == -1003 ||
+                    error.errorCode == -1005) {
+                    shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                }
+                #endif
+                
+                if error.debugDescription.contains("hostname could not be found") {
+                    shouldBeRetried = nil
+                }
+                
+                if retryAnyError {
+                    // Any transport error
+                    if let error = error {
+                        shouldBeRetried = "retry any error: \(error)"
+                    }
+                    // Any non-success HTTP error
+                    if let httpResponse = response as? HTTPURLResponse,
+                       httpResponse.statusCode < 200 || httpResponse.statusCode > 299 {
+                        shouldBeRetried = "retry any error: http \(httpResponse.statusCode)"
+                    }
+                }
+                
+                // Retries on specific error string content
+                if let errorString = error?.localizedDescription,
+                   timeoutRetry > 0 {
+                    let retryErrorStrings = [
+                        "Transferred a partial file"
+                    ]
+                    
+                    for retryErrorString in retryErrorStrings where errorString.contains(retryErrorString) {
+                        shouldBeRetried = "\(retryErrorString) \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                    }
+                }
+                
+                // If we timeout out, go ahead and retry it.
+                if let shouldBeRetried = shouldBeRetried,
+                   timeoutRetry > 0 {
+                    print(shouldBeRetried)
+                    
+                    var newRequest = request
+                    
+                    #if os(Android)
+                    if request.timeoutInterval == 4 {
+                        newRequest.timeoutInterval = 60
+                    }
+                    #endif
+                    
+                    let localNewRequest = newRequest
+                    session.flush {
+                        Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
+                            guard let self = self else { return returnCallback(nil, nil) }
+                            self.beResume(toFilePath: toFilePath,
+                                          session: session,
+                                          request: localNewRequest,
+                                          proxy: proxy,
+                                          timeoutRetry: timeoutRetry - 1,
+                                          retryAnyError: retryAnyError,
+                                          self,
+                                          returnCallback)
+                        }
+                    }
+                    return
+                }
+                
+                if let tempURL = tempURL {
+                    do {
+                        if FileManager.default.fileExists(atPath: toFilePath) {
+                            try FileManager.default.removeItem(atPath: toFilePath)
+                        }
+                        try FileManager.default.moveItem(at: tempURL, to: URL(fileURLWithPath: toFilePath
+                                                                             ))
+                    } catch {
+                        self.checkForMoreTasks()
+                        return returnCallback(response, error)
+                    }
+                }
+                                
+                self.checkForMoreTasks()
+                returnCallback(response, error)
             }
         }
         

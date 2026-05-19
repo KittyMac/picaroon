@@ -275,7 +275,8 @@ extension HTTPSession {
         
         // Flynn.syslog("TAG", "[cloudfront] download \(retry) from \(url)")
         
-        self.beRequest(url: url.toString(),
+        self.beRequest(toFilePath: toFilePath,
+                       url: url.toString(),
                        httpMethod: "GET",
                        params: [:],
                        headers: headers,
@@ -404,7 +405,8 @@ extension HTTPSession {
         
         // Flynn.syslog("TAG", "[s3] download \(retry) from \(url)")
         
-        self.beRequest(url: url.toString(),
+        self.beRequest(toFilePath: toFilePath,
+                       url: url.toString(),
                        httpMethod: "GET",
                        params: [:],
                        headers: headers,
