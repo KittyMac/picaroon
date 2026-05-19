@@ -218,57 +218,6 @@ public class HTTPSession: Actor {
         }
     }
     
-    internal func _beRequest(toFilePath: String,
-                             url: String,
-                             httpMethod: String,
-                             params: [String: String],
-                             headers: [String: String],
-                             cookies: HTTPCookieStorage? = nil,
-                             timeoutRetry: Int?,
-                             proxy: String?,
-                             body: Data?,
-                             _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        guard urlSession != URLSession.shared else {
-            returnCallback(nil, nil, "HTTPSession is not allowed to use URLSession.shared")
-            return
-        }
-        
-        let (request, error) = makeRequest(urlSession: urlSession,
-                                           url: url,
-                                           httpMethod: httpMethod,
-                                           params: params,
-                                           headers: headers,
-                                           cookies: cookies,
-                                           timeoutRetry: timeoutRetry,
-                                           proxy: proxy,
-                                           body: body)
-        
-        guard let request = request else {
-            returnCallback(nil, nil, error ?? "unknown error")
-            return
-        }
-                
-        outstandingRequests += 1
-        HTTPTaskManager.shared.beResume(toFilePath: toFilePath,
-                                        session: urlSession,
-                                        request: request,
-                                        proxy: proxy,
-                                        timeoutRetry: timeoutRetry ?? 3,
-                                        retryAnyError: retryAnyError,
-                                        self) { response, error in
-            let (data2, respose2, error2) = handleTaskResponse(data: Data(),
-                                                               response: response,
-                                                               error: error)
-            returnCallback(data2, respose2, error2)
-
-            self.outstandingRequests -= 1
-            if self.outstandingRequests == 0 {
-                self.releaseUrlSession()
-            }
-
-        }
-    }
-    
     private func makeRequest(urlSession: URLSession,
                              url: String,
                              httpMethod: String,
