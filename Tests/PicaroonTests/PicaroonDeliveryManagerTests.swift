@@ -84,6 +84,18 @@ final class PicaroonDeliveryManagerTests: XCTestCase {
         HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
                                                encrypt: nil,
                                                decrypt: nil)
+        
+        Flynn.sleep(1)
+        
+        HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
+                                               encrypt: nil,
+                                               decrypt: nil)
+        
+        Flynn.sleep(1)
+        
+        HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
+                                               encrypt: nil,
+                                               decrypt: nil)
 
         let _ = PicaroonTesting.WebServer<PicaroonTesting.WebUserSession>(port: port)
         

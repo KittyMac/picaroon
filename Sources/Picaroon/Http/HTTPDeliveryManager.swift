@@ -286,8 +286,10 @@ public class HTTPDeliveryManager: Actor {
         
         loaded.sort { $0.record.createdAt < $1.record.createdAt }
         for p in loaded {
-            pending[p.record.id] = p
-            readyQueue.append(p.record.id)
+            if pending[p.record.id] == nil {
+                pending[p.record.id] = p
+                readyQueue.append(p.record.id)
+            }
         }
     }
 }
