@@ -59,10 +59,8 @@ extension HTTPSession {
                                                 "x-amz-acl": acl,
                                                 "Authorization": "AWS \(accessKey):\(signature)"
                                              ],
-                                             body: body,
                                              proxy: nil,
-                                             priority: .medium,
-                                             maxAttempts: 0) { data, response, error in
+                                             body: body) { data, response, error in
             returnCallback(data, response, error)
         }
     }

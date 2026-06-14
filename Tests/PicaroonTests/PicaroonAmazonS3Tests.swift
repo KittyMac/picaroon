@@ -167,6 +167,10 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         
         let data = Date().toISO8601Hitch().dataCopy()
         
+        HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
+                                               encrypt: nil,
+                                               decrypt: nil)
+        
         HTTPSession.oneshot.beDeliverToS3(credentials: credentials,
                                           acl: nil,
                                           storageType: nil,

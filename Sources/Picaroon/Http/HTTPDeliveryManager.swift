@@ -19,8 +19,6 @@ public class HTTPDeliveryManager: Actor {
         let headers: [String: String]
         let body: Data?
         let proxy: String?
-        let priority: String
-        let maxAttempts: Int
         let createdAt: Date
     }
 
@@ -88,20 +86,16 @@ public class HTTPDeliveryManager: Actor {
                              httpMethod: String,
                              params: [String: String],
                              headers: [String: String],
-                             body: Data?,
                              proxy: String?,
-                             priority: HTTPSessionPriority,
-                             maxAttempts: Int) {
+                             body: Data?) {
         guard isConfigured else { return }
 
         enqueue(url: url,
                 httpMethod: httpMethod,
                 params: params,
                 headers: headers,
-                body: body,
                 proxy: proxy,
-                priority: priority,
-                maxAttempts: maxAttempts,
+                body: body,
                 onComplete: nil)
     }
 
@@ -109,10 +103,8 @@ public class HTTPDeliveryManager: Actor {
                              httpMethod: String,
                              params: [String: String],
                              headers: [String: String],
-                             body: Data?,
                              proxy: String?,
-                             priority: HTTPSessionPriority,
-                             maxAttempts: Int,
+                             body: Data?,
                              _ onComplete: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
         guard isConfigured else { return onComplete(nil, nil, "HTTPDeliveryManager configure has not been called") }
         
@@ -120,10 +112,8 @@ public class HTTPDeliveryManager: Actor {
                 httpMethod: httpMethod,
                 params: params,
                 headers: headers,
-                body: body,
                 proxy: proxy,
-                priority: priority,
-                maxAttempts: maxAttempts,
+                body: body,
                 onComplete: onComplete)
     }
 
@@ -131,10 +121,8 @@ public class HTTPDeliveryManager: Actor {
                          httpMethod: String,
                          params: [String: String],
                          headers: [String: String],
-                         body: Data?,
                          proxy: String?,
-                         priority: HTTPSessionPriority,
-                         maxAttempts: Int,
+                         body: Data?,
                          onComplete: ((Data?, HTTPURLResponse?, String?) -> ())?) {
         let record = DeliveryRecord(id: UUID().uuidString,
                                     url: url,
@@ -143,8 +131,6 @@ public class HTTPDeliveryManager: Actor {
                                     headers: headers,
                                     body: body,
                                     proxy: proxy,
-                                    priority: priority.persisted,
-                                    maxAttempts: max(0, maxAttempts),
                                     createdAt: Date())
 
         // Persist BEFORE we attempt anything. If we cannot write the record we cannot honor the
@@ -178,9 +164,8 @@ public class HTTPDeliveryManager: Actor {
         }
 
         let record = p.record
-        let priority = HTTPSessionPriority(persisted: record.priority)
 
-        HTTPSessionManager.shared.beNew(priority: priority, self) { session in
+        HTTPSessionManager.shared.beNew(priority: .high, self) { session in
             session.beRequest(url: record.url,
                               httpMethod: record.httpMethod,
                               params: record.params,
@@ -228,7 +213,6 @@ public class HTTPDeliveryManager: Actor {
         }
         
         p.attempts += 1
-        let maxAttempts = p.record.maxAttempts
         
         if isExpired(p.record) {
             pending[id] = nil
@@ -237,15 +221,7 @@ public class HTTPDeliveryManager: Actor {
             pump()
             return
         }
-
-        if maxAttempts > 0 && p.attempts >= maxAttempts {
-            pending[id] = nil
-            removeFile(for: id)
-            p.onComplete?(nil, response, error)
-            pump()
-            return
-        }
-
+        
         p.state = .waiting
         let delay = backoff(forAttempt: p.attempts)
         scheduleRetry(id: id, delay: delay)
@@ -329,24 +305,6 @@ public class HTTPDeliveryManager: Actor {
         for p in loaded {
             pending[p.record.id] = p
             readyQueue.append(p.record.id)
-        }
-    }
-}
-
-fileprivate extension HTTPSessionPriority {
-    var persisted: String {
-        switch self {
-        case .low: return "low"
-        case .medium: return "medium"
-        case .high: return "high"
-        }
-    }
-
-    init(persisted: String) {
-        switch persisted {
-        case "low": self = .low
-        case "high": self = .high
-        default: self = .medium
         }
     }
 }

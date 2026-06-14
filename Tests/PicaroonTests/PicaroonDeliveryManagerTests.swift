@@ -27,10 +27,8 @@ final class PicaroonDeliveryManagerTests: XCTestCase {
                                                  httpMethod: "GET",
                                                  params: [:],
                                                  headers: [:],
-                                                 body: nil,
                                                  proxy: nil,
-                                                 priority: .medium,
-                                                 maxAttempts: 0) { data, response, error in
+                                                 body: nil) { data, response, error in
                 XCTAssertNil(error)
                 XCTAssertNotNil(data)
                 group.leave()
@@ -65,10 +63,8 @@ final class PicaroonDeliveryManagerTests: XCTestCase {
                                                  httpMethod: "GET",
                                                  params: [:],
                                                  headers: [:],
-                                                 body: nil,
                                                  proxy: nil,
-                                                 priority: .medium,
-                                                 maxAttempts: 0) { data, response, error in }
+                                                 body: nil) { data, response, error in }
         }
         
         Flynn.sleep(5)
