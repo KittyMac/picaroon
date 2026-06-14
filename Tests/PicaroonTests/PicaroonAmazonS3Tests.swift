@@ -167,12 +167,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         
         let data = Date().toISO8601Hitch().dataCopy()
         
-        let deliveryManager = HTTPDeliveryManager(storagePath: "/tmp",
-                                                  encrypt: nil,
-                                                  decrypt: nil)
-                
-        HTTPSession.oneshot.beDeliverToS3(deliveryManager: deliveryManager,
-                                          credentials: credentials,
+        HTTPSession.oneshot.beDeliverToS3(credentials: credentials,
                                           acl: nil,
                                           storageType: nil,
                                           key: goodPath,
@@ -211,8 +206,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             
             XCTAssertEqual(allObjects[0].key, "v1/errorlogs/test.txt")
             // XCTAssertEqual(allObjects[1].key, "v1/errorlogs/test2.txt")
-        }.then().doDeliverToS3(deliveryManager: deliveryManager,
-                               credentials: credentials,
+        }.then().doDeliverToS3(credentials: credentials,
                                acl: nil,
                                storageType: nil,
                                key: badPath,

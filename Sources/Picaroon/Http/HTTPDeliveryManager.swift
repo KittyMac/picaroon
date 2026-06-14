@@ -9,7 +9,8 @@ import FoundationNetworking
 // HTTPDeliveryManager exists to "guarantee" the eventual delivery of a result to a remote endpoint.
 
 public class HTTPDeliveryManager: Actor {
-
+    public static let shared = HTTPDeliveryManager()
+    
     private struct DeliveryRecord: Codable {
         let id: String
         let url: String
@@ -45,8 +46,6 @@ public class HTTPDeliveryManager: Actor {
         }
     }
 
-    private let storageURL: URL
-    private let failedURL: URL
     private let baseRetryInterval: TimeInterval = 1.0
     private let maxRetryInterval: TimeInterval = 300.0
     private let maxAge: TimeInterval = 7 * 24 * 60 * 60
@@ -57,45 +56,34 @@ public class HTTPDeliveryManager: Actor {
     private var readyQueue: [String] = []          // FIFO of ids whose state == .ready
     private var inFlightCount = 0
     
-    private var encrypt: (Data) -> Data
-    private var decrypt: (Data) -> Data
-
-    public init(storagePath: String,
-                encrypt: ((Data) -> Data)?,
-                decrypt: ((Data) -> Data)?) {
+    private var isConfigured = false
+    private var storageURL: URL = URL(fileURLWithPath: "/tmp")
+    private var encrypt: (Data) -> Data = { return $0 }
+    private var decrypt: (Data) -> Data = { return $0 }
+    
+    public override init() {
+        self.encrypt = { return $0 }
+        self.decrypt = { return $0 }
+        
+        super.init()
+    }
+    
+    internal func _beConfigure(storagePath: String,
+                               encrypt: ((Data) -> Data)?,
+                               decrypt: ((Data) -> Data)?) {
+        isConfigured = true
+        
         self.storageURL = URL(fileURLWithPath: storagePath, isDirectory: true)
-        self.failedURL = URL(fileURLWithPath: storagePath, isDirectory: true)
-            .appendingPathComponent("failed", isDirectory: true)
         
         self.encrypt = encrypt ?? { return $0 }
         self.decrypt = decrypt ?? { return $0 }
         
-        super.init()
-
         loadFromDisk()
         unsafeSend { _ in
             self.pump()
         }
     }
     
-    public override init() {
-        let storagePath = "/tmp"
-        
-        self.storageURL = URL(fileURLWithPath: storagePath, isDirectory: true)
-        self.failedURL = URL(fileURLWithPath: storagePath, isDirectory: true)
-            .appendingPathComponent("failed", isDirectory: true)
-        
-        self.encrypt = { return $0 }
-        self.decrypt = { return $0 }
-        
-        super.init()
-
-        loadFromDisk()
-        unsafeSend { _ in
-            self.pump()
-        }
-    }
-
     internal func _beDeliver(url: String,
                              httpMethod: String,
                              params: [String: String],
@@ -104,6 +92,8 @@ public class HTTPDeliveryManager: Actor {
                              proxy: String?,
                              priority: HTTPSessionPriority,
                              maxAttempts: Int) {
+        guard isConfigured else { return }
+
         enqueue(url: url,
                 httpMethod: httpMethod,
                 params: params,
@@ -124,6 +114,8 @@ public class HTTPDeliveryManager: Actor {
                              priority: HTTPSessionPriority,
                              maxAttempts: Int,
                              _ onComplete: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
+        guard isConfigured else { return onComplete(nil, nil, "HTTPDeliveryManager configure has not been called") }
+        
         enqueue(url: url,
                 httpMethod: httpMethod,
                 params: params,

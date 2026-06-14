@@ -11,8 +11,7 @@ import FoundationNetworking
 
 extension HTTPSession {
     
-    private func performDeliverToS3(deliveryManager: HTTPDeliveryManager,
-                                    credentials: S3Credentials,
+    private func performDeliverToS3(credentials: S3Credentials,
                                     acl: String?,
                                     storageType: String?,
                                     key: String,
@@ -50,34 +49,32 @@ extension HTTPSession {
             return returnCallback(nil, nil, "Failed to generate authorization token")
         }
         
-        deliveryManager.beDeliver(url: url.toString(),
-                                  httpMethod: "PUT",
-                                  params: [:],
-                                  headers: [
-                                    "Date": date,
-                                    "Content-Type": contentType.hitch.description,
-                                    "x-amz-storage-class": storageType,
-                                    "x-amz-acl": acl,
-                                    "Authorization": "AWS \(accessKey):\(signature)"
-                                   ],
-                                  body: body,
-                                  proxy: nil,
-                                  priority: .medium,
-                                  maxAttempts: 0) { data, response, error in
+        HTTPDeliveryManager.shared.beDeliver(url: url.toString(),
+                                             httpMethod: "PUT",
+                                             params: [:],
+                                             headers: [
+                                                "Date": date,
+                                                "Content-Type": contentType.hitch.description,
+                                                "x-amz-storage-class": storageType,
+                                                "x-amz-acl": acl,
+                                                "Authorization": "AWS \(accessKey):\(signature)"
+                                             ],
+                                             body: body,
+                                             proxy: nil,
+                                             priority: .medium,
+                                             maxAttempts: 0) { data, response, error in
             returnCallback(data, response, error)
         }
     }
         
-    internal func _beDeliverToS3(deliveryManager: HTTPDeliveryManager,
-                                 credentials: S3Credentials,
+    internal func _beDeliverToS3(credentials: S3Credentials,
                                  acl: String?,
                                  storageType: String?,
                                  key: String,
                                  contentType: HttpContentType,
                                  body: Data,
                                 _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        performDeliverToS3(deliveryManager: deliveryManager,
-                           credentials: credentials,
+        performDeliverToS3(credentials: credentials,
                            acl: acl,
                            storageType: storageType,
                            key: key,
