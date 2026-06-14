@@ -242,7 +242,7 @@ public class HTTPDeliveryManager: Actor {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         do {
-            let data = try encoder.encode(record)
+            let data = encrypt(try encoder.encode(record))
             try data.write(to: fileURL(for: record.id), options: .atomic)
             return nil
         } catch {
@@ -273,7 +273,7 @@ public class HTTPDeliveryManager: Actor {
         var loaded: [Pending] = []
         for file in files where file.lastPathComponent.hasSuffix(".delivery.data") {
             guard let data = try? Data(contentsOf: file),
-                  let record = try? decoder.decode(DeliveryRecord.self, from: data) else {
+                  let record = try? decoder.decode(DeliveryRecord.self, from: decrypt(data)) else {
                 continue
             }
             if isExpired(record) {
