@@ -31,16 +31,16 @@ public class HTTPDeliveryManager: Actor {
         let record: DeliveryRecord
         var state: State
         var attempts: Int
-        let onComplete: ((Data?, HTTPURLResponse?, String?) -> ())?
+        let returnCallback: ((Data?, HTTPURLResponse?, String?) -> ())?
 
         init(record: DeliveryRecord,
              state: State,
              attempts: Int,
-             onComplete: ((Data?, HTTPURLResponse?, String?) -> ())?) {
+             returnCallback: ((Data?, HTTPURLResponse?, String?) -> ())?) {
             self.record = record
             self.state = state
             self.attempts = attempts
-            self.onComplete = onComplete
+            self.returnCallback = returnCallback
         }
     }
 
@@ -87,26 +87,9 @@ public class HTTPDeliveryManager: Actor {
                              params: [String: String],
                              headers: [String: String],
                              proxy: String?,
-                             body: Data?) {
-        guard isConfigured else { return }
-
-        enqueue(url: url,
-                httpMethod: httpMethod,
-                params: params,
-                headers: headers,
-                proxy: proxy,
-                body: body,
-                onComplete: nil)
-    }
-
-    internal func _beDeliver(url: String,
-                             httpMethod: String,
-                             params: [String: String],
-                             headers: [String: String],
-                             proxy: String?,
                              body: Data?,
-                             _ onComplete: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
-        guard isConfigured else { return onComplete(nil, nil, "HTTPDeliveryManager configure has not been called") }
+                             _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
+        guard isConfigured else { return returnCallback(nil, nil, "HTTPDeliveryManager configure has not been called") }
         
         enqueue(url: url,
                 httpMethod: httpMethod,
@@ -114,7 +97,7 @@ public class HTTPDeliveryManager: Actor {
                 headers: headers,
                 proxy: proxy,
                 body: body,
-                onComplete: onComplete)
+                returnCallback: returnCallback)
     }
 
     private func enqueue(url: String,
@@ -123,7 +106,7 @@ public class HTTPDeliveryManager: Actor {
                          headers: [String: String],
                          proxy: String?,
                          body: Data?,
-                         onComplete: ((Data?, HTTPURLResponse?, String?) -> ())?) {
+                         returnCallback: ((Data?, HTTPURLResponse?, String?) -> ())?) {
         let record = DeliveryRecord(id: UUID().uuidString,
                                     url: url,
                                     httpMethod: httpMethod,
@@ -136,11 +119,11 @@ public class HTTPDeliveryManager: Actor {
         // Persist BEFORE we attempt anything. If we cannot write the record we cannot honor the
         // guarantee, so we surface that to the caller rather than pretending success.
         if let error = persist(record) {
-            onComplete?(nil, nil, error)
+            returnCallback?(nil, nil, error)
             return
         }
 
-        let p = Pending(record: record, state: .ready, attempts: 0, onComplete: onComplete)
+        let p = Pending(record: record, state: .ready, attempts: 0, returnCallback: returnCallback)
         pending[record.id] = p
         readyQueue.append(record.id)
         pump()
@@ -207,7 +190,7 @@ public class HTTPDeliveryManager: Actor {
         if completionErrors.contains(error) {
             pending[id] = nil
             removeFile(for: id)
-            p.onComplete?(data, response, error)
+            p.returnCallback?(data, response, error)
             pump()
             return
         }
@@ -217,7 +200,7 @@ public class HTTPDeliveryManager: Actor {
         if isExpired(p.record) {
             pending[id] = nil
             removeFile(for: id)
-            p.onComplete?(nil, response, error)
+            p.returnCallback?(nil, response, error)
             pump()
             return
         }
@@ -298,7 +281,7 @@ public class HTTPDeliveryManager: Actor {
                 continue
             }
 
-            loaded.append(Pending(record: record, state: .ready, attempts: 0, onComplete: nil))
+            loaded.append(Pending(record: record, state: .ready, attempts: 0, returnCallback: nil))
         }
         
         loaded.sort { $0.record.createdAt < $1.record.createdAt }

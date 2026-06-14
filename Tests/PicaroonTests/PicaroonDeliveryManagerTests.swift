@@ -28,7 +28,8 @@ final class PicaroonDeliveryManagerTests: XCTestCase {
                                                  params: [:],
                                                  headers: [:],
                                                  proxy: nil,
-                                                 body: nil) { data, response, error in
+                                                 body: nil,
+                                                 Flynn.any) { data, response, error in
                 XCTAssertNil(error)
                 XCTAssertNotNil(data)
                 group.leave()
@@ -64,7 +65,8 @@ final class PicaroonDeliveryManagerTests: XCTestCase {
                                                  params: [:],
                                                  headers: [:],
                                                  proxy: nil,
-                                                 body: nil) { data, response, error in }
+                                                 body: nil,
+                                                 Flynn.any) { data, response, error in }
         }
         
         Flynn.sleep(5)

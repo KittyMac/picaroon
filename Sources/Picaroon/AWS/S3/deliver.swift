@@ -60,7 +60,8 @@ extension HTTPSession {
                                                 "Authorization": "AWS \(accessKey):\(signature)"
                                              ],
                                              proxy: nil,
-                                             body: body) { data, response, error in
+                                             body: body,
+                                             self) { data, response, error in
             returnCallback(data, response, error)
         }
     }
