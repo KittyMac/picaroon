@@ -213,15 +213,28 @@ public class HTTPDeliveryManager: Actor {
             pump()
             return
         }
+        
+        let completionErrors: [String?] = [
+            nil,
+            "http 400",
+            "http 422",
+            "http 401",
+            "http 403",
+            "http 404",
+            "http 410",
+            "http 405",
+            "http 413",
+            "http 414",
+        ]
 
-        if error == nil {
+        if completionErrors.contains(error) {
             pending[id] = nil
             removeFile(for: id)
-            p.onComplete?(data, response, nil)
+            p.onComplete?(data, response, error)
             pump()
             return
         }
-
+        
         p.attempts += 1
         let maxAttempts = p.record.maxAttempts
         
@@ -271,7 +284,7 @@ public class HTTPDeliveryManager: Actor {
     }
 
     private func fileURL(for id: String) -> URL {
-        return storageURL.appendingPathComponent("\(id).data", isDirectory: false)
+        return storageURL.appendingPathComponent("\(id).delivery.data", isDirectory: false)
     }
 
     private func persist(_ record: DeliveryRecord) -> String? {
@@ -307,7 +320,7 @@ public class HTTPDeliveryManager: Actor {
         decoder.dateDecodingStrategy = .iso8601
 
         var loaded: [Pending] = []
-        for file in files where file.lastPathComponent.hasSuffix(".data") {
+        for file in files where file.lastPathComponent.hasSuffix(".delivery.data") {
             guard let data = try? Data(contentsOf: file),
                   let record = try? decoder.decode(DeliveryRecord.self, from: data) else {
                 continue

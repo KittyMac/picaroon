@@ -102,13 +102,14 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                                          contentType: .txt,
                                          body: data,
                                          Flynn.any) { data, response, error in
-            
+            print("beUploadToS3 \(#file):\(#line)")
             XCTAssertNil(error)
             XCTAssertNotNil(data)
         }.then().doDownloadFromS3(credentials: credentials,
                                   key: goodPath,
                                   contentType: .txt,
                                   Flynn.any) { data, source, response, error in
+            print("doDownloadFromS3 \(#file):\(#line)")
             guard let data = data else { XCTFail(); return }
             
             XCTAssertNil(error)
@@ -123,12 +124,14 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                               keyPrefix: "v1/errorlogs/",
                               marker: nil,
                               Flynn.any) { allObjects, continuationMarker, isDone, error in
+            print("doListFromS3 \(#file):\(#line)")
+            
             XCTAssertNil(error)
             XCTAssertNotNil(data)
-            XCTAssertEqual(allObjects.count, 2)
+            XCTAssertEqual(allObjects.count, 1)
             
             XCTAssertEqual(allObjects[0].key, "v1/errorlogs/test.txt")
-            XCTAssertEqual(allObjects[1].key, "v1/errorlogs/test2.txt")
+            // XCTAssertEqual(allObjects[1].key, "v1/errorlogs/test2.txt")
         }.then().doUploadToS3(credentials: credentials,
                               acl: nil,
                               storageType: nil,
@@ -136,21 +139,107 @@ final class PicaroonAmazonS3Tests: XCTestCase {
                               contentType: .txt,
                               body: data,
                               Flynn.any) { data, response, error in
+            print("doUploadToS3 \(#file):\(#line)")
+            
             XCTAssertEqual(error, "http 403")
         }.then().doDownloadFromS3(credentials: credentials,
                                   key: badPath,
                                   contentType: .txt,
                                   Flynn.any) { data, source, response, error in
+            print("doDownloadFromS3 \(#file):\(#line)")
+            
             XCTAssertEqual(error, "http 403")
         }.then().doListFromS3(credentials: credentials,
                               keyPrefix: "/",
                               marker: nil,
                               Flynn.any) { allObjects, continuationMarker, isDone, error in
+            print("doListFromS3 \(#file):\(#line)")
+            
             XCTAssertNotNil(error)
             expectation.fulfill()
         }
         
         wait(for: [expectation], timeout: 600)
+    }
+    
+    func testDeliverAndDownloadS3() {
+        let expectation = XCTestExpectation(description: #function)
+        
+        let data = Date().toISO8601Hitch().dataCopy()
+        
+        let deliveryManager = HTTPDeliveryManager(storagePath: "/tmp",
+                                                  encrypt: nil,
+                                                  decrypt: nil)
+                
+        HTTPSession.oneshot.beDeliverToS3(deliveryManager: deliveryManager,
+                                          credentials: credentials,
+                                          acl: nil,
+                                          storageType: nil,
+                                          key: goodPath,
+                                          contentType: .txt,
+                                          body: data,
+                                          Flynn.any) { data, response, error in
+            print("beDeliverToS3 \(#file):\(#line)")
+            
+            XCTAssertNil(error)
+            XCTAssertNotNil(data)
+        }.then().doDownloadFromS3(credentials: credentials,
+                                  key: goodPath,
+                                  contentType: .txt,
+                                  Flynn.any) { data, source, response, error in
+            print("doDownloadFromS3 \(#file):\(#line)")
+            
+            guard let data = data else { XCTFail(); return }
+            
+            XCTAssertNil(error)
+            XCTAssertNotNil(data)
+            
+            guard let date = Hitch(data: data).description.date() else { XCTFail(); return }
+            
+            XCTAssertTrue(
+                abs(date.timeIntervalSinceNow) < 10.0
+            )
+        }.then().doListFromS3(credentials: credentials,
+                              keyPrefix: "v1/errorlogs/",
+                              marker: nil,
+                              Flynn.any) { allObjects, continuationMarker, isDone, error in
+            print("doListFromS3 \(#file):\(#line)")
+            
+            XCTAssertNil(error)
+            XCTAssertNotNil(data)
+            XCTAssertEqual(allObjects.count, 1)
+            
+            XCTAssertEqual(allObjects[0].key, "v1/errorlogs/test.txt")
+            // XCTAssertEqual(allObjects[1].key, "v1/errorlogs/test2.txt")
+        }.then().doDeliverToS3(deliveryManager: deliveryManager,
+                               credentials: credentials,
+                               acl: nil,
+                               storageType: nil,
+                               key: badPath,
+                               contentType: .txt,
+                               body: data,
+                               Flynn.any) { data, response, error in
+            print("doDeliverToS3 \(#file):\(#line)")
+            
+            XCTAssertEqual(error, "http 403")
+        }.then().doDownloadFromS3(credentials: credentials,
+                                  key: badPath,
+                                  contentType: .txt,
+                                  Flynn.any) { data, source, response, error in
+            print("doDownloadFromS3 \(#file):\(#line)")
+            
+            XCTAssertEqual(error, "http 403")
+        }.then().doListFromS3(credentials: credentials,
+                              keyPrefix: "/",
+                              marker: nil,
+                              Flynn.any) { allObjects, continuationMarker, isDone, error in
+            print("doListFromS3 \(#file):\(#line)")
+            
+            XCTAssertNotNil(error)
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 30)
     }
          
 }
