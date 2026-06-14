@@ -77,6 +77,24 @@ public class HTTPDeliveryManager: Actor {
             self.pump()
         }
     }
+    
+    public override init() {
+        let storagePath = "/tmp"
+        
+        self.storageURL = URL(fileURLWithPath: storagePath, isDirectory: true)
+        self.failedURL = URL(fileURLWithPath: storagePath, isDirectory: true)
+            .appendingPathComponent("failed", isDirectory: true)
+        
+        self.encrypt = { return $0 }
+        self.decrypt = { return $0 }
+        
+        super.init()
+
+        loadFromDisk()
+        unsafeSend { _ in
+            self.pump()
+        }
+    }
 
     internal func _beDeliver(url: String,
                              httpMethod: String,
