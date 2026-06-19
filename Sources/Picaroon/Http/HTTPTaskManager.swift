@@ -33,7 +33,7 @@ internal class HTTPTaskManager: Actor {
     #if os(Windows)
     private let maxConcurrentTasks = 16
     #elseif os(Linux)
-    private let maxConcurrentTasks = 512
+    private let maxConcurrentTasks = Flynn.cores <= 4 ? 8 : 512
     #elseif os(Android)
     private let maxConcurrentTasks = 8
     #else
