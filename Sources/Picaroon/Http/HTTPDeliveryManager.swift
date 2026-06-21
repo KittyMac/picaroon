@@ -148,18 +148,16 @@ public class HTTPDeliveryManager: Actor {
 
         let record = p.record
 
-        HTTPSessionManager.shared.beNew(priority: .high, self) { session in
-            session.beRequest(url: record.url,
-                              httpMethod: record.httpMethod,
-                              params: record.params,
-                              headers: record.headers,
-                              cookies: nil,
-                              timeoutRetry: self.perAttemptTimeoutRetry,
-                              proxy: record.proxy,
-                              body: record.body,
-                              self) { data, response, error in
-                self.complete(id: id, data: data, response: response, error: error)
-            }
+        HTTPSession.longshot.beRequest(url: record.url,
+                                       httpMethod: record.httpMethod,
+                                       params: record.params,
+                                       headers: record.headers,
+                                       cookies: nil,
+                                       timeoutRetry: self.perAttemptTimeoutRetry,
+                                       proxy: record.proxy,
+                                       body: record.body,
+                                       self) { data, response, error in
+            self.complete(id: id, data: data, response: response, error: error)
         }
     }
 

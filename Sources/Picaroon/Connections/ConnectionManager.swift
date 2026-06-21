@@ -6,7 +6,6 @@ public class ConnectionManager: Actor {
     public static let shared = ConnectionManager()
     private override init() {
         super.init()
-        unsafePriority = 1
     }
     
     private var active: [String: Connection] = [:]

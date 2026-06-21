@@ -338,8 +338,6 @@ public class Connection: Actor, AnyConnection {
             if config.debug {
                 fputs(" failed parsing packet of \(currentPtr - buffer) bytes; expect more data\n", stderr)
             }
-            // We have an incomplete https request, wait for more data and try again
-            self.unsafePriority = 99
             return
         }
         
@@ -355,7 +353,6 @@ public class Connection: Actor, AnyConnection {
         self.unsafeClientAddress = socket.clientAddress()
         
         self.isProcessingRequest = true
-        self.unsafePriority = -1
 
         // reset current pointer to be read for the next http request
         currentPtr = buffer

@@ -25,9 +25,7 @@ internal class HTTPTaskManager: Actor {
     internal static let shared = HTTPTaskManager()
     private override init() {
         super.init()
-        
-        unsafePriority = 9999
-        unsafeMessageBatchSize = 9999
+        unsafeMessageBatchSize = 10
     }
     
     #if os(Windows)
