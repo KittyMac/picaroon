@@ -48,7 +48,8 @@ public class HTTPSessionManager: Actor {
         
         super.init()
         
-        unsafeMessageBatchSize = 10
+        unsafePriority = 9999
+        unsafeMessageBatchSize = 9999
     }
     
     #if os(Windows)

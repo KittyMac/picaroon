@@ -53,7 +53,7 @@ public class HTTPSession: Actor {
         retryAnyError = false
         
         super.init()
-        unsafeMessageBatchSize = 10
+        unsafeMessageBatchSize = 100
     }
     
     fileprivate init(oneshot: Bool) {
@@ -70,7 +70,7 @@ public class HTTPSession: Actor {
         retryAnyError = false
         
         super.init()
-        unsafeMessageBatchSize = 10
+        unsafeMessageBatchSize = 100
     }
     
     fileprivate init(longshot: Bool) {
@@ -88,7 +88,7 @@ public class HTTPSession: Actor {
         retryAnyError = true
         
         super.init()
-        unsafeMessageBatchSize = 10
+        unsafeMessageBatchSize = 100
     }
     
     private func releaseUrlSession() {
