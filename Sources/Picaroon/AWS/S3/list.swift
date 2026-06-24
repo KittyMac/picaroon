@@ -61,11 +61,16 @@ public class S3Object: Equatable {
         var keyPrefix: String? = nil
         var key: String? = nil
         var localFile: String? = nil
-        awsLog.matches(#"download: s3:\/\/([\w\d-]+)\/([\w\d-/\.]+)\/([\s\w\d-/\.]+) to ([\s\w\d\./]+)"#) { (_, groups) in
-            if groups.count == 5 {
-                keyPrefix = groups[2]
-                key = groups[3]
-                localFile = groups[4]
+        awsLog.matches(#"download: (s3:\/\/.+) to (.+)"#) { (_, groups) in
+            if groups.count == 3,
+               let url = URL(string: groups[1]) {
+                key = url.path
+                keyPrefix = url.deletingLastPathComponent().path
+                if let kp = keyPrefix,
+                   kp.hasSuffix("/") == false {
+                    keyPrefix = kp + "/"
+                }
+                localFile = groups[2]
             }
         }
         
