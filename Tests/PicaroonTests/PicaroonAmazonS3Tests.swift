@@ -43,7 +43,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         HTTPSession.oneshot.beSyncToLocal(credentials: credentials,
                                           keyPrefix: "v1/many/",
                                           localDirectory: "/tmp/many/",
-                                          continuous: false,
+                                          continuous: true,
                                           priority: .low,
                                           progressCallback: { skipped, downloaded, total in print(" skipped: \(skipped), downloaded: \(downloaded), total: \(total)") },
                                           Flynn.any) { allObjects, newObjects, continuationMarker, error in
@@ -65,7 +65,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         HTTPSession.oneshot.beSyncToLocalAWS(credentials: credentials,
                                              keyPrefix: "v1/many/",
                                              localDirectory: "/tmp/many/",
-                                             continuous: false,
+                                             continuous: true,
                                              priority: .low,
                                              progressCallback: { skipped, downloaded, total in print(" skipped: \(skipped), downloaded: \(downloaded), total: \(total)") },
                                              Flynn.any) { allObjects, newObjects, continuationMarker, error in

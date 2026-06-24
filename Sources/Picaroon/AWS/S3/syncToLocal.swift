@@ -7,12 +7,12 @@ import CryptoSwift
 import FoundationNetworking
 #endif
 
-fileprivate struct LocalFile: Equatable, Comparable {
+internal struct LocalFile: Equatable, Comparable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         return lhs.s3Key == rhs.s3Key
     }
     static func < (lhs: Self, rhs: Self) -> Bool {
-        return Hitch(string: lhs.s3Key) < Hitch(string: rhs.s3Key)
+        return lhs.s3Key.lexicographicallyPrecedes(rhs.s3Key)
     }
     
     let name: String
