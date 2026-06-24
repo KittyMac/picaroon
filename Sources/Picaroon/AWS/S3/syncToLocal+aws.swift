@@ -96,7 +96,8 @@ extension HTTPSession {
                     // API call for continuous pulls.
                     if localFilesSorted.count >= 999 {
                         let marker = localFilesSorted[localFilesSorted.count - 999].s3Key
-                        arguments.append("--start-after \(marker)")
+                        arguments.append("--start-after")
+                        arguments.append(marker)
                     }
                 }
                 
