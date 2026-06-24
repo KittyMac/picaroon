@@ -59,6 +59,28 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         wait(for: [expectation], timeout: 600)
     }
     
+    func testSyncToLocalAWS() {
+        let expectation = XCTestExpectation(description: #function)
+
+        HTTPSession.oneshot.beSyncToLocalAWS(credentials: credentials,
+                                             keyPrefix: "v1/many/",
+                                             localDirectory: "/tmp/many/",
+                                             continuous: false,
+                                             priority: .low,
+                                             progressCallback: { skipped, downloaded, total in print(" skipped: \(skipped), downloaded: \(downloaded), total: \(total)") },
+                                             Flynn.any) { allObjects, newObjects, continuationMarker, error in
+            XCTAssertNil(error)
+            // XCTAssertNotNil(continuationMarker)
+            //XCTAssertEqual(allObjects.count, 999)
+            print("TOTAL OBJECTS QUERIED FROM S3: \(allObjects.count)")
+            print("DOWNLOADED: \(newObjects.count)")
+            print("CONTINUATION MARKER: \(continuationMarker)")
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 600)
+    }
+    
     func testSyncOneFileToLocal() {
         let expectation = XCTestExpectation(description: #function)
         

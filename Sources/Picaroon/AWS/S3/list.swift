@@ -30,6 +30,14 @@ public class S3Object: Equatable {
         return key.replacingOccurrences(of: "/", with: "_")
     }
     
+    public init(keyPrefix: String,
+                key: String) {
+        self.keyPrefix = keyPrefix
+        self.key = key
+        self.size = 0
+        self.modifiedDate = Date()
+    }
+    
     public init?(xmlElement: XmlElement,
                  keyPrefix: String = "") {
         guard let key = xmlElement["Key"]?.text else { return nil }
@@ -39,6 +47,25 @@ public class S3Object: Equatable {
         self.size = Int64(size)
         self.modifiedDate = modifiedDate
         self.keyPrefix = keyPrefix
+    }
+    
+    public static func from(awsLog: String) -> S3Object? {
+        var keyPrefix: String? = nil
+        var key: String? = nil
+        awsLog.matches(#"download: s3:\/\/([\w\d-]+)\/([\w\d-/\.]+)\/([\s\w\d-/\.]+) to ([\s\w\d\./]+)"#) { (_, groups) in
+            if groups.count == 5 {
+                keyPrefix = groups[2]
+                key = groups[3]
+            }
+        }
+        
+        guard let keyPrefix = keyPrefix,
+              let key = key else {
+            return nil
+        }
+        
+        return S3Object(keyPrefix: keyPrefix,
+                        key: key)
     }
 }
 
