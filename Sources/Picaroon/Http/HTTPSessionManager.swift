@@ -59,7 +59,7 @@ public class HTTPSessionManager: Actor {
     #if os(Windows)
     private let maxConcurrentSessions = 16
     #elseif os(Linux)
-    private let maxConcurrentSessions = Flynn.cores <= 4 ? 8 : Flynn.cores * 2
+    private let maxConcurrentSessions = Flynn.cores <= 4 ? 8 : 128
     #elseif os(Android)
     private let maxConcurrentSessions = 8
     #else
