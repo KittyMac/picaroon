@@ -31,11 +31,19 @@ public class S3Object: Equatable {
     }
     
     public init(keyPrefix: String,
-                key: String) {
+                key: String,
+                localFile: String?) {
         self.keyPrefix = keyPrefix
         self.key = key
-        self.size = 0
-        self.modifiedDate = Date()
+        
+        if let localFile = localFile,
+           let attrs = try? FileManager.default.attributesOfItem(atPath: localFile){
+            self.size = (attrs[.size] as? Int64) ?? 0
+            self.modifiedDate = (attrs[.modificationDate] as? Date) ?? .distantPast
+        } else {
+            self.size = 0
+            self.modifiedDate = Date()
+        }
     }
     
     public init?(xmlElement: XmlElement,
@@ -52,20 +60,24 @@ public class S3Object: Equatable {
     public static func from(awsLog: String) -> S3Object? {
         var keyPrefix: String? = nil
         var key: String? = nil
+        var localFile: String? = nil
         awsLog.matches(#"download: s3:\/\/([\w\d-]+)\/([\w\d-/\.]+)\/([\s\w\d-/\.]+) to ([\s\w\d\./]+)"#) { (_, groups) in
             if groups.count == 5 {
                 keyPrefix = groups[2]
                 key = groups[3]
+                localFile = groups[4]
             }
         }
         
         guard let keyPrefix = keyPrefix,
-              let key = key else {
+              let key = key,
+              let localFile = localFile else {
             return nil
         }
         
         return S3Object(keyPrefix: keyPrefix,
-                        key: key)
+                        key: key,
+                        localFile: localFile)
     }
 }
 
