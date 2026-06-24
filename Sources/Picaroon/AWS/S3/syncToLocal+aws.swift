@@ -90,6 +90,10 @@ extension HTTPSession {
                                 error = "failed to parse aws output: \(line)"
                             }
                         }
+                        
+                        sender.unsafeSend { _ in
+                            progressCallback(0, allObjects.count, allObjects.count)
+                        }
                     }
                 }
                 
