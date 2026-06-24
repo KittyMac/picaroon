@@ -10,6 +10,7 @@ import FoundationNetworking
 fileprivate func pathFor(executable name: String) -> String? {
     let paths = [
         name,
+        "/opt/awscli/bin/\(name)",
         "/Users/rjbowli/.local/bin/\(name)",
         "/opt/homebrew/bin/\(name)",
         "/usr/bin/\(name)",
