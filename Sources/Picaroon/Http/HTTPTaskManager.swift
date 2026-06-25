@@ -17,6 +17,7 @@ import Android
 #endif
 
 fileprivate struct DataTask: Equatable {
+    let uuid: String
     let task: URLSessionDataTask
     let proxy: String?
 }
@@ -91,6 +92,8 @@ internal class HTTPTaskManager: Actor {
                             timeoutRetry: Int,
                             retryAnyError: Bool,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
+        
+        let taskUUID = UUID().uuidString
 
         let task = session.dataTask(with: request) { data, response, error in
 #if os(Linux) || os(Android)
@@ -98,7 +101,7 @@ internal class HTTPTaskManager: Actor {
 #endif
             
             self.unsafeSend { _ in
-                for task in self.activeTasks where task.task.response == response {
+                for task in self.activeTasks where task.uuid == taskUUID {
                     self.activeTasks.removeOne(task)
                     break
                 }
@@ -202,7 +205,8 @@ internal class HTTPTaskManager: Actor {
             }
         }
         
-        waitingTasks.append(DataTask(task: task,
+        waitingTasks.append(DataTask(uuid: taskUUID,
+                                     task: task,
                                      proxy: proxy))
         self.checkForMoreTasks()
     }
