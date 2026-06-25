@@ -255,6 +255,7 @@ public class Socket {
         
         let capacity = Int(INET6_ADDRSTRLEN)
         guard let scratch_ptr = malloc(capacity)?.bindMemory(to: CChar.self, capacity: capacity) else { return socket }
+        defer { free(scratch_ptr) }
         
         _ = withUnsafeMutablePointer(to: &clientAddr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {

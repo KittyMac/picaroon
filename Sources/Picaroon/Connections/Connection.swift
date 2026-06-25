@@ -89,8 +89,15 @@ public class Connection: Actor, AnyConnection {
                             watchSocket.connection.beCheckForMoreData()
                             shouldSleep = false
                         }
-                        // if the socket is not in error
-                        return watchSocket.socket.isClosed() == false
+                        // if the socket has closed, drop our strong reference to the
+                        // connection AND remove it from the ConnectionManager's active
+                        // table. Both retainers must release or the connection (and its
+                        // multi-megabyte buffer + file descriptor) leaks.
+                        if watchSocket.socket.isClosed() {
+                            ConnectionManager.shared.beClose(connection: watchSocket.connection)
+                            return false
+                        }
+                        return true
                     })
                     watchLock.unlock()
                     
@@ -171,6 +178,13 @@ public class Connection: Actor, AnyConnection {
     
     public func unsafeFileDescriptor() -> Int32 {
         return socket.fd()
+    }
+    
+    // Close the underlying socket. Calling this lets the watch thread reap the
+    // associated WatchSocket (which holds a strong reference to this Connection),
+    // which is required for the Connection to be deallocated. Idempotent.
+    public func unsafeCloseSocket() {
+        socket.close()
     }
     
     internal func _beSend(httpResponse: HttpResponse) {
