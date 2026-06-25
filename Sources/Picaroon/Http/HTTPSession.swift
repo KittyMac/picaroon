@@ -53,6 +53,7 @@ public class HTTPSession: Actor {
         retryAnyError = false
         
         super.init()
+        unsafePriority = 9999
         unsafeMessageBatchSize = 100
     }
     
@@ -74,6 +75,7 @@ public class HTTPSession: Actor {
         retryAnyError = false
         
         super.init()
+        unsafePriority = 9999
         unsafeMessageBatchSize = 100
     }
     
@@ -96,6 +98,7 @@ public class HTTPSession: Actor {
         retryAnyError = true
         
         super.init()
+        unsafePriority = 9999
         unsafeMessageBatchSize = 100
     }
     
