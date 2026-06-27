@@ -37,7 +37,7 @@ extension HTTPSession {
         try? contents.write(to: url, atomically: true, encoding: .utf8)
         return url.path
     }
-        
+    
     public func beSyncToLocalAWS(credentials: S3Credentials,
                                  keyPrefix: String,
                                  localDirectory: String,
@@ -47,6 +47,7 @@ extension HTTPSession {
                                  _ sender: Actor,
                                  _ returnCallback: @escaping ([S3Object], [S3Object], String?, String?) -> Void) {
         unsafeSend { _ in
+#if os(macOS) || os(Linux)
             guard let path = pathFor(executable: "aws") else {
                 return returnCallback([], [], nil, "failed to find aws cli")
             }
@@ -89,7 +90,7 @@ extension HTTPSession {
                     }
                     
                     localFilesSorted.sort()
-                                        
+                    
                     // If our sorting of the local files and s3 bucket were perfect, then we could pick up
                     // where the last file left off. However, given time drift of user devices it is entirely
                     // possible that the sorting will leave gaps. To combat this, we allow up to one extra list
@@ -105,14 +106,14 @@ extension HTTPSession {
                 process.executableURL = URL(fileURLWithPath: path)
                 process.arguments = arguments
                 
-
+                
                 var env = ProcessInfo.processInfo.environment
                 env["AWS_CONFIG_FILE"] = self.confirmConfigFile(maxConcurrent: 64)
                 env["AWS_ACCESS_KEY_ID"] = credentials.accessKey
                 env["AWS_SECRET_ACCESS_KEY"] = credentials.secretKey
                 env["AWS_DEFAULT_REGION"] = credentials.region
                 process.environment = env
-
+                
                 let outputPipe = Pipe()
                 process.standardOutput = outputPipe
                 
@@ -146,9 +147,19 @@ extension HTTPSession {
                 guard process.terminationStatus == 0 else {
                     return returnCallback([], [], nil, "aws cli failed code \(process.terminationStatus)")
                 }
-
+                
                 return returnCallback(allObjects, allObjects, nil, error)
             }.start()
+#else
+            self.beSyncToLocal(credentials: credentials,
+                               keyPrefix: keyPrefix,
+                               localDirectory: localDirectory,
+                               continuous: continuous,
+                               priority: priority,
+                               progressCallback: progressCallback,
+                               sender,
+                               returnCallback)
+#endif
         }
     }
     
