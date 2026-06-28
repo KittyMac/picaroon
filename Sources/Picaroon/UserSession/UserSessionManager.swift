@@ -67,7 +67,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
             sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
             sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
             sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
-            ConnectionManager.shared.beClose(session: userSession)
+            ConnectionManager_CloseConnection(session: userSession)
         }
         
         // Remove the sessions with the shorted inactivity timeouts
@@ -79,7 +79,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
                 sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
                 sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
                 sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
-                ConnectionManager.shared.beClose(session: userSession)
+                ConnectionManager_CloseConnection(session: userSession)
             }
         }
         
@@ -184,7 +184,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         sessionsByCombinedSessionUUID.removeValue(forKey: userSession.unsafeSessionUUID)
         sessionsByCookieSessionUUID.removeValue(forKey: userSession.unsafeCookieSessionUUID)
         sessionsByJavascriptSessionUUID.removeValue(forKey: userSession.unsafeJavascriptSessionUUID)
-        ConnectionManager.shared.beClose(session: userSession)
+        ConnectionManager_CloseConnection(session: userSession)
 
         lock.unlock()
     }

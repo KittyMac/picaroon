@@ -94,7 +94,7 @@ public class Connection: Actor, AnyConnection {
                         // table. Both retainers must release or the connection (and its
                         // multi-megabyte buffer + file descriptor) leaks.
                         if watchSocket.socket.isClosed() {
-                            ConnectionManager.shared.beClose(connection: watchSocket.connection)
+                            ConnectionManager_CloseConnection(connection: watchSocket.connection)
                             return false
                         }
                         return true
@@ -292,7 +292,7 @@ public class Connection: Actor, AnyConnection {
             if config.debug {
                 fputs(" dropping already closed connection\n", stderr)
             }
-            ConnectionManager.shared.beClose(connection: self)
+            ConnectionManager_CloseConnection(connection: self)
             return
         }
         
@@ -324,7 +324,7 @@ public class Connection: Actor, AnyConnection {
                 }
                 
                 _beSendInternalError()
-                ConnectionManager.shared.beClose(connection: self)
+                ConnectionManager_CloseConnection(connection: self)
                 return
             }
             return
@@ -341,7 +341,7 @@ public class Connection: Actor, AnyConnection {
             }
             
             _beSendTooLargeError()
-            ConnectionManager.shared.beClose(connection: self)
+            ConnectionManager_CloseConnection(connection: self)
             return
         }
 

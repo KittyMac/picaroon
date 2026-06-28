@@ -113,11 +113,11 @@ public class Server<T: UserSession> {
                     if self.config.debug {
                         fputs("read on \(self.config.address.description) \(self.config.port)\n", stderr)
                     }
-                    ConnectionManager.shared.beOpen(socket: newSocket,
-                                                    clientAddress: clientAddress,
-                                                    config: self.config,
-                                                    staticStorageHandler: self.staticStorageHandler,
-                                                    userSessionManager: self.userSessionManager)
+                    ConnectionManager_OpenConnection(socket: newSocket,
+                                                     clientAddress: clientAddress,
+                                                     config: self.config,
+                                                     staticStorageHandler: self.staticStorageHandler,
+                                                     userSessionManager: self.userSessionManager)
                 }
             }
         } while self.listening
