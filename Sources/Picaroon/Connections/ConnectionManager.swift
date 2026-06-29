@@ -28,6 +28,7 @@ internal func ConnectionManager_CloseConnection(connection: Connection) {
     // WatchSocket and the connection (2MB buffer + fd) leaks until/unless the
     // client happens to close the TCP connection.
     connection.unsafeCloseSocket()
+    
     lock.lock()
     activeConnections[connection.unsafeUUID] = nil
     lock.unlock()
@@ -35,9 +36,14 @@ internal func ConnectionManager_CloseConnection(connection: Connection) {
 
 internal func ConnectionManager_CloseConnection(session: UserSession) {
     lock.lock()
-    for connection in activeConnections.values where connection.unsafeUserSession == session {
-        connection.unsafeCloseSocket()
-        activeConnections[connection.unsafeUUID] = nil
-    }
+    let localConnections = activeConnections.values
     lock.unlock()
+    
+    for connection in localConnections where connection.unsafeUserSession == session {
+        connection.unsafeCloseSocket()
+        
+        lock.lock()
+        activeConnections[connection.unsafeUUID] = nil
+        lock.unlock()
+    }
 }
