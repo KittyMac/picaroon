@@ -108,7 +108,7 @@ public class HTTPDeliveryManager: Actor {
             let fileUrl = pendingFiles.removeFirst()
             
             guard let data = try? Data(contentsOf: fileUrl),
-                  let decompressed = try? decrypt(data).gunzipped(),
+                  let decompressed = try? decrypt(data.gunzipped()),
                   let record = try? decoder.decode(DeliveryRecord.self, from: decompressed) else {
                 continue
             }
@@ -116,7 +116,7 @@ public class HTTPDeliveryManager: Actor {
                 removeFile(for: record.id)
                 continue
             }
-
+            
             outstandingRequests += 1
             // print("delivering \(record.body?.count ?? 0) bytes for \(record.id)")
             HTTPSession.longshot.beRequest(url: record.url,
@@ -169,6 +169,12 @@ public class HTTPDeliveryManager: Actor {
     }
 
     private func isExpired(_ record: DeliveryRecord) -> Bool {
+        // AWS signatures only last 15 minutes. Ideally we could regenerate the
+        // signature but for now we just expire them if they get that old
+        if record.headers["x-amz-storage-class"] != nil {
+            return Date().timeIntervalSince(record.createdAt) > 15 * 60 * 60
+        }
+        
         return Date().timeIntervalSince(record.createdAt) > maxAge
     }
 
