@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/krzyzanowskim/CryptoSwift.git",
       "state" : {
-        "revision" : "e45a26384239e028ec87fbcc788f513b67e10d8f",
-        "version" : "1.9.0"
+        "revision" : "f2a627b84c1ff96f21ac2fcb623ab36142dd5512",
+        "version" : "1.10.0"
       }
     },
     {
@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Flynn.git",
       "state" : {
-        "revision" : "b4f068d75b1f9536e60fa45ea33958f2bc0d2d01",
-        "version" : "0.4.131"
+        "revision" : "04508a64cb65fd0c4fdc555d01d7e6a923f7126d",
+        "version" : "0.4.155"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Hitch.git",
       "state" : {
-        "revision" : "d3bfe4b90303653d71f5423c6ec2cbe47b75d7ed",
-        "version" : "0.4.151"
+        "revision" : "067a1e36837a8e62461841665715028bf3b48f5f",
+        "version" : "0.4.153"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Sextant.git",
       "state" : {
-        "revision" : "d4f794ac57a84dadacd1a0edd5d29717ef0e7b74",
-        "version" : "0.4.38"
+        "revision" : "61b2f49b249353a3e83c2df9b56b6b9542e8a2bb",
+        "version" : "0.4.40"
       }
     },
     {
@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Spanker.git",
       "state" : {
-        "revision" : "ff05ac41aea633ca7a9fd966d3164373247ee8dd",
-        "version" : "0.2.53"
+        "revision" : "36ff4879d71313ed3097b9215686dc8091f842b3",
+        "version" : "0.2.54"
       }
     },
     {

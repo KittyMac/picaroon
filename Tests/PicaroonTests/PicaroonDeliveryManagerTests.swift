@@ -12,10 +12,11 @@ final class PicaroonDeliveryManagerTests: XCTestCase {
     func testSimpleDelivery0() {
         let expectation = XCTestExpectation(description: "success")
         
-        let port = Int.random(in: 8000..<65500)
+        let port = 56598
         let baseUrl = "http://127.0.0.1:\(port)/"
         
         HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
+                                               maxConcurrentRequests: 4,
                                                encrypt: nil,
                                                decrypt: nil)
 
@@ -56,6 +57,7 @@ final class PicaroonDeliveryManagerTests: XCTestCase {
         let baseUrl = "http://127.0.0.1:\(port)/"
         
         HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
+                                               maxConcurrentRequests: 4,
                                                encrypt: nil,
                                                decrypt: nil)
         
@@ -82,18 +84,21 @@ final class PicaroonDeliveryManagerTests: XCTestCase {
         let port = 56598
         
         HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
+                                               maxConcurrentRequests: 4,
                                                encrypt: nil,
                                                decrypt: nil)
         
         Flynn.sleep(1)
         
         HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
+                                               maxConcurrentRequests: 4,
                                                encrypt: nil,
                                                decrypt: nil)
         
         Flynn.sleep(1)
         
         HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
+                                               maxConcurrentRequests: 4,
                                                encrypt: nil,
                                                decrypt: nil)
 

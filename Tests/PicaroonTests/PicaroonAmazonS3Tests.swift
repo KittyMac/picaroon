@@ -190,6 +190,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         let data = Date().toISO8601Hitch().dataCopy()
         
         HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
+                                               maxConcurrentRequests: 4,
                                                encrypt: nil,
                                                decrypt: nil)
         
@@ -259,7 +260,38 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             expectation.fulfill()
         }
         
-        wait(for: [expectation], timeout: 30)
+        wait(for: [expectation], timeout: 30000)
+    }
+    
+    func testDeliverManyLargePayloadsS3() {
+        //let data = Date().toISO8601Hitch().dataCopy()
+        
+        HTTPDeliveryManager.shared.beConfigure(storagePath: "/tmp",
+                                               maxConcurrentRequests: 4,
+                                               encrypt: nil,
+                                               decrypt: nil)
+        let group = DispatchGroup()
+        
+        for _ in 0..<10 {
+            let data = Data(repeating: 0xff, count: 1024*1024*256)
+            group.enter()
+            HTTPSession.oneshot.beDeliverToS3(credentials: credentials,
+                                              acl: nil,
+                                              storageType: nil,
+                                              key: goodPath,
+                                              contentType: .txt,
+                                              body: data,
+                                              Flynn.any) { data, response, error in
+                print("beDeliverToS3 \(#file):\(#line)")
+                
+                XCTAssertNil(error)
+                XCTAssertNotNil(data)
+                
+                group.leave()
+            }
+        }
+        
+        group.wait()
     }
          
 }

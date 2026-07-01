@@ -1,4 +1,5 @@
 // flynn:ignore Weak Timer Violation
+// flynn:ignore Access Level Violation: Behaviors must wrap their contents in a call to unsafeSend()
 
 import Foundation
 import Flynn
@@ -11,13 +12,15 @@ import FoundationNetworking
 
 extension HTTPSession {
     
-    private func performDeliverToS3(credentials: S3Credentials,
-                                    acl: String?,
-                                    storageType: String?,
-                                    key: String,
-                                    contentType: HttpContentType,
-                                    body: Data,
-                                    _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
+    @discardableResult
+    public func beDeliverToS3(credentials: S3Credentials,
+                              acl: String?,
+                              storageType: String?,
+                              key: String,
+                              contentType: HttpContentType,
+                              body: Data,
+                              _ sender: Actor,
+                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) -> Self {
         let accessKey = credentials.accessKey
         let secretKey = credentials.secretKey
         let baseDomain = credentials.baseDomain
@@ -46,40 +49,64 @@ extension HTTPSession {
                                 "/{0}{1}" << [bucket, path])
         
         guard let signature = try? HMAC(key: secretKey, variant: .sha1).authenticate(auth.dataNoCopy().byteArray).toBase64() else {
-            return returnCallback(nil, nil, "Failed to generate authorization token")
+            returnCallback(nil, nil, "Failed to generate authorization token")
+            return unsafeSend ({ thenPtr in
+                self.safeThen(thenPtr)
+            })
         }
         
+        var headers = [
+            "Date": date,
+            "Content-Type": contentType.hitch.description,
+            "x-amz-storage-class": storageType,
+            "x-amz-acl": acl,
+            "Authorization": "AWS \(accessKey):\(signature)"
+        ]
+        
+        var compressedBody = body
+        if let compressed = try? body.gzipped(level: .bestCompression) {
+            compressedBody = compressed
+            headers["Content-Encoding"] = "gzip"
+        }
+        
+        var unsafeThenPtr: UInt64 = 0
+        let group = DispatchGroup()
+        
+        group.enter()
         HTTPDeliveryManager.shared.beDeliver(url: url.toString(),
                                              httpMethod: "PUT",
                                              params: [:],
-                                             headers: [
-                                                "Date": date,
-                                                "Content-Type": contentType.hitch.description,
-                                                "x-amz-storage-class": storageType,
-                                                "x-amz-acl": acl,
-                                                "Authorization": "AWS \(accessKey):\(signature)"
-                                             ],
+                                             headers: headers,
                                              proxy: nil,
-                                             body: body,
-                                             self) { data, response, error in
+                                             body: compressedBody,
+                                             sender) { data, response, error in
             returnCallback(data, response, error)
+            group.wait()
+            self.safeThen(unsafeThenPtr)
         }
+        return self.unsafeSend ({ thenPtr in
+            unsafeThenPtr = thenPtr
+            group.leave()
+        })
     }
-        
-    internal func _beDeliverToS3(credentials: S3Credentials,
-                                 acl: String?,
-                                 storageType: String?,
-                                 key: String,
-                                 contentType: HttpContentType,
-                                 body: Data,
-                                _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        performDeliverToS3(credentials: credentials,
-                           acl: acl,
-                           storageType: storageType,
-                           key: key,
-                           contentType: contentType,
-                           body: body,
-                           returnCallback)
+    
+    @discardableResult
+    public func doDeliverToS3(credentials: S3Credentials,
+                              acl: String?,
+                              storageType: String?,
+                              key: String,
+                              contentType: HttpContentType,
+                              body: Data,
+                              _ sender: Actor,
+                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) -> Self {
+        return beDeliverToS3(credentials: credentials,
+                             acl: acl,
+                             storageType: storageType,
+                             key: key,
+                             contentType: contentType,
+                             body: body,
+                             sender,
+                             returnCallback)
     }
     
 }
