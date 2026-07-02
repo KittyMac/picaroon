@@ -382,7 +382,7 @@ final class PicaroonHttpSessionTests: XCTestCase {
     func testLongshotRetryOnAnyError() {
         let expectation = XCTestExpectation(description: #function)
         
-        HTTPSession.longshot.beRequest(url: "https://httpstat.us/502",
+        HTTPSession.longshot.beRequest(url: "https://api.uptimesignal.io/test/502",
                           httpMethod: "GET",
                           params: [:],
                           headers: [:],

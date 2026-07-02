@@ -103,7 +103,7 @@ public class HTTPSession: Actor {
     }
     
     private func releaseUrlSession() {
-        if let deinitCallback = deinitCallback {
+        if let deinitCallback = self.deinitCallback {
             self.deinitCallback = nil
             self.urlSession = URLSession.shared
             HTTPSessionManager.shared.unsafeSend { _ in
@@ -164,7 +164,9 @@ public class HTTPSession: Actor {
             
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                self.releaseUrlSession()
+                self.urlSession.reset {
+                    self.releaseUrlSession()
+                }
             }
         }
     }
@@ -212,7 +214,9 @@ public class HTTPSession: Actor {
 
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                self.releaseUrlSession()
+                self.urlSession.reset {
+                    self.releaseUrlSession()
+                }
             }
 
         }
