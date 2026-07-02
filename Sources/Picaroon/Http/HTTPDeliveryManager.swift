@@ -78,12 +78,14 @@ public class HTTPDeliveryManager: Actor {
                           _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
         guard isConfigured else { return returnCallback(nil, nil, "HTTPDeliveryManager configure has not been called") }
         
+        let compressedBody = (try? body?.gzipped(level: .bestSpeed)) ?? body
+        
         let record = DeliveryRecord(id: UUID().uuidString,
                                     url: url,
                                     httpMethod: httpMethod,
                                     params: params,
                                     headers: headers,
-                                    body: body,
+                                    body: compressedBody,
                                     proxy: proxy,
                                     createdAt: Date())
         if let error = self.persist(record) {
@@ -119,6 +121,8 @@ public class HTTPDeliveryManager: Actor {
                 continue
             }
             
+            let decompressedBody = (try? record.body?.gunzipped()) ?? record.body
+            
             outstandingRequests += 1
             // print("delivering \(record.body?.count ?? 0) bytes for \(record.id)")
             HTTPSession.longshot.beRequest(url: record.url,
@@ -128,7 +132,7 @@ public class HTTPDeliveryManager: Actor {
                                            cookies: nil,
                                            timeoutRetry: 1,
                                            proxy: record.proxy,
-                                           body: record.body,
+                                           body: decompressedBody,
                                            self) { data, response, error in
                 defer {
                     self.outstandingRequests -= 1

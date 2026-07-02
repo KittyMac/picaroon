@@ -55,20 +55,6 @@ extension HTTPSession {
             })
         }
         
-        var headers = [
-            "Date": date,
-            "Content-Type": contentType.hitch.description,
-            "x-amz-storage-class": storageType,
-            "x-amz-acl": acl,
-            "Authorization": "AWS \(accessKey):\(signature)"
-        ]
-        
-        var compressedBody = body
-        if let compressed = try? body.gzipped(level: .bestCompression) {
-            compressedBody = compressed
-            headers["Content-Encoding"] = "gzip"
-        }
-        
         var unsafeThenPtr: UInt64 = 0
         let group = DispatchGroup()
         
@@ -76,9 +62,15 @@ extension HTTPSession {
         HTTPDeliveryManager.shared.beDeliver(url: url.toString(),
                                              httpMethod: "PUT",
                                              params: [:],
-                                             headers: headers,
+                                             headers: [
+                                                "Date": date,
+                                                "Content-Type": contentType.hitch.description,
+                                                "x-amz-storage-class": storageType,
+                                                "x-amz-acl": acl,
+                                                "Authorization": "AWS \(accessKey):\(signature)"
+                                            ],
                                              proxy: nil,
-                                             body: compressedBody,
+                                             body: body,
                                              sender) { data, response, error in
             returnCallback(data, response, error)
             group.wait()

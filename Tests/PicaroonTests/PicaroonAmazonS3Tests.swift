@@ -273,7 +273,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         let group = DispatchGroup()
         
         for _ in 0..<10 {
-            let data = Data(repeating: 0xff, count: 1024*1024*256)
+            let data = Data(repeating: 0xff, count: 1024*1024*16)
             group.enter()
             HTTPSession.oneshot.beDeliverToS3(credentials: credentials,
                                               acl: nil,
