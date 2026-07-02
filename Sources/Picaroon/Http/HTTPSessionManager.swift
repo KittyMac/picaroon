@@ -15,6 +15,26 @@ import FoundationNetworking
 // - Implement a max number of URLSessions allowed, reusing the same pool of sessions to avoid the SSL memory leak
 // - Implement a max number of outstanding URL tasks allowed (avoid concentention on sockets)
 
+extension URLSession {
+    func markTask() {
+        var count = Int(sessionDescription ?? "0") ?? 0
+        count += 1
+        sessionDescription = count.description
+    }
+    func unmarkTask() {
+        var count = Int(sessionDescription ?? "0") ?? 0
+        count -= 1
+        if count < 0 {
+            count = 0
+        }
+        sessionDescription = count.description
+    }
+    func isEmpty() -> Bool {
+        let count = Int(sessionDescription ?? "0") ?? 0
+        return count <= 0
+    }
+}
+
 public enum HTTPSessionPriority {
     case low
     case medium
@@ -92,9 +112,18 @@ public class HTTPSessionManager: Actor {
         guard let httpSession = httpSession else { return }
         
         httpSession.beBegin(urlSession: urlSession) {
-            self.unsafeSend { _ in
-                self.waitingURLSessions.append(urlSession)
-                self.checkForMoreSessions()
+            if urlSession.isEmpty() {
+                urlSession.reset {
+                    self.unsafeSend { _ in
+                        self.waitingURLSessions.append(urlSession)
+                        self.checkForMoreSessions()
+                    }
+                }
+            } else {
+                self.unsafeSend { _ in
+                    self.waitingURLSessions.append(urlSession)
+                    self.checkForMoreSessions()
+                }
             }
         }
     }

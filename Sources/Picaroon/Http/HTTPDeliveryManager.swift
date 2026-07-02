@@ -113,7 +113,9 @@ public class HTTPDeliveryManager: Actor {
                 continue
             }
             if isExpired(record) {
-                removeFile(for: record.id)
+                self.outstandingCallbacks[record.id]?(nil, nil, "delivery expired")
+                self.outstandingCallbacks[record.id] = nil
+                self.removeFile(for: record.id)
                 continue
             }
             
@@ -156,7 +158,7 @@ public class HTTPDeliveryManager: Actor {
                                 
                 if self.isExpired(record) {
                     // print("expiring \(record.id)")
-                    self.outstandingCallbacks[record.id]?(data, response, error)
+                    self.outstandingCallbacks[record.id]?(data, response, "delivery expired")
                     self.outstandingCallbacks[record.id] = nil
                     self.removeFile(for: record.id)
                     return

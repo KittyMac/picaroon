@@ -95,7 +95,10 @@ internal class HTTPTaskManager: Actor {
         
         let taskUUID = UUID().uuidString
 
+        session.markTask()
         let task = session.dataTask(with: request) { data, response, error in
+            session.unmarkTask()
+            
 #if os(Linux) || os(Android)
             _ = signal(SIGPIPE, SIG_IGN)
 #endif
