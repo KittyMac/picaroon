@@ -64,44 +64,54 @@ extension HTTPSession {
                     "--no-progress"
                 ]
                 
-                if continuous {
-                    let localDirectoryUrl = URL(fileURLWithPath: localDirectory)
-                    var localFilesByS3Key: [String: LocalFile] = [:]
-                    var localFilesSorted: [LocalFile] = []
-                    if let enumerator = FileManager.default.enumerator(at: localDirectoryUrl,
-                                                                       includingPropertiesForKeys: [.isRegularFileKey],
-                                                                       options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
-                        for case let fileURL as URL in enumerator {
-                            guard let resourceValues = try? fileURL.resourceValues(forKeys: Set([.isRegularFileKey])) else { continue }
-                            guard resourceValues.isRegularFile == true else { continue }
-                            
-                            // Note: this does not handle paths which repeat like /a/b/and/more/a/b/and/file.txt?
-                            guard let relativePath = fileURL.path.components(separatedBy: localDirectoryUrl.path).last else { continue }
-                            var s3Key = keyPrefix + relativePath
-                            s3Key = s3Key.replacingOccurrences(of: "//", with: "/")
-                            
-                            let localFile = LocalFile(name: fileURL.lastPathComponent,
-                                                      path: fileURL.path,
-                                                      s3Key: s3Key)
-                            
-                            localFilesByS3Key[s3Key] = localFile
-                            localFilesSorted.append(localFile)
+                var allObjects: [S3Object] = []
+
+                
+                let localDirectoryUrl = URL(fileURLWithPath: localDirectory)
+                var localFilesByS3Key: [String: LocalFile] = [:]
+                var localFilesSorted: [LocalFile] = []
+                if let enumerator = FileManager.default.enumerator(at: localDirectoryUrl,
+                                                                   includingPropertiesForKeys: [.isRegularFileKey],
+                                                                   options: [.skipsHiddenFiles, .skipsPackageDescendants]) {
+                    for case let fileURL as URL in enumerator {
+                        guard let resourceValues = try? fileURL.resourceValues(forKeys: Set([.isRegularFileKey])) else { continue }
+                        guard resourceValues.isRegularFile == true else { continue }
+                        
+                        // Note: this does not handle paths which repeat like /a/b/and/more/a/b/and/file.txt?
+                        guard let relativePath = fileURL.path.components(separatedBy: localDirectoryUrl.path).last else { continue }
+                        var s3Key = keyPrefix + relativePath
+                        s3Key = s3Key.replacingOccurrences(of: "//", with: "/")
+                        
+                        let localFile = LocalFile(name: fileURL.lastPathComponent,
+                                                  path: fileURL.path,
+                                                  s3Key: s3Key)
+                        
+                        // to match existing logic in non-AWS version
+                        if continuous == false || allObjects.count < 999 {
+                            allObjects.append(
+                                S3Object(keyPrefix: keyPrefix,
+                                         key: s3Key,
+                                         localFile: fileURL.path)
+                            )
                         }
-                    }
-                    
-                    localFilesSorted.sort()
-                    
-                    // If our sorting of the local files and s3 bucket were perfect, then we could pick up
-                    // where the last file left off. However, given time drift of user devices it is entirely
-                    // possible that the sorting will leave gaps. To combat this, we allow up to one extra list
-                    // API call for continuous pulls.
-                    if localFilesSorted.count >= 999 {
-                        let marker = localFilesSorted[localFilesSorted.count - 999].s3Key
-                        arguments.append("--start-after")
-                        arguments.append(marker)
+                        
+                        localFilesByS3Key[s3Key] = localFile
+                        localFilesSorted.append(localFile)
                     }
                 }
                 
+                localFilesSorted.sort()
+                
+                // If our sorting of the local files and s3 bucket were perfect, then we could pick up
+                // where the last file left off. However, given time drift of user devices it is entirely
+                // possible that the sorting will leave gaps. To combat this, we allow up to one extra list
+                // API call for continuous pulls.
+                if localFilesSorted.count >= 999 {
+                    let marker = localFilesSorted[localFilesSorted.count - 999].s3Key
+                    arguments.append("--start-after")
+                    arguments.append(marker)
+                }
+                                
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: path)
                 process.arguments = arguments
@@ -119,7 +129,6 @@ extension HTTPSession {
                 
                 try? process.run()
                 
-                var allObjects: [S3Object] = []
                 var error: String? = nil
                 
                 outputPipe.fileHandleForWriting.closeFile()
