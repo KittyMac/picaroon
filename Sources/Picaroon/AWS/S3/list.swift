@@ -219,21 +219,19 @@ extension HTTPSession {
         
         func requestMore(marker: String?) {
             // Like beListFromS3(), but gives parsed results and will keep listing until all returns have been discovered
-            HTTPSessionManager.shared.beNew(priority: priority, self) { session in
-                session.beListFromS3(credentials: credentials,
-                                     keyPrefix: keyPrefix,
-                                     marker: marker,
-                                     self) { moreObjects, continuationMarker, isDone, error in
-                    
-                    if let error = error { return returnCallback(allObjects, continuationMarker, error) }
-                    
-                    allObjects.append(contentsOf: moreObjects)
-                    
-                    if isDone {
-                        return returnCallback(allObjects, continuationMarker, nil)
-                    } else {
-                        return requestMore(marker: continuationMarker)
-                    }
+                HTTPSession.longshot.beListFromS3(credentials: credentials,
+                                                  keyPrefix: keyPrefix,
+                                                  marker: marker,
+                                                  self) { moreObjects, continuationMarker, isDone, error in
+                
+                if let error = error { return returnCallback(allObjects, continuationMarker, error) }
+                
+                allObjects.append(contentsOf: moreObjects)
+                
+                if isDone {
+                    return returnCallback(allObjects, continuationMarker, nil)
+                } else {
+                    return requestMore(marker: continuationMarker)
                 }
             }
         }
@@ -253,34 +251,32 @@ extension HTTPSession {
             
             func requestMore(marker: String?) {
                 // Like beListFromS3(), but gives parsed results and will keep listing until all returns have been discovered
-                HTTPSessionManager.shared.beNew(priority: priority, self) { session in
-                    session.beListFromS3(credentials: credentials,
-                                         keyPrefix: keyPrefix,
-                                         marker: marker,
-                                         self) { moreObjects, continuationMarker, isDone, error in
-                        
-                        if let error = error {
-                            sender.unsafeSend { _ in
-                                returnCallback(allObjects, continuationMarker, error)
-                            }
-                            return
-                        }
-
-                        
-                        allObjects.append(contentsOf: moreObjects)
-                        
+                HTTPSession.longshot.beListFromS3(credentials: credentials,
+                                                  keyPrefix: keyPrefix,
+                                                  marker: marker,
+                                                  self) { moreObjects, continuationMarker, isDone, error in
+                    
+                    if let error = error {
                         sender.unsafeSend { _ in
-                            progressCallback(moreObjects)
+                            returnCallback(allObjects, continuationMarker, error)
                         }
-                        
-                        if isDone {
-                            sender.unsafeSend { _ in
-                                returnCallback(allObjects, continuationMarker, nil)
-                            }
-                            return
-                        } else {
-                            return requestMore(marker: continuationMarker)
+                        return
+                    }
+
+                    
+                    allObjects.append(contentsOf: moreObjects)
+                    
+                    sender.unsafeSend { _ in
+                        progressCallback(moreObjects)
+                    }
+                    
+                    if isDone {
+                        sender.unsafeSend { _ in
+                            returnCallback(allObjects, continuationMarker, nil)
                         }
+                        return
+                    } else {
+                        return requestMore(marker: continuationMarker)
                     }
                 }
             }
