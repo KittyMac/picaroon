@@ -120,45 +120,47 @@ extension HTTPSession {
                 
                 for object in mutableObjectsByKey.values {
                     group.enter()
-                    HTTPSession.longshot.beDownloadFromS3(credentials: credentials.noCloudFront(),
-                                                          key: object.key,
-                                                          contentType: .any,
-                                                          self) { data, source, response, error in
-                        if let error = error {
-                            lastError = error
-                        }
-                        
-                        downloadCount += 1
-                        
-                        sender.unsafeSend { _ in
-                            progressCallback(skippedCount, downloadCount, allObjects.count)
-                        }
-                        
-                        if let data = data,
-                           error == nil {
-                            let objectKey = makeRelativePath(key: object.key)
-                            
-                            let fileUrl = localDirectoryUrl.appendingPathComponent(objectKey)
-                            if (try? data.write(to: fileUrl)) == nil {
-                                // probably directory does not exist...
-                                try? FileManager.default.createDirectory(at: fileUrl.deletingLastPathComponent(),
-                                                                         withIntermediateDirectories: true)
-                                try? data.write(to: fileUrl)
+                    HTTPSessionManager.shared.beNew(priority: priority, self) { session in
+                        session.beDownloadFromS3(credentials: credentials.noCloudFront(),
+                                                 key: object.key,
+                                                 contentType: .any,
+                                                 self) { data, source, response, error in
+                            if let error = error {
+                                lastError = error
                             }
                             
-                            // Update the modification date of the file to match the date of the s3 object
-                            try? FileManager.default.setAttributes([
-                                FileAttributeKey.creationDate: object.modifiedDate,
-                            ], ofItemAtPath: fileUrl.path)
+                            downloadCount += 1
                             
-                            try? FileManager.default.setAttributes([
-                                FileAttributeKey.modificationDate: object.modifiedDate,
-                            ], ofItemAtPath: fileUrl.path)
+                            sender.unsafeSend { _ in
+                                progressCallback(skippedCount, downloadCount, allObjects.count)
+                            }
                             
-                            modifiedObjects.append(object)
+                            if let data = data,
+                               error == nil {
+                                let objectKey = makeRelativePath(key: object.key)
+                                
+                                let fileUrl = localDirectoryUrl.appendingPathComponent(objectKey)
+                                if (try? data.write(to: fileUrl)) == nil {
+                                    // probably directory does not exist...
+                                    try? FileManager.default.createDirectory(at: fileUrl.deletingLastPathComponent(),
+                                                                             withIntermediateDirectories: true)
+                                    try? data.write(to: fileUrl)
+                                }
+                                
+                                // Update the modification date of the file to match the date of the s3 object
+                                try? FileManager.default.setAttributes([
+                                    FileAttributeKey.creationDate: object.modifiedDate,
+                                ], ofItemAtPath: fileUrl.path)
+                                
+                                try? FileManager.default.setAttributes([
+                                    FileAttributeKey.modificationDate: object.modifiedDate,
+                                ], ofItemAtPath: fileUrl.path)
+                                
+                                modifiedObjects.append(object)
+                            }
+                            
+                            group.leave()
                         }
-                        
-                        group.leave()
                     }
                 }
             }
