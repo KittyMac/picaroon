@@ -40,6 +40,7 @@ public class HttpRequest {
     public var waitingCount: HalfHitch?
     public var activeCount: HalfHitch?
     public var maxConcurrent: HalfHitch?
+    public var exclusivity: HalfHitch?
     
     public var content: HalfHitch?
     public var json: JsonElement?
@@ -444,6 +445,7 @@ public class HttpRequest {
         waitingCount = bake(buffer: buffer, bufferSize: bufferSize, using: waitingCount)
         activeCount = bake(buffer: buffer, bufferSize: bufferSize, using: activeCount)
         maxConcurrent = bake(buffer: buffer, bufferSize: bufferSize, using: maxConcurrent)
+        exclusivity = bake(buffer: buffer, bufferSize: bufferSize, using: exclusivity)
         content = bake(buffer: buffer, bufferSize: bufferSize, using: content)
         
         // If we have json content, automatically parse it out
@@ -946,6 +948,26 @@ public class HttpRequest {
                                       count: bufferSize,
                                       from: valueStart - buffer,
                                       to: ptr - buffer)
+        }
+        
+        if exclusivity == nil,
+            size >= 11,
+            //keyEnd[-11] == .e || keyEnd[-11] == .E,
+            keyEnd[-10] == .x || keyEnd[-10] == .X,
+            //keyEnd[-9] == .c || keyEnd[-9] == .C,
+            keyEnd[-8] == .l || keyEnd[-8] == .L,
+            //keyEnd[-7] == .u || keyEnd[-7] == .U,
+            keyEnd[-6] == .s || keyEnd[-6] == .S,
+            //keyEnd[-5] == .i|| keyEnd[-5] == .I,
+            keyEnd[-4] == .v || keyEnd[-4] == .V,
+            //keyEnd[-3] == .i || keyEnd[-3] == .I,
+            keyEnd[-2] == .t || keyEnd[-2] == .T,
+            keyEnd[-1] == .y || keyEnd[-1] == .Y {
+            exclusivity = HalfHitch(sourceObject: nil,
+                                    raw: buffer,
+                                    count: bufferSize,
+                                    from: valueStart - buffer,
+                                    to: ptr - buffer)
         }
     }
 }

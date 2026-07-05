@@ -49,6 +49,7 @@ final class picaroonHttpRequestTests: XCTestCase {
         waiting-count: 3\r
         active-count: 7\r
         max-concurrent: 20\r
+        exclusivity: 12345,54321,11111,22222\r
         accept-language: en-us\r
         accept-encoding: gzip, deflate\r\n\r\n
         """
@@ -71,6 +72,7 @@ final class picaroonHttpRequestTests: XCTestCase {
         XCTAssertEqual(request.waitingCount, "3")
         XCTAssertEqual(request.activeCount, "7")
         XCTAssertEqual(request.maxConcurrent, "20")
+        XCTAssertEqual(request.exclusivity, "12345,54321,11111,22222")
         XCTAssertEqual(request.acceptLanguage, "en-us")
         XCTAssertEqual(request.acceptEncoding, "gzip, deflate")
     }
