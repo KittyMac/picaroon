@@ -65,7 +65,7 @@ extension HTTPSession {
                 ]
                 
                 var allObjects: [S3Object] = []
-
+                var modifiedObjects: [S3Object] = []
                 
                 let localDirectoryUrl = URL(fileURLWithPath: localDirectory)
                 var localFilesByS3Key: [String: LocalFile] = [:]
@@ -140,6 +140,7 @@ extension HTTPSession {
                             
                             if let object = S3Object.from(awsLog: line) {
                                 allObjects.append(object)
+                                modifiedObjects.append(object)
                             } else {
                                 error = "failed to parse aws output: \(line)"
                             }
@@ -157,7 +158,7 @@ extension HTTPSession {
                     return returnCallback([], [], nil, "aws cli failed code \(process.terminationStatus)")
                 }
                 
-                return returnCallback(allObjects, allObjects, nil, error)
+                return returnCallback(allObjects, modifiedObjects, nil, error)
             }.start()
 #else
             self.beSyncToLocal(credentials: credentials,
