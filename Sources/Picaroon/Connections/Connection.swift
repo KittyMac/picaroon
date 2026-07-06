@@ -159,7 +159,7 @@ public class Connection: Actor, AnyConnection {
         connectionMaxBackoff = config.connectionMaxBackoff
 
         buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize + 32)
-        buffer.initialize(to: 0)
+        buffer.initialize(repeating: 0, count: bufferSize + 32)
 
         currentPtr = buffer
         endPtr = buffer + bufferSize

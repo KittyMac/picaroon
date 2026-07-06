@@ -10,6 +10,12 @@ import Spanker
 // swiftlint:disable type_body_length
 // swiftlint:disable file_length
 
+@inline(__always)
+fileprivate func peek(_ ptr: UnsafePointer<UInt8>,
+                      _ endPtr: UnsafePointer<UInt8>) -> UInt8 {
+    return ptr < endPtr ? ptr[0] : 0
+}
+
 public class HttpRequest {
     
     public var method: HttpMethod = .UNKNOWN
@@ -249,12 +255,13 @@ public class HttpRequest {
                 if current == .carriageReturn || current == .newLine {
                     while ptr < endPtr && (current == .carriageReturn || current == .newLine) {
                         ptr += 1
-                        current = ptr[0]
+                        current = peek(ptr, endPtr)
                     }
                     // If we reach here, we're at the point we're looking for payload data
                     if let contentLength = contentLength,
                        let contentLengthBytes = contentLength.toInt() {
-                        guard endPtr - ptr >= contentLengthBytes else {
+                        guard endPtr - ptr >= contentLengthBytes,
+                              contentLengthBytes >= 0 else {
                             return nil
                         }
                         content = HalfHitch(sourceObject: nil,
@@ -273,17 +280,17 @@ public class HttpRequest {
                 } else if current == .colon {
                     keyEnd = ptr
                     ptr += 1
-                    current = ptr[0]
+                    current = peek(ptr, endPtr)
                     break
                 }
                 ptr += 1
-                current = ptr[0]
+                current = peek(ptr, endPtr)
             }
             
             // 2. Skip whitespace
             while ptr < endPtr && (current == .space || current == .tab) {
                 ptr += 1
-                current = ptr[0]
+                current = peek(ptr, endPtr)
             }
             
             let valueStart = ptr
@@ -291,7 +298,7 @@ public class HttpRequest {
             // 3. Advance to the end of the line
             while ptr < endPtr && current != .carriageReturn && current != .newLine {
                 ptr += 1
-                current = ptr[0]
+                current = peek(ptr, endPtr)
             }
             
             // 3. For speed, we only match against the keys we support (no generics)
@@ -302,12 +309,12 @@ public class HttpRequest {
                           keyEnd: keyEnd)
             
             // Advance to the next line
-            if ptr[0] == .carriageReturn {
+            if peek(ptr, endPtr) == .carriageReturn {
                 ptr += 1
-                if ptr[0] == .newLine {
+                if peek(ptr, endPtr) == .newLine {
                     ptr += 1
                 }
-            } else if ptr[0] == .newLine {
+            } else if peek(ptr, endPtr) == .newLine {
                 ptr += 1
             } else {
                 ptr += 1
@@ -376,16 +383,16 @@ public class HttpRequest {
                           keyEnd: keyEnd)
             
             // Advance to the next line
-            if ptr[0] == .carriageReturn {
+            if peek(ptr, endPtr) == .carriageReturn {
                 ptr += 1
-                if ptr[0] == .newLine {
+                if peek(ptr, endPtr) == .newLine {
                     ptr += 1
                 }
-            } else if ptr[0] == .newLine {
+            } else if peek(ptr, endPtr) == .newLine {
                 ptr += 1
             }
             
-            if ptr[0] == .newLine {
+            if peek(ptr, endPtr) == .newLine {
                 lineNumber += 1
             }
             
