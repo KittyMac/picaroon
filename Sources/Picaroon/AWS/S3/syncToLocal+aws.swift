@@ -106,7 +106,7 @@ extension HTTPSession {
                 // where the last file left off. However, given time drift of user devices it is entirely
                 // possible that the sorting will leave gaps. To combat this, we allow up to one extra list
                 // API call for continuous pulls.
-                if localFilesSorted.count >= 999 {
+                if continuous && localFilesSorted.count >= 999 {
                     let marker = localFilesSorted[localFilesSorted.count - 999].s3Key
                     arguments.append("--start-after")
                     arguments.append(marker)
