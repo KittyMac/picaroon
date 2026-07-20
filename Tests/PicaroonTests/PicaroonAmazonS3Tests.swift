@@ -150,7 +150,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             
             XCTAssertNil(error)
             XCTAssertNotNil(data)
-            XCTAssertEqual(allObjects.count, 1)
+            XCTAssertEqual(allObjects.count, 2)
             
             XCTAssertEqual(allObjects[0].key, "v1/errorlogs/test.txt")
             // XCTAssertEqual(allObjects[1].key, "v1/errorlogs/test2.txt")
@@ -178,6 +178,29 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             print("doListFromS3 \(#file):\(#line)")
             
             XCTAssertNotNil(error)
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 600)
+    }
+    
+    func testUploadFileS3() {
+        let expectation = XCTestExpectation(description: #function)
+        
+        let filePath = "/tmp/test.txt"
+        
+        let data = Date().toISO8601Hitch().dataCopy()
+        try! data.write(to: URL(fileURLWithPath: filePath))
+        
+        let uploadPath = "/v1/errorlogs/test_upload.txt"
+                
+        HTTPSession.oneshot.beUploadToS3(credentials: credentials,
+                                         key: uploadPath,
+                                         filePath: filePath,
+                                         Flynn.any) { error in
+            print("beUploadToS3 \(#file):\(#line)")
+            XCTAssertNil(error)
+            XCTAssertNotNil(data)
             expectation.fulfill()
         }
         
@@ -229,7 +252,7 @@ final class PicaroonAmazonS3Tests: XCTestCase {
             
             XCTAssertNil(error)
             XCTAssertNotNil(data)
-            XCTAssertEqual(allObjects.count, 1)
+            XCTAssertEqual(allObjects.count, 2)
             
             XCTAssertEqual(allObjects[0].key, "v1/errorlogs/test.txt")
             // XCTAssertEqual(allObjects[1].key, "v1/errorlogs/test2.txt")

@@ -7,7 +7,7 @@ import CryptoSwift
 import FoundationNetworking
 #endif
 
-fileprivate func pathFor(executable name: String) -> String? {
+internal func pathFor(executable name: String) -> String? {
     let paths = [
         name,
         "/opt/awscli/bin/\(name)",
@@ -49,7 +49,10 @@ extension HTTPSession {
         unsafeSend { _ in
 #if os(macOS) || os(Linux)
             guard let path = pathFor(executable: "aws") else {
-                return returnCallback([], [], nil, "failed to find aws cli")
+                sender.unsafeSend { _ in
+                    returnCallback([], [], nil, "failed to find aws cli")
+                }
+                return
             }
             
             Thread {
@@ -155,10 +158,16 @@ extension HTTPSession {
                 process.waitUntilExit()
                 
                 guard process.terminationStatus == 0 else {
-                    return returnCallback([], [], nil, "aws cli failed code \(process.terminationStatus)")
+                    sender.unsafeSend { _ in
+                        returnCallback([], [], nil, "aws cli failed code \(process.terminationStatus)")
+                    }
+                    return
                 }
                 
-                return returnCallback(allObjects, modifiedObjects, nil, error)
+                sender.unsafeSend { _ in
+                    returnCallback(allObjects, modifiedObjects, nil, error)
+                }
+                return
             }.start()
 #else
             self.beSyncToLocal(credentials: credentials,
