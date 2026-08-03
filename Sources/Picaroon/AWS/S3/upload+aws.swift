@@ -60,7 +60,7 @@ extension HTTPSession {
             return returnCallback(nil)
         }.start()
 #else
-        returnCallback(nil, nil, "unsupported platform")
+        returnCallback("unsupported platform")
 #endif
     }
     
