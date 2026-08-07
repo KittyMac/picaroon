@@ -14,28 +14,147 @@ public enum HttpMethod {
 }
 
 public enum HttpStatus: Int {
+
+    // MARK: - 1xx Informational
+    case `continue` = 100
+    case switchingProtocols = 101
+    case processing = 102
+    case earlyHints = 103
+
+    // MARK: - 2xx Success
     case ok = 200
+    case created = 201
+    case accepted = 202
+    case nonAuthoritativeInformation = 203
+    case noContent = 204
+    case resetContent = 205
+    case partialContent = 206
+    case multiStatus = 207
+    case alreadyReported = 208
+    case imUsed = 226
+
+    // MARK: - 3xx Redirection
+    case multipleChoices = 300
     case movedPermanently = 301
+    case found = 302
+    case seeOther = 303
     case notModified = 304
+    case useProxy = 305
+    case temporaryRedirect = 307
+    case permanentRedirect = 308
+
+    // MARK: - 4xx Client Error
     case badRequest = 400
     case unauthorized = 401
+    case paymentRequired = 402
+    case forbidden = 403
     case notFound = 404
+    case methodNotAllowed = 405
+    case notAcceptable = 406
+    case proxyAuthenticationRequired = 407
     case requestTimeout = 408
+    case conflict = 409
+    case gone = 410
+    case lengthRequired = 411
+    case preconditionFailed = 412
     case requestTooLarge = 413
+    case uriTooLong = 414
+    case unsupportedMediaType = 415
+    case rangeNotSatisfiable = 416
+    case expectationFailed = 417
+    case imATeapot = 418
+    case misdirectedRequest = 421
+    case unprocessableContent = 422
+    case locked = 423
+    case failedDependency = 424
+    case tooEarly = 425
+    case upgradeRequired = 426
+    case preconditionRequired = 428
+    case tooManyRequests = 429
+    case requestHeaderFieldsTooLarge = 431
+    case unavailableForLegalReasons = 451
+
+    // MARK: - 5xx Server Error
     case internalServerError = 500
+    case notImplemented = 501
+    case badGateway = 502
     case serviceUnavailable = 503
+    case gatewayTimeout = 504
+    case httpVersionNotSupported = 505
+    case variantAlsoNegotiates = 506
+    case insufficientStorage = 507
+    case loopDetected = 508
+    case notExtended = 510
+    case networkAuthenticationRequired = 511
 
     public var hitch: HalfHitch {
         switch self {
+        case .continue: return "HTTP/1.1 100 Continue"
+        case .switchingProtocols: return "HTTP/1.1 101 Switching Protocols"
+        case .processing: return "HTTP/1.1 102 Processing"
+        case .earlyHints: return "HTTP/1.1 103 Early Hints"
+
         case .ok: return "HTTP/1.1 200 OK"
+        case .created: return "HTTP/1.1 201 Created"
+        case .accepted: return "HTTP/1.1 202 Accepted"
+        case .nonAuthoritativeInformation: return "HTTP/1.1 203 Non-Authoritative Information"
+        case .noContent: return "HTTP/1.1 204 No Content"
+        case .resetContent: return "HTTP/1.1 205 Reset Content"
+        case .partialContent: return "HTTP/1.1 206 Partial Content"
+        case .multiStatus: return "HTTP/1.1 207 Multi-Status"
+        case .alreadyReported: return "HTTP/1.1 208 Already Reported"
+        case .imUsed: return "HTTP/1.1 226 IM Used"
+
+        case .multipleChoices: return "HTTP/1.1 300 Multiple Choices"
         case .movedPermanently: return "HTTP/1.1 301 Moved Permanently"
+        case .found: return "HTTP/1.1 302 Found"
+        case .seeOther: return "HTTP/1.1 303 See Other"
         case .notModified: return "HTTP/1.1 304 Not Modified"
+        case .useProxy: return "HTTP/1.1 305 Use Proxy"
+        case .temporaryRedirect: return "HTTP/1.1 307 Temporary Redirect"
+        case .permanentRedirect: return "HTTP/1.1 308 Permanent Redirect"
+
         case .badRequest: return "HTTP/1.1 400 Bad Request"
         case .unauthorized: return "HTTP/1.1 401 Unauthorized"
+        case .paymentRequired: return "HTTP/1.1 402 Payment Required"
+        case .forbidden: return "HTTP/1.1 403 Forbidden"
         case .notFound: return "HTTP/1.1 404 Not Found"
+        case .methodNotAllowed: return "HTTP/1.1 405 Method Not Allowed"
+        case .notAcceptable: return "HTTP/1.1 406 Not Acceptable"
+        case .proxyAuthenticationRequired: return "HTTP/1.1 407 Proxy Authentication Required"
         case .requestTimeout: return "HTTP/1.1 408 Request Timeout"
+        case .conflict: return "HTTP/1.1 409 Conflict"
+        case .gone: return "HTTP/1.1 410 Gone"
+        case .lengthRequired: return "HTTP/1.1 411 Length Required"
+        case .preconditionFailed: return "HTTP/1.1 412 Precondition Failed"
         case .requestTooLarge: return "HTTP/1.1 413 Request Too Large"
+        case .uriTooLong: return "HTTP/1.1 414 URI Too Long"
+        case .unsupportedMediaType: return "HTTP/1.1 415 Unsupported Media Type"
+        case .rangeNotSatisfiable: return "HTTP/1.1 416 Range Not Satisfiable"
+        case .expectationFailed: return "HTTP/1.1 417 Expectation Failed"
+        case .imATeapot: return "HTTP/1.1 418 I'm a teapot"
+        case .misdirectedRequest: return "HTTP/1.1 421 Misdirected Request"
+        case .unprocessableContent: return "HTTP/1.1 422 Unprocessable Content"
+        case .locked: return "HTTP/1.1 423 Locked"
+        case .failedDependency: return "HTTP/1.1 424 Failed Dependency"
+        case .tooEarly: return "HTTP/1.1 425 Too Early"
+        case .upgradeRequired: return "HTTP/1.1 426 Upgrade Required"
+        case .preconditionRequired: return "HTTP/1.1 428 Precondition Required"
+        case .tooManyRequests: return "HTTP/1.1 429 Too Many Requests"
+        case .requestHeaderFieldsTooLarge: return "HTTP/1.1 431 Request Header Fields Too Large"
+        case .unavailableForLegalReasons: return "HTTP/1.1 451 Unavailable For Legal Reasons"
+
+        case .notImplemented: return "HTTP/1.1 501 Not Implemented"
+        case .badGateway: return "HTTP/1.1 502 Bad Gateway"
         case .serviceUnavailable: return "HTTP/1.1 503 Service Unavailable"
+        case .gatewayTimeout: return "HTTP/1.1 504 Gateway Timeout"
+        case .httpVersionNotSupported: return "HTTP/1.1 505 HTTP Version Not Supported"
+        case .variantAlsoNegotiates: return "HTTP/1.1 506 Variant Also Negotiates"
+        case .insufficientStorage: return "HTTP/1.1 507 Insufficient Storage"
+        case .loopDetected: return "HTTP/1.1 508 Loop Detected"
+        case .notExtended: return "HTTP/1.1 510 Not Extended"
+        case .networkAuthenticationRequired: return "HTTP/1.1 511 Network Authentication Required"
+
         default: return "HTTP/1.1 500 Internal Server Error"
         }
     }
