@@ -108,7 +108,16 @@ public class Socket {
         #endif
     }
     
-    public func setReadTimeout(milliseconds value: UInt = 0) {
+    #if os(Android)
+    private static let soRcvTimeo: Int32 = 20 // SO_RCVTIMEO_OLD
+    private static let soSndTimeo: Int32 = 21 // SO_SNDTIMEO_OLD
+    #else
+    private static let soRcvTimeo: Int32 = SO_RCVTIMEO
+    private static let soSndTimeo: Int32 = SO_SNDTIMEO
+    #endif
+    
+    @discardableResult
+    public func setReadTimeout(milliseconds value: UInt = 0) -> Bool {
         var timeout = timeval()
         if value > 0 {
             timeout.tv_sec = Int(Double(value / 1000))
@@ -119,14 +128,16 @@ public class Socket {
             timeout.tv_usec = Int32(uSecs)
             #endif
         }
-        #if os(Android)
-        setsockopt (socketFd, SOL_SOCKET, SO_RCVTIMEO_NEW, &timeout, socklen_t(MemoryLayout<timeval>.stride))
-        #else
-        setsockopt (socketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.stride))
-        #endif
+        
+        guard setsockopt(socketFd, SOL_SOCKET, Self.soRcvTimeo, &timeout, socklen_t(MemoryLayout<timeval>.stride)) == 0 else {
+            print("warning: failed to set read timeout of \(value)ms on socket \(socketFd), errno \(errno)")
+            return false
+        }
+        return true
     }
     
-    public func setWriteTimeout(milliseconds: UInt = 0) {
+    @discardableResult
+    public func setWriteTimeout(milliseconds: UInt = 0) -> Bool {
         var timeout = timeval()
         if milliseconds > 0 {
             timeout.tv_sec = Int(milliseconds / 1000)
@@ -137,11 +148,12 @@ public class Socket {
             timeout.tv_usec = Int32(uSecs)
             #endif
         }
-        #if os(Android)
-        setsockopt (socketFd, SOL_SOCKET, SO_SNDTIMEO_NEW, &timeout, socklen_t(MemoryLayout<timeval>.stride))
-        #else
-        setsockopt (socketFd, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.stride))
-        #endif
+        
+        guard setsockopt(socketFd, SOL_SOCKET, Self.soSndTimeo, &timeout, socklen_t(MemoryLayout<timeval>.stride)) == 0 else {
+            print("warning: failed to set write timeout of \(milliseconds)ms on socket \(socketFd), errno \(errno)")
+            return false
+        }
+        return true
     }
     
     public func close() {
