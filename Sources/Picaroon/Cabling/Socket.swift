@@ -130,7 +130,7 @@ public class Socket {
         }
         
         guard setsockopt(socketFd, SOL_SOCKET, Self.soRcvTimeo, &timeout, socklen_t(MemoryLayout<timeval>.stride)) == 0 else {
-            print("warning: failed to set read timeout of \(value)ms on socket \(socketFd), errno \(errno)")
+            Flynn.syslog("TAG", "warning: failed to set read timeout of \(value)ms on socket \(socketFd), errno \(errno)")
             return false
         }
         return true
@@ -150,7 +150,7 @@ public class Socket {
         }
         
         guard setsockopt(socketFd, SOL_SOCKET, Self.soSndTimeo, &timeout, socklen_t(MemoryLayout<timeval>.stride)) == 0 else {
-            print("warning: failed to set write timeout of \(milliseconds)ms on socket \(socketFd), errno \(errno)")
+            Flynn.syslog("TAG", "warning: failed to set write timeout of \(milliseconds)ms on socket \(socketFd), errno \(errno)")
             return false
         }
         return true

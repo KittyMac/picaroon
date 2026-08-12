@@ -156,7 +156,7 @@ internal class HTTPTaskManager: Actor {
 #if !os(Linux)
             if didWarnAbountProxy == false {
                 didWarnAbountProxy = true
-                print("warning: URLSessionDataTasks do not support proxy on this platform")
+                Flynn.syslog("TAG", "warning: URLSessionDataTasks do not support proxy on this platform")
             }
 #endif
             setenv("all_proxy", proxy, 1)
