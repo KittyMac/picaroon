@@ -1,4 +1,5 @@
 // flynn:ignore Weak Timer Violation
+// flynn:ignore Flynn.Any Warning: Flynn.any inside of an Actor; did you mean to use self?
 
 import Foundation
 import Flynn
@@ -188,9 +189,8 @@ extension HTTPSession {
             if error == "http 403" || error == "http 503" || error == "http 500" {
                 NTP.reset()
                 if retry > 0 {
-                    let actor = Actor()
-                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
-                        HTTPSessionManager.shared.beNew(actor) { session in
+                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, Flynn.any) { timer in
+                        HTTPSessionManager.shared.beNew(Flynn.any) { session in
                             // Flynn.syslog("TAG", "aws download http 403, retrying \(retry)\n")
                             session.performDownloadFromS3(credentials: credentials,
                                                           key: key,
@@ -417,9 +417,8 @@ extension HTTPSession {
             if error == "http 403" || error == "http 503" || error == "http 500" {
                 NTP.reset()
                 if retry > 0 {
-                    let actor = Actor()
-                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, actor) { timer in
-                        HTTPSessionManager.shared.beNew(actor) { session in
+                    Flynn.Timer(timeInterval: 3.0, immediate: false, repeats: false, Flynn.any) { timer in
+                        HTTPSessionManager.shared.beNew(Flynn.any) { session in
                             // Flynn.syslog("TAG", "aws download http 403, retrying \(retry)\n")
                             session.performDownloadFromS3(toFilePath: toFilePath,
                                                           credentials: credentials,
