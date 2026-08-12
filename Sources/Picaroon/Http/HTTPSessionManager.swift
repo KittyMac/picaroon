@@ -114,11 +114,10 @@ public class HTTPSessionManager: Actor {
         
         httpSession.beBegin(urlSession: urlSession) {
             if urlSession.isEmpty() {
-                urlSession.reset {
-                    self.unsafeSend { _ in
-                        self.waitingURLSessions.append(urlSession)
-                        self.checkForMoreSessions()
-                    }
+                // urlSession.reset { }
+                self.unsafeSend { _ in
+                    self.waitingURLSessions.append(urlSession)
+                    self.checkForMoreSessions()
                 }
             } else {
                 self.unsafeSend { _ in

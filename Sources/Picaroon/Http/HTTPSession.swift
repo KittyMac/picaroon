@@ -165,9 +165,8 @@ public class HTTPSession: Actor {
             
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                self.urlSession.reset {
-                    self.releaseUrlSession()
-                }
+                // self.urlSession.reset { }
+                self.releaseUrlSession()
             }
         }
     }
@@ -215,9 +214,8 @@ public class HTTPSession: Actor {
 
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                self.urlSession.reset {
-                    self.releaseUrlSession()
-                }
+                // self.urlSession.reset { }
+                self.releaseUrlSession()
             }
 
         }
