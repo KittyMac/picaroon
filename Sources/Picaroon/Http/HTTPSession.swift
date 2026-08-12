@@ -60,6 +60,7 @@ public class HTTPSession: Actor {
     fileprivate init(oneshot: Bool) {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 20.0
+        config.timeoutIntervalForResource = 600.0
 #if os(Android)
         config.httpMaximumConnectionsPerHost = 1
 #else
@@ -82,7 +83,7 @@ public class HTTPSession: Actor {
     fileprivate init(longshot: Bool) {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 120.0
-        config.timeoutIntervalForResource = 120.0
+        config.timeoutIntervalForResource = 600.0
 #if os(Android)
         config.httpMaximumConnectionsPerHost = 1
 #else

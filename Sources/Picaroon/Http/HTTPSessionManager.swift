@@ -55,6 +55,7 @@ public class HTTPSessionManager: Actor {
         for _ in 0..<maxConcurrentSessions {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 20.0
+            config.timeoutIntervalForResource = 600.0
 #if os(Android)
             config.httpMaximumConnectionsPerHost = 1
 #else

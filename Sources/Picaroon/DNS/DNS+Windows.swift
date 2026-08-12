@@ -25,7 +25,7 @@ public class DNS: Actor {
         }
     }
     
-    public static func resolve(domain: String) -> DNS.Results {
+    internal static func resolveBlocking(domain: String) -> DNS.Results {
         guard checkWAS() else { return DNS.Results() }
         
         guard let hp = gethostbyname(domain) else { return DNS.Results() }
@@ -73,24 +73,19 @@ public class DNS: Actor {
                            addresses: addresses)
     }
     
-    public static func resolve(url: URL) -> DNS.Results {
-        guard let host = url.host else { return DNS.Results() }
-        return Self.resolve(domain: host)
-    }
-    
-    
     public static let shared = DNS()
     private override init() {
         super.init()
     }
 
-    internal func _beResolve(domain: String) -> DNS.Results {
-        return Self.resolve(domain: domain)
+    internal func _beResolve(domain: String,
+                             _ returnCallback: @escaping (DNS.Results) -> ()) {
+        Self.resolve(domain: domain, returnCallback)
     }
     
-    internal func _beResolve(url: URL) -> DNS.Results {
-        guard let host = url.host else { return DNS.Results() }
-        return Self.resolve(domain: host)
+    internal func _beResolve(url: URL,
+                             _ returnCallback: @escaping (DNS.Results) -> ()) {
+        Self.resolve(url: url, returnCallback)
     }
 }
 

@@ -88,23 +88,7 @@ public class DNS: Actor {
         return address
     }
     
-    public static func resolve(domain: String, timeoutSeconds: Double = 5.0) -> DNS.Results {
-        let semaphore = DispatchSemaphore(value: 0)
-        var results = DNS.Results()
-        
-        DispatchQueue.global(qos: .utility).async {
-            results = _resolveBlocking(domain: domain)
-            semaphore.signal()
-        }
-        
-        if semaphore.wait(timeout: .now() + timeoutSeconds) == .timedOut {
-            return DNS.Results()
-        }
-        
-        return results
-    }
-
-    private static func _resolveBlocking(domain: String) -> DNS.Results {
+    internal static func resolveBlocking(domain: String) -> DNS.Results {
     #if os(Linux)
         var result: hostent = hostent()
         var resultPointer: UnsafeMutablePointer<hostent>? = UnsafeMutablePointer<hostent>(mutating: nil)
@@ -173,27 +157,20 @@ public class DNS: Actor {
                            addresses: addresses)
     }
     
-    public static func resolve(url: URL) -> DNS.Results {
-        guard let host = url.host else { return DNS.Results() }
-        return Self.resolve(domain: host)
-    }
-    
-    
     public static let shared = DNS()
     private override init() {
         super.init()
     }
 
-    internal func _beResolve(domain: String) -> DNS.Results {
-        return Self.resolve(domain: domain)
+    internal func _beResolve(domain: String,
+                             _ returnCallback: @escaping (DNS.Results) -> ()) {
+        Self.resolve(domain: domain, returnCallback)
     }
     
-    internal func _beResolve(url: URL) -> DNS.Results {
-        guard let host = url.host else { return DNS.Results() }
-        return Self.resolve(domain: host)
+    internal func _beResolve(url: URL,
+                             _ returnCallback: @escaping (DNS.Results) -> ()) {
+        Self.resolve(url: url, returnCallback)
     }
-    
-    
 }
 
 #endif
