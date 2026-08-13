@@ -193,7 +193,7 @@ public class Socket {
         let bytesRead = WinSDK.recv(SOCKET(socketFd), cptr, Int32(endPtr - cptr), 0)
         
         if (bytesRead <= 0) {
-            if bytesRead < 0 && errno == EWOULDBLOCK || errno == EAGAIN {
+            if bytesRead < 0 && (errno == EWOULDBLOCK || errno == EAGAIN) {
                 return 0
             }
             self.close()

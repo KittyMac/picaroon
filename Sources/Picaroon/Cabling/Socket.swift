@@ -292,7 +292,7 @@ public class Socket {
         let bytesRead = posix_recv(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
         
         if (bytesRead <= 0) {
-            if bytesRead < 0 && errno == EWOULDBLOCK || errno == EAGAIN {
+            if bytesRead < 0 && (errno == EWOULDBLOCK || errno == EAGAIN) {
                 return 0
             }
             self.close()
