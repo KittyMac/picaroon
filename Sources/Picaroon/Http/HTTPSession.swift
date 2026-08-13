@@ -37,13 +37,27 @@ public class HTTPSession: Actor {
     /// give it a deliberately small timeout and let the retry do the real work.
     internal static let androidFirstCallTimeout: TimeInterval = 2
     
-    private let maxConsecutiveTransportFailures = 2
+    /// How many request timeouts in a row against one host before we stop
+    /// believing in this URLSession. Two is enough to tell a single dropped
+    /// request apart from a connection cache full of dead keepalive sockets.
+    private let maxConsecutiveTimeouts = 2
     
     private var urlSession: URLSession = URLSession.shared
     
+    /// Non nil when this HTTPSession built its own URLSession and is therefore
+    /// entitled to throw it away and build another. Pooled sessions borrow
+    /// theirs from HTTPSessionManager and can only flag it as suspect on the
+    /// way out.
     private let ownedSessionKind: URLSessionFactory.Kind?
     
-    private var consecutiveTransportFailures = 0
+    /// Consecutive request timeouts, keyed by host.
+    ///
+    /// Per host rather than per session because one URLSession can be serving
+    /// several hosts at once (HTTPSession.longshot serves all of them), and the
+    /// two situations we have to tell apart look identical in aggregate: one host
+    /// wedged while the others are fine is a poisoned connection, whereas every
+    /// host failing at once is just the link being down.
+    private var consecutiveTimeouts: [String: Int] = [:]
     private var sessionIsSuspect = false
     
     private var beginCallback: ((HTTPSession) -> ())?
@@ -98,24 +112,66 @@ public class HTTPSession: Actor {
         }
     }
     
-    private func noteCompletion(response: HTTPURLResponse?) {
+    /// Whether an error means "we wrote a request into a socket which looked
+    /// alive and nothing ever came back".
+    ///
+    /// Deliberately narrow: this is the only error which indicates a connection
+    /// libcurl will happily keep on reusing.
+    ///  - a resolve failure (-1003) never got a socket at all, so replacing the
+    ///    session cannot possibly help
+    ///  - an aborted or reset connection means the kernel already tore the socket
+    ///    down, so curl will not reuse it - that recovers on its own
+    ///  - our own HTTPTaskError is not a URLError, so cancellations and
+    ///    retirements cannot count towards retiring anything else. That part
+    ///    matters: counting them meant one recycle cancelled its sibling tasks,
+    ///    and those cancellations immediately retired the replacement session.
+    private func isRequestTimeout(_ error: Error?) -> Bool {
+        guard let error = error else { return false }
+        if let urlError = error as? URLError {
+            return urlError.code == .timedOut || urlError.errorCode == -1001
+        }
+        if let posixError = error as? POSIXError {
+            return posixError.errorCode == -1001
+        }
+        return false
+    }
+    
+    /// Called on this actor once per completed request.
+    private func noteCompletion(host: String?,
+                                response: HTTPURLResponse?,
+                                error: Error?) {
+        guard let host = host else { return }
+        
+        // Any HTTPURLResponse at all - 4xx and 5xx included - proves this
+        // connection carries traffic, so anything counted against this host is
+        // stale.
         guard response == nil else {
-            consecutiveTransportFailures = 0
+            consecutiveTimeouts.removeValue(forKey: host)
             return
         }
         
-        consecutiveTransportFailures += 1
-        guard consecutiveTransportFailures >= maxConsecutiveTransportFailures else { return }
-        consecutiveTransportFailures = 0
+        // Other transport errors are left uncounted rather than resetting the
+        // count: they are evidence of neither a healthy nor a poisoned
+        // connection, and a flaky link produces a great many of them.
+        guard isRequestTimeout(error) else { return }
         
-        recycleUrlSession()
+        let timeouts = (consecutiveTimeouts[host] ?? 0) + 1
+        consecutiveTimeouts[host] = timeouts
+        
+        guard timeouts >= maxConsecutiveTimeouts else { return }
+        
+        recycleUrlSession(host: host)
     }
     
-    private func recycleUrlSession() {
+    private func recycleUrlSession(host: String) {
+        // The counts belong to the session we are about to stop using.
+        consecutiveTimeouts.removeAll()
+        
         guard let ownedSessionKind = ownedSessionKind else {
             // Borrowed from the pool: we cannot swap it out from under the
             // manager, so flag it and let the manager replace it on release.
             sessionIsSuspect = true
+            Flynn.syslog("TAG", "warning: flagged a pooled url session as suspect after \(maxConsecutiveTimeouts) consecutive timeouts against \(host)")
             return
         }
         
@@ -129,7 +185,7 @@ public class HTTPSession: Actor {
         // in the meantime - such a task never calls back at all.
         HTTPTaskManager.shared.beRetire(session: poisoned)
         
-        Flynn.syslog("TAG", "warning: replaced a url session after \(maxConsecutiveTransportFailures) consecutive transport failures")
+        Flynn.syslog("TAG", "warning: replaced the \(ownedSessionKind) url session after \(maxConsecutiveTimeouts) consecutive timeouts against \(host)")
     }
     
     /// Hold on to the URLSession for a little while after going idle, rather than
@@ -203,6 +259,7 @@ public class HTTPSession: Actor {
                              timeoutRetry: Int?,
                              proxy: String?,
                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
+        let host = request.url?.host
         outstandingRequests += 1
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
@@ -215,7 +272,9 @@ public class HTTPSession: Actor {
                                                                error: error)
             returnCallback(data2, respose2, error2)
             
-            self.noteCompletion(response: respose2)
+            self.noteCompletion(host: host,
+                                response: respose2,
+                                error: error)
             
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
@@ -253,6 +312,7 @@ public class HTTPSession: Actor {
             return
         }
                 
+        let host = request.url?.host
         outstandingRequests += 1
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
@@ -265,7 +325,9 @@ public class HTTPSession: Actor {
                                                                error: error)
             returnCallback(data2, respose2, error2)
             
-            self.noteCompletion(response: respose2)
+            self.noteCompletion(host: host,
+                                response: respose2,
+                                error: error)
             
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
