@@ -38,9 +38,25 @@ public class HTTPSession: Actor {
     internal static let androidFirstCallTimeout: TimeInterval = 2
     
     /// How many request timeouts in a row against one host before we stop
-    /// believing in this URLSession. Two is enough to tell a single dropped
-    /// request apart from a connection cache full of dead keepalive sockets.
-    private let maxConsecutiveTimeouts = 2
+    /// believing in this URLSession.
+    ///
+    /// One. A request which consumed its entire timeout budget is categorically
+    /// different from one which failed: on a link which can fail at all, failures
+    /// come back in single digit milliseconds (connect refused, host unresolved),
+    /// whereas burning the full budget means we wrote into a socket that looked
+    /// alive and nothing ever came back. Waiting for a second one only donates
+    /// another full timeout's worth of dead air to a host that was never coming
+    /// back on that connection.
+    private let maxConsecutiveTimeouts = 1
+    
+    /// Timeouts are only evidence against a session if the request had a
+    /// realistic amount of time to succeed in.
+    ///
+    /// This exists because of the android first call hack below, which
+    /// deliberately gives its request a 2 second timeout and expects it to fail;
+    /// with a threshold of one, counting that would recycle a brand new session
+    /// on every launch.
+    private let minimumTimeoutForRecycling: TimeInterval = 10
     
     private var urlSession: URLSession = URLSession.shared
     
@@ -138,6 +154,7 @@ public class HTTPSession: Actor {
     
     /// Called on this actor once per completed request.
     private func noteCompletion(host: String?,
+                                timeoutInterval: TimeInterval,
                                 response: HTTPURLResponse?,
                                 error: Error?) {
         guard let host = host else { return }
@@ -154,16 +171,19 @@ public class HTTPSession: Actor {
         // count: they are evidence of neither a healthy nor a poisoned
         // connection, and a flaky link produces a great many of them.
         guard isRequestTimeout(error) else { return }
+        guard timeoutInterval >= minimumTimeoutForRecycling else { return }
         
         let timeouts = (consecutiveTimeouts[host] ?? 0) + 1
         consecutiveTimeouts[host] = timeouts
         
         guard timeouts >= maxConsecutiveTimeouts else { return }
         
-        recycleUrlSession(host: host)
+        recycleUrlSession(host: host,
+                          timeouts: timeouts)
     }
     
-    private func recycleUrlSession(host: String) {
+    private func recycleUrlSession(host: String,
+                                   timeouts: Int) {
         // The counts belong to the session we are about to stop using.
         consecutiveTimeouts.removeAll()
         
@@ -171,7 +191,7 @@ public class HTTPSession: Actor {
             // Borrowed from the pool: we cannot swap it out from under the
             // manager, so flag it and let the manager replace it on release.
             sessionIsSuspect = true
-            Flynn.syslog("TAG", "warning: flagged a pooled url session as suspect after \(maxConsecutiveTimeouts) consecutive timeouts against \(host)")
+            Flynn.syslog("TAG", "warning: flagged a pooled url session as suspect after \(timeouts) request timeout(s) against \(host)")
             return
         }
         
@@ -185,7 +205,7 @@ public class HTTPSession: Actor {
         // in the meantime - such a task never calls back at all.
         HTTPTaskManager.shared.beRetire(session: poisoned)
         
-        Flynn.syslog("TAG", "warning: replaced the \(ownedSessionKind) url session after \(maxConsecutiveTimeouts) consecutive timeouts against \(host)")
+        Flynn.syslog("TAG", "warning: replaced the \(ownedSessionKind) url session after \(timeouts) request timeout(s) against \(host)")
     }
     
     /// Hold on to the URLSession for a little while after going idle, rather than
@@ -260,6 +280,7 @@ public class HTTPSession: Actor {
                              proxy: String?,
                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
         let host = request.url?.host
+        let requestTimeout = request.timeoutInterval
         outstandingRequests += 1
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
@@ -273,6 +294,7 @@ public class HTTPSession: Actor {
             returnCallback(data2, respose2, error2)
             
             self.noteCompletion(host: host,
+                                timeoutInterval: requestTimeout,
                                 response: respose2,
                                 error: error)
             
@@ -313,6 +335,7 @@ public class HTTPSession: Actor {
         }
                 
         let host = request.url?.host
+        let requestTimeout = request.timeoutInterval
         outstandingRequests += 1
         HTTPTaskManager.shared.beResume(session: urlSession,
                                         request: request,
@@ -326,6 +349,7 @@ public class HTTPSession: Actor {
             returnCallback(data2, respose2, error2)
             
             self.noteCompletion(host: host,
+                                timeoutInterval: requestTimeout,
                                 response: respose2,
                                 error: error)
             
