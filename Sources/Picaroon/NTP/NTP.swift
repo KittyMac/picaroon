@@ -15,6 +15,8 @@ public class NTP {
     private static var disabled = false
     
     private static func sync(domain: String = "pool.ntp.org") -> TimeInterval? {
+        return ntpOffset
+        
         guard lock.try() == true else { return nil }
         defer { lock.unlock() }
 
