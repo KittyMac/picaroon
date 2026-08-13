@@ -35,6 +35,7 @@ final class picaroonConnectionTests: XCTestCase {
     
     
     func testNTPResolver0() {
+        NTP.warm()
         let correctedDate = NTP.date()
         XCTAssertTrue(abs(correctedDate.timeIntervalSinceNow) < 5.0)
     }
