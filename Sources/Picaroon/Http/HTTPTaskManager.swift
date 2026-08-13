@@ -197,7 +197,8 @@ internal class HTTPTaskManager: Actor {
         }
     }
 
-    internal func _beCancelAll(session: URLSession) {
+    private func cancelAll(session: URLSession,
+                           reason: String) {
         let belongsToSession: (DataTask) -> Bool = { $0.session === session }
 
         guard activeTasks.contains(where: belongsToSession) ||
@@ -212,9 +213,31 @@ internal class HTTPTaskManager: Actor {
             if dataTask.isResumed {
                 dataTask.task.cancel()
             }
-            dataTask.once.call(nil, nil, HTTPTaskError("http task was cancelled"))
+            dataTask.once.call(nil, nil, HTTPTaskError(reason))
         }
+    }
 
+    internal func _beCancelAll(session: URLSession) {
+        cancelAll(session: session,
+                  reason: "http task was cancelled")
+        checkForMoreTasks()
+    }
+
+    /// Permanently drop a URLSession whose owner has stopped trusting it.
+    ///
+    /// invalidateAndCancel() is the only thing which reliably empties libcurl's
+    /// connection cache on swift-corelibs-foundation - reset() and cancelling
+    /// individual tasks do not - so it is what we use, and it means this session
+    /// can never be handed out again.
+    ///
+    /// This runs on our actor precisely so that the invalidation is ordered
+    /// against our own queues: a task resumed on an already invalidated
+    /// URLSession never calls its completion handler at all, so we must be
+    /// certain no queued task belonging to this session survives the call below.
+    internal func _beRetire(session: URLSession) {
+        cancelAll(session: session,
+                  reason: "http task was retired")
+        session.invalidateAndCancel()
         checkForMoreTasks()
     }
 
@@ -362,7 +385,10 @@ internal class HTTPTaskManager: Actor {
         var newRequest = request
 
         #if os(Android)
-        if request.timeoutInterval == 4 {
+        // The first android call is deliberately given a very short timeout (see
+        // HTTPSession.makeRequest); the retry is the one expected to actually
+        // succeed, so give it a realistic one.
+        if request.timeoutInterval == HTTPSession.androidFirstCallTimeout {
             newRequest.timeoutInterval = 60
         }
         #endif
