@@ -15,24 +15,36 @@ import FoundationNetworking
 // - Implement a max number of URLSessions allowed, reusing the same pool of sessions to avoid the SSL memory leak
 // - Implement a max number of outstanding URL tasks allowed (avoid concentention on sockets)
 
-extension URLSession {
-    func markTask() {
-        var count = Int(sessionDescription ?? "0") ?? 0
-        count += 1
-        sessionDescription = count.description
+internal enum HTTPSessionTuning {
+    /// Maximum simultaneous connections libcurl will open to one host, per URLSession.
+    /// Note: on android this used to be 1. That did not reduce the number of sockets
+    /// we create, it only serialized them, which spread the same request volume over
+    /// more connection setups and teardowns.
+    internal static var maximumConnectionsPerHost: Int {
+        #if os(Android)
+        return 4
+        #else
+        return min(max(Flynn.cores * 3, 4), 32)
+        #endif
     }
-    func unmarkTask() {
-        var count = Int(sessionDescription ?? "0") ?? 0
-        count -= 1
-        if count < 0 {
-            count = 0
-        }
-        sessionDescription = count.description
+
+    /// How long an idle URLSession is kept by its current owner before being handed
+    /// back to the pool. Without this, a caller making three sequential requests to
+    /// the same host releases the session after each one, very likely gets a
+    /// different session (with a cold connection cache) for the next, and pays a
+    /// fresh TCP + TLS handshake -- and a fresh muxnote lifecycle -- every time.
+    internal static var idleSessionLinger: TimeInterval {
+        #if os(Android)
+        return 2.0
+        #else
+        return 5.0
+        #endif
     }
-    func isEmpty() -> Bool {
-        let count = Int(sessionDescription ?? "0") ?? 0
-        return count <= 0
-    }
+
+    /// How long a released URLSession sits out before being issued to a new owner.
+    /// Gives libdispatch a chance to finish unregistering the previous owner's
+    /// sockets before libcurl starts registering new ones on the same handle.
+    internal static let sessionSettleInterval: TimeInterval = 0.1
 }
 
 public enum HTTPSessionPriority {
@@ -56,11 +68,7 @@ public class HTTPSessionManager: Actor {
             let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 20.0
             config.timeoutIntervalForResource = 600.0
-#if os(Android)
-            config.httpMaximumConnectionsPerHost = 1
-#else
-            config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
-#endif
+            config.httpMaximumConnectionsPerHost = HTTPSessionTuning.maximumConnectionsPerHost
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             config.httpCookieAcceptPolicy = .always
@@ -82,7 +90,7 @@ public class HTTPSessionManager: Actor {
     #elseif os(Linux)
     private let maxConcurrentSessions = Flynn.cores <= 4 ? 8 : 128
     #elseif os(Android)
-    private let maxConcurrentSessions = 8
+    private let maxConcurrentSessions = 4
     #else
     private let maxConcurrentSessions = min(max(Flynn.cores * 4, 4), 64)
     #endif
@@ -112,19 +120,27 @@ public class HTTPSessionManager: Actor {
         
         guard let httpSession = httpSession else { return }
         
-        httpSession.beBegin(urlSession: urlSession) {
-            if urlSession.isEmpty() {
-                // urlSession.reset { }
-                self.unsafeSend { _ in
-                    self.waitingURLSessions.append(urlSession)
-                    self.checkForMoreSessions()
-                }
-            } else {
-                self.unsafeSend { _ in
-                    self.waitingURLSessions.append(urlSession)
-                    self.checkForMoreSessions()
-                }
+        httpSession.beBegin(urlSession: urlSession) { returnedURLSession in
+            self.unsafeSend { _ in
+                self.returnToPool(returnedURLSession)
             }
+        }
+    }
+    
+    private func returnToPool(_ urlSession: URLSession) {
+        guard HTTPSessionTuning.sessionSettleInterval > 0 else {
+            waitingURLSessions.append(urlSession)
+            checkForMoreSessions()
+            return
+        }
+        
+        Flynn.Timer(timeInterval: HTTPSessionTuning.sessionSettleInterval,
+                    immediate: false,
+                    repeats: false,
+                    self) { [weak self] _ in
+            guard let self = self else { return }
+            self.waitingURLSessions.append(urlSession)
+            self.checkForMoreSessions()
         }
     }
     
