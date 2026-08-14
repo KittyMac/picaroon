@@ -62,7 +62,7 @@ public class HTTPSession: Actor {
         config.timeoutIntervalForRequest = 20.0
         config.timeoutIntervalForResource = 600.0
 #if os(Android)
-        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+        config.httpMaximumConnectionsPerHost = 1
 #else
         config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
 #endif
@@ -85,7 +85,7 @@ public class HTTPSession: Actor {
         config.timeoutIntervalForRequest = 120.0
         config.timeoutIntervalForResource = 600.0
 #if os(Android)
-        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+        config.httpMaximumConnectionsPerHost = 1
 #else
         config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
 #endif
@@ -279,7 +279,6 @@ public class HTTPSession: Actor {
         
         request.httpMethod = httpMethod
         request.httpBody = body
-        request.timeoutInterval = urlSession.configuration.timeoutIntervalForRequest
         
         #if os(Android)
         // On android specifically, the first time we make a network call it always time outs

@@ -104,7 +104,7 @@ internal class HTTPTaskManager: Actor {
     #elseif os(Linux)
     private let maxConcurrentTasks = Flynn.cores <= 4 ? 8 : 512
     #elseif os(Android)
-    private let maxConcurrentTasks = min(max(Flynn.cores * 4, 4), 64)
+    private let maxConcurrentTasks = 8
     #else
     private let maxConcurrentTasks = min(max(Flynn.cores * 4, 4), 64)
     #endif
@@ -338,27 +338,27 @@ internal class HTTPTaskManager: Actor {
         var newRequest = request
 
         #if os(Android)
-        if request.timeoutInterval == 2 {
+        if request.timeoutInterval == 4 {
             newRequest.timeoutInterval = 60
         }
         #endif
 
         let localNewRequest = newRequest
 
-        session.reset {
-            Flynn.Timer(timeInterval: self.retryInterval, immediate: false, repeats: false, self) { [weak self] _ in
-                guard let self = self else {
-                    once.call(nil, nil, HTTPTaskError("http task manager went away before retry"))
-                    return
-                }
-                self.submit(session: session,
-                            request: localNewRequest,
-                            proxy: proxy,
-                            timeoutRetry: timeoutRetry - 1,
-                            retryAnyError: retryAnyError,
-                            deadline: deadline,
-                            once: once)
+        session.reset { }
+
+        Flynn.Timer(timeInterval: retryInterval, immediate: false, repeats: false, self) { [weak self] _ in
+            guard let self = self else {
+                once.call(nil, nil, HTTPTaskError("http task manager went away before retry"))
+                return
             }
+            self.submit(session: session,
+                        request: localNewRequest,
+                        proxy: proxy,
+                        timeoutRetry: timeoutRetry - 1,
+                        retryAnyError: retryAnyError,
+                        deadline: deadline,
+                        once: once)
         }
     }
 }
