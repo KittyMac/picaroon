@@ -62,7 +62,7 @@ public class HTTPSession: Actor {
         config.timeoutIntervalForRequest = 20.0
         config.timeoutIntervalForResource = 600.0
 #if os(Android)
-        config.httpMaximumConnectionsPerHost = 1
+        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
 #else
         config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
 #endif
@@ -85,7 +85,7 @@ public class HTTPSession: Actor {
         config.timeoutIntervalForRequest = 120.0
         config.timeoutIntervalForResource = 600.0
 #if os(Android)
-        config.httpMaximumConnectionsPerHost = 1
+        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
 #else
         config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
 #endif
