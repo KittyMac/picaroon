@@ -37,7 +37,7 @@ public class HTTPSessionManager: Actor {
             config.timeoutIntervalForRequest = 20.0
             config.timeoutIntervalForResource = 600.0
 #if os(Android)
-            config.httpMaximumConnectionsPerHost = 1
+            config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
 #else
             config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
 #endif
@@ -62,7 +62,7 @@ public class HTTPSessionManager: Actor {
     #elseif os(Linux)
     private let maxConcurrentSessions = Flynn.cores <= 4 ? 8 : 128
     #elseif os(Android)
-    private let maxConcurrentSessions = 8
+    private let maxConcurrentSessions = min(max(Flynn.cores * 4, 4), 64)
     #else
     private let maxConcurrentSessions = min(max(Flynn.cores * 4, 4), 64)
     #endif
