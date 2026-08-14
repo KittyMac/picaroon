@@ -66,23 +66,18 @@ fileprivate final class OnceCallback {
 fileprivate final class DataTask {
     let uuid: String
     let task: URLSessionDataTask
-    let session: URLSession
     let proxy: String?
 
     let deadline: TimeInterval
     let once: OnceCallback
 
-    var isResumed = false
-
     init(uuid: String,
          task: URLSessionDataTask,
-         session: URLSession,
          proxy: String?,
          deadline: TimeInterval,
          once: OnceCallback) {
         self.uuid = uuid
         self.task = task
-        self.session = session
         self.proxy = proxy
         self.deadline = deadline
         self.once = once
@@ -141,8 +136,6 @@ internal class HTTPTaskManager: Actor {
     }
 
     private func resume(dataTask: DataTask) {
-        dataTask.isResumed = true
-
         #if os(Windows)
         dataTask.task.resume()
         #else
@@ -190,32 +183,9 @@ internal class HTTPTaskManager: Actor {
         waitingTasks.removeAll(where: isExpired)
 
         for dataTask in expired {
-            if dataTask.isResumed {
-                dataTask.task.cancel()
-            }
+            dataTask.task.cancel()
             dataTask.once.call(nil, nil, HTTPTaskError("http task exceeded its maximum lifetime of \(maxRequestLifetime)s"))
         }
-    }
-
-    internal func _beCancelAll(session: URLSession) {
-        let belongsToSession: (DataTask) -> Bool = { $0.session === session }
-
-        guard activeTasks.contains(where: belongsToSession) ||
-              waitingTasks.contains(where: belongsToSession) else { return }
-
-        let cancelled = activeTasks.filter(belongsToSession) + waitingTasks.filter(belongsToSession)
-
-        activeTasks.removeAll(where: belongsToSession)
-        waitingTasks.removeAll(where: belongsToSession)
-
-        for dataTask in cancelled {
-            if dataTask.isResumed {
-                dataTask.task.cancel()
-            }
-            dataTask.once.call(nil, nil, HTTPTaskError("http task was cancelled"))
-        }
-
-        checkForMoreTasks()
     }
 
     internal func _beResume(session: URLSession,
@@ -249,7 +219,10 @@ internal class HTTPTaskManager: Actor {
 
         let taskUUID = UUID().uuidString
 
+        session.markTask()
         let task = session.dataTask(with: request) { data, response, error in
+            session.unmarkTask()
+
 #if os(Linux) || os(Android)
             _ = signal(SIGPIPE, SIG_IGN)
 #endif
@@ -271,7 +244,6 @@ internal class HTTPTaskManager: Actor {
 
         waitingTasks.append(DataTask(uuid: taskUUID,
                                      task: task,
-                                     session: session,
                                      proxy: proxy,
                                      deadline: deadline,
                                      once: once))
@@ -303,6 +275,7 @@ internal class HTTPTaskManager: Actor {
             error.code == .networkConnectionLost ||
             error.errorCode == 104 ||
             error.errorCode == -1001 ||
+            error.errorCode == -1003 ||
             error.errorCode == -1005) {
             shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
         }
@@ -315,6 +288,7 @@ internal class HTTPTaskManager: Actor {
             error.errorCode == 54 ||
             error.errorCode == 104 ||
             error.errorCode == -1001 ||
+            error.errorCode == -1003 ||
             error.errorCode == -1005) {
             shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
         }
@@ -323,10 +297,15 @@ internal class HTTPTaskManager: Actor {
            (error.code == .ENOSPC ||
             error.errorCode == 104 ||
             error.errorCode == -1001 ||
+            error.errorCode == -1003 ||
             error.errorCode == -1005) {
             shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
         }
         #endif
+
+        if error.debugDescription.contains("hostname could not be found") {
+            shouldBeRetried = nil
+        }
 
         if retryAnyError {
             // Any transport error

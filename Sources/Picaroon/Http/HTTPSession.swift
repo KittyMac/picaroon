@@ -35,7 +35,7 @@ public class HTTPSession: Actor {
     
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
-    private var deinitCallback: ((URLSession) -> ())?
+    private var deinitCallback: (() -> ())?
     private var sessionCookies: [HTTPCookie] = []
     
     internal var safeS3Key: String?
@@ -43,11 +43,6 @@ public class HTTPSession: Actor {
     
     private var outstandingRequests = 0
     
-    /// Bumped every time we schedule a deferred release. A release only fires if
-    /// it is still the most recently scheduled one, so new work arriving during
-    /// the linger window silently cancels the pending release.
-    private var idleReleaseGeneration = 0
-        
     private var firstTimeCalled = true
     private let retryAnyError: Bool
     
@@ -66,7 +61,11 @@ public class HTTPSession: Actor {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 20.0
         config.timeoutIntervalForResource = 600.0
-        config.httpMaximumConnectionsPerHost = HTTPSessionTuning.maximumConnectionsPerHost
+#if os(Android)
+        config.httpMaximumConnectionsPerHost = 1
+#else
+        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+#endif
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
         config.httpCookieStorage = nil
@@ -85,7 +84,11 @@ public class HTTPSession: Actor {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 120.0
         config.timeoutIntervalForResource = 600.0
-        config.httpMaximumConnectionsPerHost = HTTPSessionTuning.maximumConnectionsPerHost
+#if os(Android)
+        config.httpMaximumConnectionsPerHost = 1
+#else
+        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+#endif
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
         config.httpCookieStorage = nil
@@ -103,37 +106,10 @@ public class HTTPSession: Actor {
     private func releaseUrlSession() {
         if let deinitCallback = self.deinitCallback {
             self.deinitCallback = nil
-            let releasedUrlSession = self.urlSession
             self.urlSession = URLSession.shared
             HTTPSessionManager.shared.unsafeSend { _ in
-                deinitCallback(releasedUrlSession)
+                deinitCallback()
             }
-        }
-    }
-    
-    /// Hold on to the URLSession for a little while after going idle, rather than
-    /// handing it straight back to the pool.
-    ///
-    /// Releasing immediately looks tidy but is expensive: a caller making several
-    /// sequential requests to the same host would release after each one, get a
-    /// different session (with a cold connection cache) for the next, and pay a
-    /// fresh TCP + TLS handshake every time. Every one of those handshakes is also a
-    /// socket registration and unregistration inside libdispatch, which is the churn
-    /// that drives the muxnote use-after-free on android.
-    private func scheduleReleaseUrlSession() {
-        guard deinitCallback != nil else { return }
-        
-        idleReleaseGeneration += 1
-        let generation = idleReleaseGeneration
-        
-        Flynn.Timer(timeInterval: HTTPSessionTuning.idleSessionLinger,
-                    immediate: false,
-                    repeats: false,
-                    self) { [weak self] _ in
-            guard let self = self else { return }
-            guard self.idleReleaseGeneration == generation else { return }
-            guard self.outstandingRequests == 0 else { return }
-            self.releaseUrlSession()
         }
     }
     
@@ -143,7 +119,7 @@ public class HTTPSession: Actor {
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
     internal func beBegin(urlSession: URLSession,
-                          _ deinitCallback: @escaping (URLSession) -> ()) {
+                          _ deinitCallback: @escaping () -> ()) {
         unsafeSend { _ in
             guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
             self.beginCallback = nil
@@ -167,15 +143,8 @@ public class HTTPSession: Actor {
     
     internal func _beCancel() {
         guard self != HTTPSession.oneshot else { fatalError("You cannot cancel the oneshot HTTPSession") }
-        
-        HTTPTaskManager.shared.beCancelAll(session: urlSession)
-        
-        // Anything still in flight will come back through the completion path and
-        // release the session as it drains. If there is nothing in flight, there is
-        // nothing to wait for.
-        if outstandingRequests == 0 {
-            releaseUrlSession()
-        }
+        urlSession.invalidateAndCancel()
+        urlSession = URLSession.shared
     }
         
     internal func _beRequest(request: URLRequest,
@@ -196,7 +165,8 @@ public class HTTPSession: Actor {
             
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                self.scheduleReleaseUrlSession()
+                // self.urlSession.reset { }
+                self.releaseUrlSession()
             }
         }
     }
@@ -244,8 +214,10 @@ public class HTTPSession: Actor {
 
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                self.scheduleReleaseUrlSession()
+                // self.urlSession.reset { }
+                self.releaseUrlSession()
             }
+
         }
     }
     
