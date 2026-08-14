@@ -338,27 +338,27 @@ internal class HTTPTaskManager: Actor {
         var newRequest = request
 
         #if os(Android)
-        if request.timeoutInterval == 4 {
+        if request.timeoutInterval == 2 {
             newRequest.timeoutInterval = 60
         }
         #endif
 
         let localNewRequest = newRequest
 
-        session.reset { }
-
-        Flynn.Timer(timeInterval: retryInterval, immediate: false, repeats: false, self) { [weak self] _ in
-            guard let self = self else {
-                once.call(nil, nil, HTTPTaskError("http task manager went away before retry"))
-                return
+        session.reset {
+            Flynn.Timer(timeInterval: self.retryInterval, immediate: false, repeats: false, self) { [weak self] _ in
+                guard let self = self else {
+                    once.call(nil, nil, HTTPTaskError("http task manager went away before retry"))
+                    return
+                }
+                self.submit(session: session,
+                            request: localNewRequest,
+                            proxy: proxy,
+                            timeoutRetry: timeoutRetry - 1,
+                            retryAnyError: retryAnyError,
+                            deadline: deadline,
+                            once: once)
             }
-            self.submit(session: session,
-                        request: localNewRequest,
-                        proxy: proxy,
-                        timeoutRetry: timeoutRetry - 1,
-                        retryAnyError: retryAnyError,
-                        deadline: deadline,
-                        once: once)
         }
     }
 }
