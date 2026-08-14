@@ -345,13 +345,7 @@ internal class HTTPTaskManager: Actor {
 
         let localNewRequest = newRequest
 
-        // Note: the retry deliberately does NOT hang off of session.flush()'s
-        // completion handler any more. URLSession is not obliged to call it
-        // (notably once the session has been invalidated, and inconsistently on
-        // swift-corelibs-foundation), and when it didn't we silently lost the
-        // caller's callback forever. Flushing is best effort; scheduling the
-        // retry is not conditional on it.
-        session.flush { }
+        session.reset { }
 
         Flynn.Timer(timeInterval: retryInterval, immediate: false, repeats: false, self) { [weak self] _ in
             guard let self = self else {
