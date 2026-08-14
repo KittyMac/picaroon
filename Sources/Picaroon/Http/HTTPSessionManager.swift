@@ -65,8 +65,17 @@ public class HTTPSessionManager: Actor {
     public static let shared = HTTPSessionManager()
     private override init() {
         for _ in 0..<maxConcurrentSessions {
+            let config = URLSessionConfiguration.ephemeral
+            config.timeoutIntervalForRequest = 20.0
+            config.timeoutIntervalForResource = 600.0
+            config.httpMaximumConnectionsPerHost = HTTPSessionTuning.maximumConnectionsPerHost
+            config.urlCache = nil
+            config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            config.httpCookieAcceptPolicy = .always
+            config.httpShouldUsePipelining = false
+
             waitingURLSessions.append(
-                URLSessionFactory.make(.pooled)
+                URLSession(configuration: config)
             )
         }
         
@@ -111,32 +120,16 @@ public class HTTPSessionManager: Actor {
         
         guard let httpSession = httpSession else { return }
         
-        httpSession.beBegin(urlSession: urlSession) { returnedURLSession, isSuspect in
+        httpSession.beBegin(urlSession: urlSession) { returnedURLSession in
             self.unsafeSend { _ in
-                self.returnToPool(returnedURLSession,
-                                  isSuspect: isSuspect)
+                self.returnToPool(returnedURLSession)
             }
         }
     }
     
-    /// Hand a URLSession back to the pool - or, if its previous owner lost faith
-    /// in it, retire it and put a freshly built one in the pool in its place.
-    ///
-    /// Recycling the same URLSession objects forever means that a session whose
-    /// connection cache has gone bad is handed to the next caller with the bad
-    /// cache intact, and the next, indefinitely. The pool has to be able to
-    /// replace its contents, not just reorder them.
-    private func returnToPool(_ urlSession: URLSession,
-                              isSuspect: Bool) {
-        var pooledSession = urlSession
-        
-        if isSuspect {
-            HTTPTaskManager.shared.beRetire(session: urlSession)
-            pooledSession = URLSessionFactory.make(.pooled)
-        }
-        
+    private func returnToPool(_ urlSession: URLSession) {
         guard HTTPSessionTuning.sessionSettleInterval > 0 else {
-            waitingURLSessions.append(pooledSession)
+            waitingURLSessions.append(urlSession)
             checkForMoreSessions()
             return
         }
@@ -146,7 +139,7 @@ public class HTTPSessionManager: Actor {
                     repeats: false,
                     self) { [weak self] _ in
             guard let self = self else { return }
-            self.waitingURLSessions.append(pooledSession)
+            self.waitingURLSessions.append(urlSession)
             self.checkForMoreSessions()
         }
     }

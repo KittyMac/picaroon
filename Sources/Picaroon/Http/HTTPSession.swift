@@ -30,24 +30,12 @@ import Android
 // Note: We also want to support "one shot" url tasks which are ephemeral, have cookies disabled, and can share a single url session
 
 public class HTTPSession: Actor {
-    public static let oneshot: HTTPSession = HTTPSession(owned: .oneshot)
-    public static let longshot: HTTPSession = HTTPSession(owned: .longshot)
-    
-    /// On android the first network call after launch reliably times out, so we
-    /// give it a deliberately small timeout and let the retry do the real work.
-    internal static let androidFirstCallTimeout: TimeInterval = 2
-    
-    private let maxConsecutiveTransportFailures = 2
+    public static let oneshot: HTTPSession = HTTPSession(oneshot: true)
+    public static let longshot: HTTPSession = HTTPSession(longshot: true)
     
     private var urlSession: URLSession = URLSession.shared
-    
-    private let ownedSessionKind: URLSessionFactory.Kind?
-    
-    private var consecutiveTransportFailures = 0
-    private var sessionIsSuspect = false
-    
     private var beginCallback: ((HTTPSession) -> ())?
-    private var deinitCallback: ((URLSession, Bool) -> ())?
+    private var deinitCallback: ((URLSession) -> ())?
     private var sessionCookies: [HTTPCookie] = []
     
     internal var safeS3Key: String?
@@ -68,17 +56,44 @@ public class HTTPSession: Actor {
         sessionCookies = cookies
         beginCallback = returnCallback
         retryAnyError = false
-        ownedSessionKind = nil
         
         super.init()
         unsafePriority = 9999
         unsafeMessageBatchSize = 100
     }
     
-    fileprivate init(owned kind: URLSessionFactory.Kind) {
-        ownedSessionKind = kind
-        urlSession = URLSessionFactory.make(kind)
-        retryAnyError = (kind == .longshot)
+    fileprivate init(oneshot: Bool) {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 20.0
+        config.timeoutIntervalForResource = 600.0
+        config.httpMaximumConnectionsPerHost = HTTPSessionTuning.maximumConnectionsPerHost
+        config.httpShouldSetCookies = false
+        config.httpCookieAcceptPolicy = .never
+        config.httpCookieStorage = nil
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        config.httpShouldUsePipelining = false
+        urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
+        retryAnyError = false
+        
+        super.init()
+        unsafePriority = 9999
+        unsafeMessageBatchSize = 100
+    }
+    
+    fileprivate init(longshot: Bool) {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 120.0
+        config.timeoutIntervalForResource = 600.0
+        config.httpMaximumConnectionsPerHost = HTTPSessionTuning.maximumConnectionsPerHost
+        config.httpShouldSetCookies = false
+        config.httpCookieAcceptPolicy = .never
+        config.httpCookieStorage = nil
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        config.httpShouldUsePipelining = true
+        urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
+        retryAnyError = true
         
         super.init()
         unsafePriority = 9999
@@ -89,47 +104,11 @@ public class HTTPSession: Actor {
         if let deinitCallback = self.deinitCallback {
             self.deinitCallback = nil
             let releasedUrlSession = self.urlSession
-            let releasedIsSuspect = self.sessionIsSuspect
-            self.sessionIsSuspect = false
             self.urlSession = URLSession.shared
             HTTPSessionManager.shared.unsafeSend { _ in
-                deinitCallback(releasedUrlSession, releasedIsSuspect)
+                deinitCallback(releasedUrlSession)
             }
         }
-    }
-    
-    private func noteCompletion(response: HTTPURLResponse?) {
-        guard response == nil else {
-            consecutiveTransportFailures = 0
-            return
-        }
-        
-        consecutiveTransportFailures += 1
-        guard consecutiveTransportFailures >= maxConsecutiveTransportFailures else { return }
-        consecutiveTransportFailures = 0
-        
-        recycleUrlSession()
-    }
-    
-    private func recycleUrlSession() {
-        guard let ownedSessionKind = ownedSessionKind else {
-            // Borrowed from the pool: we cannot swap it out from under the
-            // manager, so flag it and let the manager replace it on release.
-            sessionIsSuspect = true
-            return
-        }
-        
-        let poisoned = urlSession
-        guard poisoned !== URLSession.shared else { return }
-        
-        urlSession = URLSessionFactory.make(ownedSessionKind)
-        
-        // Retiring happens on the HTTPTaskManager actor so that no already
-        // queued task can be resumed on a session which has been invalidated
-        // in the meantime - such a task never calls back at all.
-        HTTPTaskManager.shared.beRetire(session: poisoned)
-        
-        Flynn.syslog("TAG", "warning: replaced a url session after \(maxConsecutiveTransportFailures) consecutive transport failures")
     }
     
     /// Hold on to the URLSession for a little while after going idle, rather than
@@ -164,7 +143,7 @@ public class HTTPSession: Actor {
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
     internal func beBegin(urlSession: URLSession,
-                          _ deinitCallback: @escaping (URLSession, Bool) -> ()) {
+                          _ deinitCallback: @escaping (URLSession) -> ()) {
         unsafeSend { _ in
             guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
             self.beginCallback = nil
@@ -215,8 +194,6 @@ public class HTTPSession: Actor {
                                                                error: error)
             returnCallback(data2, respose2, error2)
             
-            self.noteCompletion(response: respose2)
-            
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
                 self.scheduleReleaseUrlSession()
@@ -264,9 +241,7 @@ public class HTTPSession: Actor {
                                                                response: response,
                                                                error: error)
             returnCallback(data2, respose2, error2)
-            
-            self.noteCompletion(response: respose2)
-            
+
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
                 self.scheduleReleaseUrlSession()
@@ -335,7 +310,7 @@ public class HTTPSession: Actor {
         // To help work around this, we give the first network call a small timeout value
         if firstTimeCalled {
             firstTimeCalled = false
-            request.timeoutInterval = Self.androidFirstCallTimeout
+            request.timeoutInterval = 2
         }
         #endif
         
