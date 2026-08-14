@@ -35,7 +35,7 @@ public class HTTPSession: Actor {
     
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
-    private var deinitCallback: (() -> ())?
+    private var deinitCallback: ((URLSession) -> ())?
     private var sessionCookies: [HTTPCookie] = []
     
     internal var safeS3Key: String?
@@ -94,7 +94,7 @@ public class HTTPSession: Actor {
         config.httpCookieStorage = nil
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        config.httpShouldUsePipelining = true
+        config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
         retryAnyError = true
         
@@ -106,9 +106,10 @@ public class HTTPSession: Actor {
     private func releaseUrlSession() {
         if let deinitCallback = self.deinitCallback {
             self.deinitCallback = nil
+            let releasedUrlSession = self.urlSession
             self.urlSession = URLSession.shared
             HTTPSessionManager.shared.unsafeSend { _ in
-                deinitCallback()
+                deinitCallback(releasedUrlSession)
             }
         }
     }
@@ -119,7 +120,7 @@ public class HTTPSession: Actor {
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
     internal func beBegin(urlSession: URLSession,
-                          _ deinitCallback: @escaping () -> ()) {
+                          _ deinitCallback: @escaping (URLSession) -> ()) {
         unsafeSend { _ in
             guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
             self.beginCallback = nil
@@ -165,8 +166,9 @@ public class HTTPSession: Actor {
             
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                // self.urlSession.reset { }
-                self.releaseUrlSession()
+                self.urlSession.reset {
+                    self.releaseUrlSession()
+                }
             }
         }
     }
@@ -214,8 +216,9 @@ public class HTTPSession: Actor {
 
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                // self.urlSession.reset { }
-                self.releaseUrlSession()
+                self.urlSession.reset {
+                    self.releaseUrlSession()
+                }
             }
 
         }
