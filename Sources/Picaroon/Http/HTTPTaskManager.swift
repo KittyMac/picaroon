@@ -104,7 +104,7 @@ internal class HTTPTaskManager: Actor {
     #elseif os(Linux)
     private let maxConcurrentTasks = Flynn.cores <= 4 ? 8 : 512
     #elseif os(Android)
-    private let maxConcurrentTasks = min(max(Flynn.cores * 4, 4), 64)
+    private let maxConcurrentTasks = 16
     #else
     private let maxConcurrentTasks = min(max(Flynn.cores * 4, 4), 64)
     #endif
@@ -336,6 +336,12 @@ internal class HTTPTaskManager: Actor {
         }
 
         var newRequest = request
+
+        #if os(Android)
+        if request.timeoutInterval == 2 {
+            newRequest.timeoutInterval = 60
+        }
+        #endif
 
         let localNewRequest = newRequest
 
