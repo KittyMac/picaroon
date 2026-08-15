@@ -91,6 +91,10 @@ internal class HTTPTaskManager: Actor {
                             timeoutRetry: Int,
                             retryAnyError: Bool,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
+        
+        guard session.sessionDescription == nil else {
+            return returnCallback(nil, nil, "session has been recycled")
+        }
 
         let task = session.dataTask(with: request) { data, response, error in
 #if os(Linux) || os(Android)
@@ -104,6 +108,7 @@ internal class HTTPTaskManager: Actor {
                 }
                 
                 var shouldBeRetried: String? = nil
+                var shouldBeRecycled: String? = nil
                                    
                 // Allow specific error to be retried
                 if let error = error as? URLError,
@@ -114,6 +119,9 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1003 ||
                     error.errorCode == -1005) {
                     shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                    if error.errorCode == -1001 {
+                        shouldBeRecycled = "error -1003 detected - recycle session"
+                    }
                 }
                 
                 // If we timeout out, go ahead and retry it.
@@ -127,6 +135,9 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1003 ||
                     error.errorCode == -1005) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                    if error.errorCode == -1001 {
+                        shouldBeRecycled = "error -1003 detected - recycle session"
+                    }
                 }
                 #else
                 if let error = error as? POSIXError,
@@ -137,6 +148,9 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1003 ||
                     error.errorCode == -1005) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                    if error.errorCode == -1001 {
+                        shouldBeRecycled = "error -1003 detected - recycle session"
+                    }
                 }
                 #endif
                 
@@ -181,18 +195,22 @@ internal class HTTPTaskManager: Actor {
                     }
                     #endif
                     
-                    let localNewRequest = newRequest
-                    session.reset {
-                        Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
-                            guard let self = self else { return returnCallback(nil, nil, nil) }
-                            self.beResume(session: session,
-                                          request: localNewRequest,
-                                          proxy: proxy,
-                                          timeoutRetry: timeoutRetry - 1,
-                                          retryAnyError: retryAnyError,
-                                          self,
-                                          returnCallback)
-                        }
+                    if let shouldBeRecycled = shouldBeRecycled {
+                        print(shouldBeRecycled)
+                        session.sessionDescription = shouldBeRecycled
+                        self.checkForMoreTasks()
+                        returnCallback(data, response, error)
+                    }
+                    
+                    Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
+                        guard let self = self else { return returnCallback(nil, nil, nil) }
+                        self.beResume(session: session,
+                                      request: newRequest,
+                                      proxy: proxy,
+                                      timeoutRetry: timeoutRetry - 1,
+                                      retryAnyError: retryAnyError,
+                                      self,
+                                      returnCallback)
                     }
                     return
                 }
