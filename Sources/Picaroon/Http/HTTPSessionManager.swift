@@ -91,9 +91,9 @@ public class HTTPSessionManager: Actor {
         
         guard let httpSession = httpSession else { return }
         
-        httpSession.beBegin(urlSession: urlSession) { returnedSession in
+        httpSession.beBegin(urlSession: urlSession) {
             self.unsafeSend { _ in
-                self.waitingURLSessions.append(returnedSession)
+                self.waitingURLSessions.append(urlSession)
                 self.checkForMoreSessions()
             }
         }

@@ -35,7 +35,7 @@ public class HTTPSession: Actor {
     
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
-    private var deinitCallback: ((URLSession) -> ())?
+    private var deinitCallback: (() -> ())?
     private var sessionCookies: [HTTPCookie] = []
     
     internal var safeS3Key: String?
@@ -105,10 +105,9 @@ public class HTTPSession: Actor {
     private func releaseUrlSession() {
         if let deinitCallback = deinitCallback {
             self.deinitCallback = nil
-            let localUrlSession = self.urlSession
             self.urlSession = URLSession.shared
             HTTPSessionManager.shared.unsafeSend { _ in
-                deinitCallback(localUrlSession)
+                deinitCallback()
             }
         }
     }
@@ -119,7 +118,7 @@ public class HTTPSession: Actor {
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
     internal func beBegin(urlSession: URLSession,
-                          _ deinitCallback: @escaping (URLSession) -> ()) {
+                          _ deinitCallback: @escaping () -> ()) {
         unsafeSend { _ in
             guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
             self.beginCallback = nil
@@ -157,9 +156,7 @@ public class HTTPSession: Actor {
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
                                         retryAnyError: retryAnyError,
-                                        self) { newSession, data, response, error in
-            self.urlSession = newSession
-            
+                                        self) { data, response, error in
             let (data2, respose2, error2) = handleTaskResponse(data: data,
                                                                response: response,
                                                                error: error)
@@ -207,9 +204,7 @@ public class HTTPSession: Actor {
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
                                         retryAnyError: retryAnyError,
-                                        self) { newSession, data, response, error in
-            self.urlSession = newSession
-            
+                                        self) { data, response, error in
             let (data2, respose2, error2) = handleTaskResponse(data: data,
                                                                response: response,
                                                                error: error)
