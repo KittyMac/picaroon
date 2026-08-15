@@ -193,12 +193,13 @@ internal class HTTPTaskManager: Actor {
                     print(shouldBeRetried)
                     
                     var newRequest = request
-                    
+                    /*
                     #if os(Android)
-                    if request.timeoutInterval == 4 {
+                    if request.timeoutInterval == 2 {
                         newRequest.timeoutInterval = 60
                     }
                     #endif
+                     */
                     
                     if let shouldBeRecycled = shouldBeRecycled {
                         Flynn.syslog("TAG", "shouldBeRecycled: \(shouldBeRecycled)")

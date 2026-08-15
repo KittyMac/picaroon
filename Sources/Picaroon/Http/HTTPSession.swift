@@ -282,7 +282,7 @@ public class HTTPSession: Actor {
         
         request.httpMethod = httpMethod
         request.httpBody = body
-        
+        /*
         #if os(Android)
         // On android specifically, the first time we make a network call it always time outs
         // To help work around this, we give the first network call a small timeout value
@@ -291,7 +291,7 @@ public class HTTPSession: Actor {
             request.timeoutInterval = 2
         }
         #endif
-        
+        */
         for (header, value) in headers {
             request.addValue(value, forHTTPHeaderField: header)
         }
