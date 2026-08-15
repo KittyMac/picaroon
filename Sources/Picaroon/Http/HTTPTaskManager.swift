@@ -125,7 +125,7 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1005) {
                     shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                     if error.errorCode == -1001 {
-                        shouldBeRecycled = "error -1003 detected - recycle session"
+                        shouldBeRecycled = "error -1001 detected - recycle session"
                     }
                 }
                 
@@ -141,7 +141,7 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1005) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                     if error.errorCode == -1001 {
-                        shouldBeRecycled = "error -1003 detected - recycle session"
+                        shouldBeRecycled = "error -1001 detected - recycle session"
                     }
                 }
                 #else
@@ -154,7 +154,7 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1005) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                     if error.errorCode == -1001 {
-                        shouldBeRecycled = "error -1003 detected - recycle session"
+                        shouldBeRecycled = "error -1001 detected - recycle session"
                     }
                 }
                 #endif
@@ -201,7 +201,7 @@ internal class HTTPTaskManager: Actor {
                     #endif
                     
                     if let shouldBeRecycled = shouldBeRecycled {
-                        print(shouldBeRecycled)
+                        Flynn.syslog("TAG", "shouldBeRecycled: \(shouldBeRecycled)")
                         session.sessionDescription = shouldBeRecycled
                         self.checkForMoreTasks()
                         returnCallback(data, response, error)
