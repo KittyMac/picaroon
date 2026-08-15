@@ -90,7 +90,7 @@ internal class HTTPTaskManager: Actor {
                             proxy: String?,
                             timeoutRetry: Int,
                             retryAnyError: Bool,
-                            _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
+                            _ returnCallback: @escaping (URLSession, Data?, URLResponse?, Error?) -> ()) {
 
         let task = session.dataTask(with: request) { data, response, error in
 #if os(Linux) || os(Android)
@@ -181,24 +181,27 @@ internal class HTTPTaskManager: Actor {
                     }
                     #endif
                     
-                    let localNewRequest = newRequest
-                    session.reset {
-                        Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
-                            guard let self = self else { return returnCallback(nil, nil, nil) }
-                            self.beResume(session: session,
-                                          request: localNewRequest,
-                                          proxy: proxy,
-                                          timeoutRetry: timeoutRetry - 1,
-                                          retryAnyError: retryAnyError,
-                                          self,
-                                          returnCallback)
-                        }
+                    // if we fail on a session and need to retry don't trust the session anymore
+                    // create a new one with the same configuration and invalidate the old session
+                    let urlSession = URLSession(configuration: session.configuration,
+                                                delegate: nil,
+                                                delegateQueue: nil)
+                    session.finishTasksAndInvalidate()
+                    Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
+                        guard let self = self else { return returnCallback(urlSession, nil, nil, nil) }
+                        self.beResume(session: urlSession,
+                                      request: newRequest,
+                                      proxy: proxy,
+                                      timeoutRetry: timeoutRetry - 1,
+                                      retryAnyError: retryAnyError,
+                                      self,
+                                      returnCallback)
                     }
                     return
                 }
                 
                 self.checkForMoreTasks()
-                returnCallback(data, response, error)
+                returnCallback(session, data, response, error)
             }
         }
         
