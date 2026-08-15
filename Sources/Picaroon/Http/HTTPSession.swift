@@ -35,7 +35,7 @@ public class HTTPSession: Actor {
     
     private var urlSession: URLSession = URLSession.shared
     private var beginCallback: ((HTTPSession) -> ())?
-    private var deinitCallback: ((URLSession) -> ())?
+    private var deinitCallback: (() -> ())?
     private var sessionCookies: [HTTPCookie] = []
     
     internal var safeS3Key: String?
@@ -60,7 +60,6 @@ public class HTTPSession: Actor {
     fileprivate init(oneshot: Bool) {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 20.0
-        config.timeoutIntervalForResource = 600.0
 #if os(Android)
         config.httpMaximumConnectionsPerHost = 1
 #else
@@ -83,7 +82,7 @@ public class HTTPSession: Actor {
     fileprivate init(longshot: Bool) {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 120.0
-        config.timeoutIntervalForResource = 600.0
+        config.timeoutIntervalForResource = 120.0
 #if os(Android)
         config.httpMaximumConnectionsPerHost = 1
 #else
@@ -94,7 +93,7 @@ public class HTTPSession: Actor {
         config.httpCookieStorage = nil
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        config.httpShouldUsePipelining = false
+        config.httpShouldUsePipelining = true
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
         retryAnyError = true
         
@@ -104,12 +103,11 @@ public class HTTPSession: Actor {
     }
     
     private func releaseUrlSession() {
-        if let deinitCallback = self.deinitCallback {
+        if let deinitCallback = deinitCallback {
             self.deinitCallback = nil
-            let releasedUrlSession = self.urlSession
             self.urlSession = URLSession.shared
             HTTPSessionManager.shared.unsafeSend { _ in
-                deinitCallback(releasedUrlSession)
+                deinitCallback()
             }
         }
     }
@@ -120,7 +118,7 @@ public class HTTPSession: Actor {
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
     internal func beBegin(urlSession: URLSession,
-                          _ deinitCallback: @escaping (URLSession) -> ()) {
+                          _ deinitCallback: @escaping () -> ()) {
         unsafeSend { _ in
             guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
             self.beginCallback = nil
@@ -140,16 +138,6 @@ public class HTTPSession: Actor {
 
             beginCallback(self)
         }
-    }
-    
-    internal func _beReset() {
-        Flynn.syslog("TAG", "URLSession user reset")
-        let oldURLSession = urlSession
-        let newURLSession = URLSession(configuration: oldURLSession.configuration,
-                                       delegate: nil,
-                                       delegateQueue: nil)
-        urlSession = newURLSession
-        oldURLSession.finishTasksAndInvalidate()
     }
     
     internal func _beCancel() {
