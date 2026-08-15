@@ -238,7 +238,7 @@ internal class HTTPTaskManager: Actor {
                             error: error)
             }
         }
-
+        
         waitingTasks.append(DataTask(uuid: taskUUID,
                                      task: task,
                                      proxy: proxy,
@@ -345,22 +345,18 @@ internal class HTTPTaskManager: Actor {
 
         let localNewRequest = newRequest
 
-        Flynn.syslog("TAG", "BEFORE URLSession reset - timeout retry")
-        session.reset {
-            Flynn.syslog("TAG", "AFTER URLSession reset - timeout retry")
-            Flynn.Timer(timeInterval: self.retryInterval, immediate: false, repeats: false, self) { [weak self] _ in
-                guard let self = self else {
-                    once.call(nil, nil, HTTPTaskError("http task manager went away before retry"))
-                    return
-                }
-                self.submit(session: session,
-                            request: localNewRequest,
-                            proxy: proxy,
-                            timeoutRetry: timeoutRetry - 1,
-                            retryAnyError: retryAnyError,
-                            deadline: deadline,
-                            once: once)
+        Flynn.Timer(timeInterval: self.retryInterval, immediate: false, repeats: false, self) { [weak self] _ in
+            guard let self = self else {
+                once.call(nil, nil, HTTPTaskError("http task manager went away before retry"))
+                return
             }
+            self.submit(session: session,
+                        request: localNewRequest,
+                        proxy: proxy,
+                        timeoutRetry: timeoutRetry - 1,
+                        retryAnyError: retryAnyError,
+                        deadline: deadline,
+                        once: once)
         }
     }
 }

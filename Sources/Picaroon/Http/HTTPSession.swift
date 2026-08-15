@@ -176,11 +176,7 @@ public class HTTPSession: Actor {
             
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                Flynn.syslog("TAG", "BEFORE URLSession reset 0")
-                self.urlSession.reset {
-                    Flynn.syslog("TAG", "AFTER URLSession reset 0")
-                    self.releaseUrlSession()
-                }
+                self.releaseUrlSession()
             }
         }
     }
@@ -228,11 +224,7 @@ public class HTTPSession: Actor {
 
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                Flynn.syslog("TAG", "BEFORE URLSession reset 1")
-                self.urlSession.reset {
-                    Flynn.syslog("TAG", "AFTER URLSession reset 1")
-                    self.releaseUrlSession()
-                }
+                self.releaseUrlSession()
             }
 
         }
