@@ -93,7 +93,7 @@ public class HTTPSession: Actor {
         config.httpCookieStorage = nil
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        config.httpShouldUsePipelining = true
+        config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
         retryAnyError = true
         
