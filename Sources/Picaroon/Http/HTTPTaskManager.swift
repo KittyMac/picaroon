@@ -16,6 +16,11 @@ import Android
 #error("Unknown platform")
 #endif
 
+fileprivate struct StringError: LocalizedError {
+    let errorDescription: String?
+    init(_ description: String) { self.errorDescription = description }
+}
+
 fileprivate struct DataTask: Equatable {
     let task: URLSessionDataTask
     let proxy: String?
@@ -93,7 +98,7 @@ internal class HTTPTaskManager: Actor {
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
         
         guard session.sessionDescription == nil else {
-            return returnCallback(nil, nil, "session has been recycled")
+            return returnCallback(nil, nil, StringError("session has been recycled"))
         }
 
         let task = session.dataTask(with: request) { data, response, error in
