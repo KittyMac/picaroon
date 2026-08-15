@@ -142,6 +142,16 @@ public class HTTPSession: Actor {
         }
     }
     
+    internal func _beReset() {
+        Flynn.syslog("TAG", "URLSession user reset")
+        let oldURLSession = urlSession
+        let newURLSession = URLSession(configuration: oldURLSession.configuration,
+                                       delegate: nil,
+                                       delegateQueue: nil)
+        urlSession = newURLSession
+        oldURLSession.finishTasksAndInvalidate()
+    }
+    
     internal func _beCancel() {
         guard self != HTTPSession.oneshot else { fatalError("You cannot cancel the oneshot HTTPSession") }
         urlSession.invalidateAndCancel()
@@ -166,7 +176,9 @@ public class HTTPSession: Actor {
             
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
+                Flynn.syslog("TAG", "BEFORE URLSession reset 0")
                 self.urlSession.reset {
+                    Flynn.syslog("TAG", "AFTER URLSession reset 0")
                     self.releaseUrlSession()
                 }
             }
@@ -216,7 +228,9 @@ public class HTTPSession: Actor {
 
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
+                Flynn.syslog("TAG", "BEFORE URLSession reset 1")
                 self.urlSession.reset {
+                    Flynn.syslog("TAG", "AFTER URLSession reset 1")
                     self.releaseUrlSession()
                 }
             }

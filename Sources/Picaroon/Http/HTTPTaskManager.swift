@@ -345,7 +345,9 @@ internal class HTTPTaskManager: Actor {
 
         let localNewRequest = newRequest
 
+        Flynn.syslog("TAG", "BEFORE URLSession reset - timeout retry")
         session.reset {
+            Flynn.syslog("TAG", "AFTER URLSession reset - timeout retry")
             Flynn.Timer(timeInterval: self.retryInterval, immediate: false, repeats: false, self) { [weak self] _ in
                 guard let self = self else {
                     once.call(nil, nil, HTTPTaskError("http task manager went away before retry"))
