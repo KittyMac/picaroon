@@ -214,9 +214,28 @@ internal class HTTPTaskManager: Actor {
                     #endif
                     
                     if let shouldBeRecycled = shouldBeRecycled {
+                        // flag the original session as needing to be recycled.
                         session.sessionDescription = sessionState_Recycle
-                        self.checkForMoreTasks()
-                        returnCallback(data, response, error)
+                        
+                        // create a new, temporary session for our retry attempt
+                        let tempSession = URLSession(configuration: session.configuration,
+                                                     delegate: nil,
+                                                     delegateQueue: nil)
+                        tempSession.sessionDescription = sessionState_Inited
+                        
+                        Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
+                            guard let self = self else { return returnCallback(nil, nil, nil) }
+                            self.beResume(session: tempSession,
+                                          request: newRequest,
+                                          proxy: proxy,
+                                          timeoutRetry: timeoutRetry - 1,
+                                          retryAnyError: retryAnyError,
+                                          self) { data, response, error in
+                                tempSession.finishTasksAndInvalidate()
+                                tempSession.sessionDescription = sessionState_Invalidated
+                                returnCallback(data, response, error)
+                            }
+                        }
                         return
                     }
                     
