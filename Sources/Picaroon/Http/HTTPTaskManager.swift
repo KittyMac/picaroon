@@ -91,12 +91,12 @@ internal class HTTPTaskManager: Actor {
     }
     
     internal func _beResume(session: URLSession,
-                            request: URLRequest,
+                            request _request: URLRequest,
                             proxy: String?,
                             timeoutRetry: Int,
                             retryAnyError: Bool,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
-        
+        var request = _request
         #if os(Android)
         // On android specifically, the first time we make a network call it always time outs
         // To help work around this, we give the first network call a small timeout value
