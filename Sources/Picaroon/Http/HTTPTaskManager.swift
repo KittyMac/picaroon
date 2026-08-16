@@ -97,7 +97,7 @@ internal class HTTPTaskManager: Actor {
                             retryAnyError: Bool,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
         var request = _request
-        #if os(Android)
+        #if os(Android) || os(Linux)
         // On android specifically, the first time we make a network call it always time outs
         // To help work around this, we give the first network call a small timeout value
         if session.sessionDescription == sessionState_Inited {
@@ -206,7 +206,7 @@ internal class HTTPTaskManager: Actor {
                     
                     var newRequest = request
                     
-                    #if os(Android)
+                    #if os(Android) || os(Linux)
                     if request.timeoutInterval == 2 {
                         newRequest.timeoutInterval = 60
                         shouldBeRecycled = nil
