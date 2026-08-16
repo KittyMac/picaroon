@@ -45,9 +45,9 @@ public class HTTPSessionManager: Actor {
             config.httpCookieAcceptPolicy = .always
             config.httpShouldUsePipelining = false
 
-            waitingURLSessions.append(
-                URLSession(configuration: config)
-            )
+            let urlSession = URLSession(configuration: config)
+            urlSession.sessionDescription = sessionState_Inited
+            waitingURLSessions.append(urlSession)
         }
         
         super.init()

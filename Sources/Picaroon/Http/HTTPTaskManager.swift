@@ -97,8 +97,21 @@ internal class HTTPTaskManager: Actor {
                             retryAnyError: Bool,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
         
-        guard session.sessionDescription == nil else {
-            return returnCallback(nil, nil, StringError("session has been recycled"))
+        #if os(Android)
+        // On android specifically, the first time we make a network call it always time outs
+        // To help work around this, we give the first network call a small timeout value
+        if session.sessionDescription == sessionState_Inited {
+            request.timeoutInterval = 2
+            Flynn.syslog("TAG", "force android first task to 2 sec timeout")
+        }
+        #endif
+        if session.sessionDescription == sessionState_Inited {
+            session.sessionDescription = sessionState_Normal
+        }
+
+        
+        guard session.sessionDescription == sessionState_Normal else {
+            return returnCallback(nil, nil, StringError("invalid session state - \(session.sessionDescription ?? "unknown")"))
         }
 
         let task = session.dataTask(with: request) { data, response, error in
@@ -203,7 +216,7 @@ internal class HTTPTaskManager: Actor {
                     
                     if let shouldBeRecycled = shouldBeRecycled {
                         Flynn.syslog("TAG", "shouldBeRecycled: \(shouldBeRecycled)")
-                        session.sessionDescription = shouldBeRecycled
+                        session.sessionDescription = sessionState_Recycle
                         self.checkForMoreTasks()
                         returnCallback(data, response, error)
                         return

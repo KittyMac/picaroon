@@ -18,6 +18,11 @@ import Android
 #error("Unknown platform")
 #endif
 
+let sessionState_Inited = "inited"
+let sessionState_Normal = "normal"
+let sessionState_Recycle = "recycle"
+let sessionState_Invalidated = "invalidated"
+
 // Note: we cannot have too many concurrent URLSession (or we will get "No space left on device")
 // https://stackoverflow.com/questions/67318867/error-domain-nsposixerrordomain-code-28-no-space-left-on-device-userinfo-kcf
 
@@ -43,7 +48,6 @@ public class HTTPSession: Actor {
     
     private var outstandingRequests = 0
     
-    private var firstTimeCalled = true
     private let retryAnyError: Bool
     
     public init(cookies: [HTTPCookie],
@@ -72,6 +76,7 @@ public class HTTPSession: Actor {
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
+        urlSession.sessionDescription = sessionState_Inited
         retryAnyError = false
         
         super.init()
@@ -95,6 +100,7 @@ public class HTTPSession: Actor {
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
+        urlSession.sessionDescription = sessionState_Inited
         retryAnyError = true
         
         super.init()
@@ -103,12 +109,14 @@ public class HTTPSession: Actor {
     }
     
     private func releaseUrlSession() {
-        if let shouldBeRecycled = urlSession.sessionDescription {
-            Flynn.syslog("TAG", "recycling url session [\(shouldBeRecycled)]")
+        if urlSession.sessionDescription == sessionState_Recycle {
+            Flynn.syslog("TAG", "recycling url session")
             urlSession.finishTasksAndInvalidate()
+            urlSession.sessionDescription = sessionState_Invalidated
             urlSession = URLSession(configuration: urlSession.configuration,
                                     delegate: nil,
                                     delegateQueue: nil)
+            urlSession.sessionDescription = sessionState_Inited
         }
         
         if let deinitCallback = deinitCallback {
@@ -282,16 +290,7 @@ public class HTTPSession: Actor {
         
         request.httpMethod = httpMethod
         request.httpBody = body
-        
-        #if os(Android)
-        // On android specifically, the first time we make a network call it always time outs
-        // To help work around this, we give the first network call a small timeout value
-        if firstTimeCalled {
-            firstTimeCalled = false
-            request.timeoutInterval = 2
-        }
-        #endif
-        
+                
         for (header, value) in headers {
             request.addValue(value, forHTTPHeaderField: header)
         }
