@@ -102,7 +102,6 @@ internal class HTTPTaskManager: Actor {
         // To help work around this, we give the first network call a small timeout value
         if session.sessionDescription == sessionState_Inited {
             request.timeoutInterval = 2
-            Flynn.syslog("TAG", "force android first task to 2 sec timeout")
         }
         #endif
         if session.sessionDescription == sessionState_Inited {
@@ -215,7 +214,6 @@ internal class HTTPTaskManager: Actor {
                     #endif
                     
                     if let shouldBeRecycled = shouldBeRecycled {
-                        Flynn.syslog("TAG", "shouldBeRecycled: \(shouldBeRecycled)")
                         session.sessionDescription = sessionState_Recycle
                         self.checkForMoreTasks()
                         returnCallback(data, response, error)

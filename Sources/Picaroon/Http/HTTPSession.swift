@@ -110,7 +110,6 @@ public class HTTPSession: Actor {
     
     private func releaseUrlSession() {
         if urlSession.sessionDescription == sessionState_Recycle {
-            Flynn.syslog("TAG", "recycling url session")
             urlSession.finishTasksAndInvalidate()
             urlSession.sessionDescription = sessionState_Invalidated
             urlSession = URLSession(configuration: urlSession.configuration,
