@@ -77,6 +77,7 @@ public class HTTPSession: Actor {
         config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
         urlSession.sessionDescription = sessionState_Inited
+        urlSession.kickstart()
         retryAnyError = false
         
         super.init()
@@ -101,6 +102,7 @@ public class HTTPSession: Actor {
         config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
         urlSession.sessionDescription = sessionState_Inited
+        urlSession.kickstart()
         retryAnyError = true
         
         super.init()
@@ -116,6 +118,7 @@ public class HTTPSession: Actor {
                                     delegate: nil,
                                     delegateQueue: nil)
             urlSession.sessionDescription = sessionState_Inited
+            urlSession.kickstart()
         }
         
         if let deinitCallback = deinitCallback {

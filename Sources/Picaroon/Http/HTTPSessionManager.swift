@@ -47,6 +47,7 @@ public class HTTPSessionManager: Actor {
 
             let urlSession = URLSession(configuration: config)
             urlSession.sessionDescription = sessionState_Inited
+            urlSession.kickstart()
             waitingURLSessions.append(urlSession)
         }
         

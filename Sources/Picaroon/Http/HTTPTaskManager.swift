@@ -16,6 +16,14 @@ import Android
 #error("Unknown platform")
 #endif
 
+extension URLSession {
+    func kickstart() {
+        let request = URLRequest(url: URL(string: "http://127.0.0.1:9/")!)
+        let task = self.dataTask(with: request) { _, _, _ in }
+        task.resume()
+    }
+}
+
 fileprivate struct StringError: LocalizedError {
     let errorDescription: String?
     init(_ description: String) { self.errorDescription = description }
@@ -97,12 +105,13 @@ internal class HTTPTaskManager: Actor {
                             retryAnyError: Bool,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
         var request = _request
+        
         #if os(Android) || os(Linux)
         // On android specifically, the first time we make a network call it always time outs
         // To help work around this, we give the first network call a small timeout value
-        if session.sessionDescription == sessionState_Inited {
-            request.timeoutInterval = 2
-        }
+        //if session.sessionDescription == sessionState_Inited {
+        //    request.timeoutInterval = 2
+        //}
         #endif
         if session.sessionDescription == sessionState_Inited {
             session.sessionDescription = sessionState_Normal
@@ -222,6 +231,7 @@ internal class HTTPTaskManager: Actor {
                                                      delegate: nil,
                                                      delegateQueue: nil)
                         tempSession.sessionDescription = sessionState_Inited
+                        tempSession.kickstart()
                         
                         Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
                             guard let self = self else { return returnCallback(nil, nil, nil) }
