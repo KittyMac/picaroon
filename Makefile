@@ -40,7 +40,7 @@ linux:
 	-docker login
 	
 	swift package resolve
-	docker buildx build --platform linux/arm64 --push -t kittymac/picaroon .
+	docker buildx build --progress=plain --platform linux/arm64 --push -t kittymac/picaroon .
 	#linux/amd64,
 
 android:

@@ -1,11 +1,11 @@
-FROM swift:5.9.2-focal as builder
+FROM swift:5.10.1-noble as builder
 
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && apt-get -q update && \
     apt-get install -y \
     libpq-dev \
     libpng-dev \
     libjpeg-dev \
-    libjavascriptcoregtk-4.0-dev \
+    libjavascriptcoregtk-4.1-dev \
     libatomic1 \
     unzip
 
@@ -20,5 +20,5 @@ COPY ./Package.swift ./Package.swift
 COPY ./Sources ./Sources
 COPY ./Tests ./Tests
 
-#RUN swift test
-RUN swift build --configuration release
+RUN swift test --filter=testPolling
+# RUN swift build --configuration release

@@ -399,4 +399,38 @@ final class PicaroonHttpSessionTests: XCTestCase {
         
         wait(for: [expectation], timeout: 600)
     }
+    
+    func testPolling() {
+        let expectation = XCTestExpectation(description: #function)
+        
+        setenv("URLSessionDebugLibcurl", "true", 1)
+        setenv("URLSessionDebug", "true", 1)
+        
+        var count = 0
+        //Flynn.Timer(timeInterval: 10.0, immediate: true, repeats: true, Flynn.any) { timer in
+            HTTPSessionManager.shared.beNew(priority: .high,
+                                            Flynn.any) { session in
+                count += 1
+                let callCount = count
+                print("[\(callCount)] BEFORE CALL")
+                session.beRequest(url: "http://www.apple.com",
+                                               httpMethod: "GET",
+                                                params: [:],
+                                               headers: [:],
+                                               cookies: nil,
+                                               timeoutRetry: 0,
+                                               proxy: nil,
+                                               body: nil,
+                                               Flynn.any) { data, httpResponse, error in
+                    print("[\(callCount)] AFTER CALL")
+                    print("[\(callCount)] httpResponse: \(httpResponse)")
+                    print("[\(callCount)] error: \(error)")
+                    
+                    expectation.fulfill()
+                }
+            }
+        //}
+        
+        wait(for: [expectation], timeout: 600)
+    }
 }

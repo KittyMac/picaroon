@@ -1,0 +1,5 @@
+module CPicaroonCurl [system] {
+    umbrella header "include/shim.h"
+    link "curl"
+    export *
+}

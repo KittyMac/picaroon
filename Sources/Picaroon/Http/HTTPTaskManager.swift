@@ -21,9 +21,25 @@ fileprivate struct StringError: LocalizedError {
     init(_ description: String) { self.errorDescription = description }
 }
 
-fileprivate struct DataTask: Equatable {
-    let task: URLSessionDataTask
+/// The only two things HTTPTaskManager needs from a task, so a CurlTask and a
+/// URLSessionDataTask are interchangeable at the call site.
+internal protocol PicaroonTask: AnyObject {
+    func resume()
+    func cancel()
+}
+
+extension URLSessionDataTask: PicaroonTask { }
+
+fileprivate struct DataTask {
+    let task: PicaroonTask
     let proxy: String?
+}
+
+/// Lets the completion closure identify the task it belongs to, which does not exist
+/// yet when the closure is built. PicaroonTask has no `response`, so activeTasks can
+/// no longer be matched the way it was.
+fileprivate final class DataTaskBox {
+    var task: PicaroonTask?
 }
 
 internal class HTTPTaskManager: Actor {
@@ -73,7 +89,8 @@ internal class HTTPTaskManager: Actor {
         // where all URLSessionTasks are funnelled through the HTTPTaskManager actor
         // (thus none of these will execute concurrently)
         // Note: per session proxies are only supported on linux
-        if let proxy = task.proxy {
+        if let proxy = task.proxy,
+           let urlTask = task.task as? URLSessionDataTask {
 #if !os(Linux)
             if didWarnAbountProxy == false {
                 didWarnAbountProxy = true
@@ -81,10 +98,12 @@ internal class HTTPTaskManager: Actor {
             }
 #endif
             setenv("all_proxy", proxy, 1)
-            task.task.resume()
-            task.task.priority = URLSessionTask.defaultPriority
+            urlTask.resume()
+            urlTask.priority = URLSessionTask.defaultPriority
             unsetenv("all_proxy")
         } else {
+            // CurlTask carries its proxy on the handle (CURLOPT_PROXY), so it needs
+            // none of the above.
             task.task.resume()
         }
         #endif
@@ -100,7 +119,10 @@ internal class HTTPTaskManager: Actor {
         #if os(Android) || os(Linux)
         // On android specifically, the first time we make a network call it always time outs
         // To help work around this, we give the first network call a small timeout value
-        if session.sessionDescription == sessionState_Inited {
+        // Note: this works around a corelibs URLSession stall that CurlTransport avoids
+        // entirely, so it is skipped when the curl transport is active.
+        if CurlTransport.enabled == false,
+           session.sessionDescription == sessionState_Inited {
             request.timeoutInterval = 2
         }
         #endif
@@ -113,15 +135,15 @@ internal class HTTPTaskManager: Actor {
             return returnCallback(nil, nil, StringError("invalid session state - \(session.sessionDescription ?? "unknown")"))
         }
 
-        let task = session.dataTask(with: request) { data, response, error in
+        let taskBox = DataTaskBox()
+        let completionHandler: (Data?, URLResponse?, Error?) -> () = { data, response, error in
 #if os(Linux) || os(Android)
             _ = signal(SIGPIPE, SIG_IGN)
 #endif
             
             self.unsafeSend { _ in
-                for task in self.activeTasks where task.task.response == response {
-                    self.activeTasks.removeOne(task)
-                    break
+                if let boxedTask = taskBox.task {
+                    self.activeTasks.removeAll { $0.task === boxedTask }
                 }
                 
                 var shouldBeRetried: String? = nil
@@ -256,6 +278,21 @@ internal class HTTPTaskManager: Actor {
                 returnCallback(data, response, error)
             }
         }
+        
+        let task: PicaroonTask
+        #if os(Linux) || os(Android)
+        if CurlTransport.enabled {
+            task = CurlTransport.makeTask(session: session,
+                                          request: request,
+                                          proxy: proxy,
+                                          completionHandler)
+        } else {
+            task = session.dataTask(with: request, completionHandler: completionHandler)
+        }
+        #else
+        task = session.dataTask(with: request, completionHandler: completionHandler)
+        #endif
+        taskBox.task = task
         
         waitingTasks.append(DataTask(task: task,
                                      proxy: proxy))

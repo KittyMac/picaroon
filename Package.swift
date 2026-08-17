@@ -17,6 +17,16 @@ let package = Package(
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.5.0"),
     ],
     targets: [
+        // libcurl is already in the process, linked by FoundationNetworking. This
+        // target just exposes it so Picaroon can drive the easy interface directly
+        // on Linux and Android. See CurlTransport.swift.
+        .systemLibrary(
+            name: "CPicaroonCurl",
+            path: "Sources/CPicaroonCurl",
+            providers: [
+                .apt(["libcurl4-openssl-dev"])
+            ]
+        ),
         .executableTarget(
             name: "PicaroonTestTool",
             dependencies: [
@@ -36,6 +46,7 @@ let package = Package(
                 "Sextant",
                 "CryptoSwift",
                 .product(name: "Gzip", package: "GzipSwift"),
+                .target(name: "CPicaroonCurl", condition: .when(platforms: [.linux, .android])),
 			],
             plugins: [
                 .plugin(name: "FlynnPlugin", package: "Flynn")
