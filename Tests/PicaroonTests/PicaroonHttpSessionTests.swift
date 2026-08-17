@@ -413,7 +413,7 @@ final class PicaroonHttpSessionTests: XCTestCase {
                 count += 1
                 let callCount = count
                 print("[\(callCount)] BEFORE CALL")
-                session.beRequest(url: "https://www.wildlink.me/data/681/merchant-rate/1",
+                session.beRequest(url: "https://httpbun.com/headers",
                                                httpMethod: "GET",
                                                 params: [:],
                                                headers: [:],
@@ -425,6 +425,9 @@ final class PicaroonHttpSessionTests: XCTestCase {
                     print("[\(callCount)] AFTER CALL")
                     print("[\(callCount)] httpResponse: \(httpResponse)")
                     print("[\(callCount)] error: \(error)")
+                    if let data = data {
+                        print(Hitch(data: data))
+                    }
                     
                     expectation.fulfill()
                 }

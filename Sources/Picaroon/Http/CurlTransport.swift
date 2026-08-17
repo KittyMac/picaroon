@@ -104,10 +104,13 @@ internal final class CurlTransport {
         return value != nil && value != "0"
     }()
 
-    private func reusedConnection(_ handle: UnsafeMutableRawPointer) -> Bool {
-        var count: Int = 0
-        _ = picaroon_curl_getinfo_long(handle, CURLINFO_NUM_CONNECTS, &count)
-        return count == 0
+    /// Peer address actually used, when libcurl got far enough to have one. Empty
+    /// means the connect never completed, which is itself the useful signal.
+    private func primaryIP(_ handle: UnsafeMutableRawPointer) -> String {
+        var pointer: UnsafeMutablePointer<CChar>? = nil
+        _ = picaroon_curl_getinfo_str(handle, CURLINFO_PRIMARY_IP, &pointer)
+        guard let pointer = pointer else { return "" }
+        return String(cString: pointer)
     }
 
     #if os(Android)
@@ -328,9 +331,9 @@ internal final class CurlTransport {
             headerList = curl_slist_append(headerList, "Expect:")
         }
         // corelibs sends this on every request (curlHeadersToSet in HTTPURLProtocol).
-        if headers["Connection"] == nil {
-            headerList = curl_slist_append(headerList, "Connection: keep-alive")
-        }
+        // if headers["Connection"] == nil {
+        //    headerList = curl_slist_append(headerList, "Connection: keep-alive")
+        // }
         if headers["Accept-Language"] == nil {
             headerList = curl_slist_append(headerList, "Accept-Language: en-US,en;q=0.9")
         }
@@ -396,7 +399,14 @@ internal final class CurlTransport {
             }
             var osErrno: Int = 0
             _ = picaroon_curl_getinfo_long(handle, CURLINFO_OS_ERRNO, &osErrno)
-            description += String(format: " [curl=%d dns=%.2fs connect=%.2fs tls=%.2fs total=%.2fs errno=%d connectTimeout=%ds reused=%@]",
+            var numConnects: Int = 0
+            _ = picaroon_curl_getinfo_long(handle, CURLINFO_NUM_CONNECTS, &numConnects)
+            // newConnections is CURLINFO_NUM_CONNECTS: how many connections libcurl
+            // *completed* for this transfer. Zero means either the connection came
+            // from the cache or -- if connect=0.00s with a nonzero dns time -- that no
+            // connection ever completed and the socket hung. peer is empty in the
+            // latter case, which disambiguates the two.
+            description += String(format: " [curl=%d dns=%.2fs connect=%.2fs tls=%.2fs total=%.2fs errno=%d connectTimeout=%ds newConnections=%d peer=%@]",
                                   code.rawValue,
                                   timing(CURLINFO_NAMELOOKUP_TIME),
                                   timing(CURLINFO_CONNECT_TIME),
@@ -404,7 +414,8 @@ internal final class CurlTransport {
                                   timing(CURLINFO_TOTAL_TIME),
                                   osErrno,
                                   CurlTransport.connectTimeout,
-                                  reusedConnection(handle) ? "yes" : "no")
+                                  numConnects,
+                                  primaryIP(handle))
             return task.finish(nil, nil, urlError(urlCode(for: code), description, url))
         }
 
