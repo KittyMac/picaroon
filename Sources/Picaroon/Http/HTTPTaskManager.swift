@@ -116,24 +116,6 @@ internal class HTTPTaskManager: Actor {
                             retryAnyError: Bool,
                             _ returnCallback: @escaping (Data?, URLResponse?, Error?) -> ()) {
         var request = _request
-        #if os(Android) || os(Linux)
-        // On android specifically, the first time we make a network call it always time outs
-        // To help work around this, we give the first network call a small timeout value
-        // Note: this works around a corelibs URLSession stall that CurlTransport avoids
-        // entirely, so it is skipped when the curl transport is active.
-        if CurlTransport.enabled == false,
-           session.sessionDescription == sessionState_Inited {
-            request.timeoutInterval = 2
-        }
-        #endif
-        if session.sessionDescription == sessionState_Inited {
-            session.sessionDescription = sessionState_Normal
-        }
-
-        
-        guard session.sessionDescription == sessionState_Normal else {
-            return returnCallback(nil, nil, StringError("invalid session state - \(session.sessionDescription ?? "unknown")"))
-        }
 
         let taskBox = DataTaskBox()
         let completionHandler: (Data?, URLResponse?, Error?) -> () = { data, response, error in
@@ -226,45 +208,10 @@ internal class HTTPTaskManager: Actor {
                    timeoutRetry > 0 {
                     print(shouldBeRetried)
                     
-                    var newRequest = request
-                    
-                    #if os(Android) || os(Linux)
-                    if request.timeoutInterval == 2 {
-                        newRequest.timeoutInterval = 60
-                        shouldBeRecycled = nil
-                    }
-                    #endif
-                    
-                    if let shouldBeRecycled = shouldBeRecycled {
-                        // flag the original session as needing to be recycled.
-                        session.sessionDescription = sessionState_Recycle
-                        
-                        // create a new, temporary session for our retry attempt
-                        let tempSession = URLSession(configuration: session.configuration,
-                                                     delegate: nil,
-                                                     delegateQueue: nil)
-                        tempSession.sessionDescription = sessionState_Inited
-                        
-                        Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
-                            guard let self = self else { return returnCallback(nil, nil, nil) }
-                            self.beResume(session: tempSession,
-                                          request: newRequest,
-                                          proxy: proxy,
-                                          timeoutRetry: timeoutRetry - 1,
-                                          retryAnyError: retryAnyError,
-                                          self) { data, response, error in
-                                tempSession.finishTasksAndInvalidate()
-                                tempSession.sessionDescription = sessionState_Invalidated
-                                returnCallback(data, response, error)
-                            }
-                        }
-                        return
-                    }
-                    
                     Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
                         guard let self = self else { return returnCallback(nil, nil, nil) }
                         self.beResume(session: session,
-                                      request: newRequest,
+                                      request: request,
                                       proxy: proxy,
                                       timeoutRetry: timeoutRetry - 1,
                                       retryAnyError: retryAnyError,

@@ -4,14 +4,7 @@
 // interface: one shared _TimeoutSource plus per-socket DispatchSources, all feeding
 // curl_multi_socket_action. On Swift 5.10 that event loop can race into a state where
 // neither a timer nor a socket source is armed, and the transfer stalls with no bytes
-// moved until the request watchdog fires -1001. It is nondeterministic, it is not
-// specific to the first task or to redirects, and there is no supported API to
-// re-drive a wedged multi handle from outside FoundationNetworking.
-//
-// The easy interface has none of that machinery. curl_easy_perform blocks the calling
-// thread and runs its own internal poll loop, so there is no timer to drop and no
-// socket source to leak. We trade one thread per in-flight request for a transport
-// that cannot wedge.
+// moved until the request watchdog fires -1001.
 //
 // Threads here are dedicated and never DispatchQueue.global(), for the same reason
 // DNS+Resolver.swift avoids it: a blocked network call must not consume a worker from
@@ -32,6 +25,11 @@ import Glibc
 #elseif canImport(Android)
 import Android
 #endif
+
+/// Same name and semantics as swift-corelibs-foundation's, so an app that already
+/// sets this for URLSession keeps working unchanged when the curl transport is active.
+internal let caInfoEnvironmentVariable = "URLSessionCertificateAuthorityInfoFile"
+internal let insecureNoVerifySentinel = "INSECURE_SSL_NO_VERIFY"
 
 internal final class CurlTask: PicaroonTask {
     fileprivate let request: URLRequest
@@ -83,14 +81,7 @@ internal final class CurlTask: PicaroonTask {
 
 internal final class CurlTransport {
 
-    /// Set PICAROON_CURL_TRANSPORT=0 to fall back to URLSession without rebuilding.
-    internal static let enabled: Bool = {
-        if let value = ProcessInfo.processInfo.environment["PICAROON_CURL_TRANSPORT"] {
-            return value != "0" && value.lowercased() != "false"
-        }
-        return true
-    }()
-
+    internal static var enabled: Bool = true
     internal static let shared = CurlTransport()
 
     /// One blocked thread per in-flight request, so this is the real concurrency
@@ -189,6 +180,25 @@ internal final class CurlTransport {
         _ = picaroon_curl_setopt_long(handle, CURLOPT_MAXREDIRS, 20)
         _ = picaroon_curl_setopt_long(handle, CURLOPT_TCP_KEEPALIVE, 1)
         "".withCString { _ = picaroon_curl_setopt_str(handle, CURLOPT_ACCEPT_ENCODING, $0) }
+        // Match corelibs setAllowedProtocolsToAll(): only http/https on redirect.
+        _ = picaroon_curl_setopt_long(handle, CURLOPT_REDIR_PROTOCOLS, picaroon_curl_redir_protocols())
+
+        // Driving libcurl directly bypasses _EasyHandle.setupCertificates(), so we must
+        // honour the same environment variable it does. Without this libcurl falls back
+        // to whatever CA bundle path it was compiled with, which on Android does not
+        // exist inside the app sandbox and yields
+        //   "error setting certificate file: .../etc/tls/cert.pem"
+        // (CURLE_SSL_CACERT_BADFILE). See EasyHandle.swift:196-209.
+        // corelibs only reads this on Android; we read it on every platform, so the same
+        // variable also covers minimal Linux containers that ship no CA bundle.
+        if let caInfo = getenv(caInfoEnvironmentVariable) {
+            if String(cString: caInfo) == insecureNoVerifySentinel {
+                _ = picaroon_curl_setopt_long(handle, CURLOPT_SSL_VERIFYPEER, 0)
+                _ = picaroon_curl_setopt_long(handle, CURLOPT_SSL_VERIFYHOST, 0)
+            } else {
+                _ = picaroon_curl_setopt_ptr(handle, CURLOPT_CAINFO, UnsafeMutableRawPointer(mutating: caInfo))
+            }
+        }
 
         // corelibs' watchdog resets on every read/write callback, so
         // timeoutIntervalForRequest was always an idle bound rather than a total one.
@@ -349,6 +359,7 @@ internal final class CurlTransport {
         case CURLE_ABORTED_BY_CALLBACK:         return .cancelled
         case CURLE_PEER_FAILED_VERIFICATION:    return .serverCertificateUntrusted
         case CURLE_SSL_CONNECT_ERROR:           return .secureConnectionFailed
+        case CURLE_SSL_CACERT_BADFILE:          return .serverCertificateUntrusted
         default:                                return .unknown
         }
     }

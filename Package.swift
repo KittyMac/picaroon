@@ -17,9 +17,6 @@ let package = Package(
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.5.0"),
     ],
     targets: [
-        // libcurl is already in the process, linked by FoundationNetworking. This
-        // target just exposes it so Picaroon can drive the easy interface directly
-        // on Linux and Android. See CurlTransport.swift.
         .systemLibrary(
             name: "CPicaroonCurl",
             path: "Sources/CPicaroonCurl",

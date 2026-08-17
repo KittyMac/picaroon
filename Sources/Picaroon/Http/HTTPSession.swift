@@ -18,11 +18,6 @@ import Android
 #error("Unknown platform")
 #endif
 
-let sessionState_Inited = "inited"
-let sessionState_Normal = "normal"
-let sessionState_Recycle = "recycle"
-let sessionState_Invalidated = "invalidated"
-
 // Note: we cannot have too many concurrent URLSession (or we will get "No space left on device")
 // https://stackoverflow.com/questions/67318867/error-domain-nsposixerrordomain-code-28-no-space-left-on-device-userinfo-kcf
 
@@ -76,7 +71,6 @@ public class HTTPSession: Actor {
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
-        urlSession.sessionDescription = sessionState_Inited
         retryAnyError = false
         
         super.init()
@@ -100,7 +94,6 @@ public class HTTPSession: Actor {
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         config.httpShouldUsePipelining = false
         urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
-        urlSession.sessionDescription = sessionState_Inited
         retryAnyError = true
         
         super.init()
@@ -109,15 +102,6 @@ public class HTTPSession: Actor {
     }
     
     private func releaseUrlSession() {
-        if urlSession.sessionDescription == sessionState_Recycle {
-            urlSession.finishTasksAndInvalidate()
-            urlSession.sessionDescription = sessionState_Invalidated
-            urlSession = URLSession(configuration: urlSession.configuration,
-                                    delegate: nil,
-                                    delegateQueue: nil)
-            urlSession.sessionDescription = sessionState_Inited
-        }
-        
         if let deinitCallback = deinitCallback {
             self.deinitCallback = nil
             let returnedURLSession = urlSession
