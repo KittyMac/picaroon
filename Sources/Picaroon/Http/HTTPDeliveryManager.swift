@@ -45,6 +45,8 @@ public class HTTPDeliveryManager: Actor {
     private var outstandingRequests = 0
     private var outstandingCallbacks: [String:(Data?, HTTPURLResponse?, String?) -> ()] = [:]
     
+    private var persistLock = NSLock()
+    
     private var isConfigured = false
     private var storageURL: URL = URL(fileURLWithPath: "/tmp")
     private var encrypt: (Data) -> Data = { return $0 }
@@ -68,7 +70,10 @@ public class HTTPDeliveryManager: Actor {
                                decrypt: ((Data) -> Data)?) {
         isConfigured = true
         
+        persistLock.lock()
         self.storageURL = URL(fileURLWithPath: storagePath, isDirectory: true)
+        persistLock.unlock()
+        
         self.maxConcurrentRequests = maxConcurrentRequests
         
         self.encrypt = encrypt ?? { return $0 }
@@ -259,11 +264,7 @@ public class HTTPDeliveryManager: Actor {
         
         return Date().timeIntervalSince(record.createdAt) > maxAge
     }
-
-    private func fileURL(for id: String) -> URL {
-        return storageURL.appendingPathComponent("\(id)\(Self.fileSuffix)", isDirectory: false)
-    }
-
+    
     private func recordID(for fileUrl: URL) -> String? {
         let name = fileUrl.lastPathComponent
         guard name.hasSuffix(Self.fileSuffix) else { return nil }
@@ -273,10 +274,12 @@ public class HTTPDeliveryManager: Actor {
     }
 
     private func persist(_ record: DeliveryRecord) throws -> URL {
+        persistLock.lock(); defer { persistLock.unlock() }
+        
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         
-        let fileUrl = fileURL(for: record.id)
+        let fileUrl = storageURL.appendingPathComponent("\(record.id)\(Self.fileSuffix)", isDirectory: false)
         let data = encrypt(try encoder.encode(record))
         let compressed = try data.gzipped(level: .bestCompression)
         try compressed.write(to: fileUrl, options: .atomic)
@@ -284,6 +287,7 @@ public class HTTPDeliveryManager: Actor {
     }
     
     private func loadFromDisk() {
+        persistLock.lock(); defer { persistLock.unlock() }
         do {
             try FileManager.default.createDirectory(at: storageURL, withIntermediateDirectories: true)
         } catch {
