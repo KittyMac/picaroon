@@ -413,7 +413,7 @@ final class PicaroonHttpSessionTests: XCTestCase {
                 count += 1
                 let callCount = count
                 print("[\(callCount)] BEFORE CALL")
-                session.beRequest(url: "http://www.apple.com",
+                session.beRequest(url: "https://www.wildlink.me/data/681/merchant-rate/1",
                                                httpMethod: "GET",
                                                 params: [:],
                                                headers: [:],

@@ -236,6 +236,15 @@ internal final class CurlTransport {
         if headers["Expect"] == nil {
             headerList = curl_slist_append(headerList, "Expect:")
         }
+        if headers["Accept-Language"] == nil {
+            headerList = curl_slist_append(headerList, "Accept-Language: en-US,en;q=0.9")
+        }
+        if headers["Cache-Control"] == nil {
+            headerList = curl_slist_append(headerList, "Cache-Control: no-cache")
+        }
+        if headers["User-Agent"] == nil {
+            headerList = curl_slist_append(headerList, "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15")
+        }
         for (key, value) in headers {
             headerList = curl_slist_append(headerList, "\(key): \(value)")
         }
