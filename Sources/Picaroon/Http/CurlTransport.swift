@@ -83,11 +83,7 @@ internal final class CurlTransport {
 
     internal static let shared = CurlTransport()
 
-    #if os(Android)
-    private let workerCount = 16
-    #else
     private let workerCount = min(max(Flynn.cores * 4, 8), 64)
-    #endif
 
     private let condition = NSCondition()
     private var pending: [CurlTask] = []
