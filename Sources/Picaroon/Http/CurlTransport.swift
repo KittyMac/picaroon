@@ -81,14 +81,10 @@ internal final class CurlTask: PicaroonTask {
 
 internal final class CurlTransport {
 
-    internal static var enabled: Bool = true
     internal static let shared = CurlTransport()
 
-    /// One blocked thread per in-flight request, so this is the real concurrency
-    /// ceiling. HTTPTaskManager.maxConcurrentTasks should be no higher than this,
-    /// otherwise requests simply queue here instead of there.
     #if os(Android)
-    private let workerCount = 8
+    private let workerCount = 16
     #else
     private let workerCount = min(max(Flynn.cores * 4, 8), 64)
     #endif
@@ -227,10 +223,30 @@ internal final class CurlTransport {
         }
 
         // Method last, so CUSTOMREQUEST wins over the POST that COPYPOSTFIELDS implies.
+        // Use libcurl's native method options where they exist rather than
+        // CUSTOMREQUEST. CUSTOMREQUEST persists across a redirect and pins the method
+        // for every hop, which defeats libcurl's own 301/302/303 downgrade: a POST
+        // that receives a 303 then arrives at the final URL still as a POST, where
+        // URLSession sends a GET. CUSTOMREQUEST is only needed for methods libcurl has
+        // no dedicated option for, and libcurl does not downgrade those anyway.
         let method = task.request.httpMethod ?? "GET"
-        if method == "HEAD" {
+        let hasBody = (task.request.httpBody?.isEmpty == false)
+        switch method {
+        case "GET":
+            // COPYPOSTFIELDS above would otherwise have flipped this to POST.
+            if hasBody {
+                method.withCString { _ = picaroon_curl_setopt_str(handle, CURLOPT_CUSTOMREQUEST, $0) }
+            } else {
+                _ = picaroon_curl_setopt_long(handle, CURLOPT_HTTPGET, 1)
+            }
+        case "HEAD":
             _ = picaroon_curl_setopt_long(handle, CURLOPT_NOBODY, 1)
-        } else {
+        case "POST":
+            _ = picaroon_curl_setopt_long(handle, CURLOPT_POST, 1)
+            if hasBody == false {
+                _ = picaroon_curl_setopt_off(handle, CURLOPT_POSTFIELDSIZE_LARGE, 0)
+            }
+        default:
             method.withCString { _ = picaroon_curl_setopt_str(handle, CURLOPT_CUSTOMREQUEST, $0) }
         }
 
@@ -245,6 +261,10 @@ internal final class CurlTransport {
         // An empty value suppresses a header curl would otherwise add itself.
         if headers["Expect"] == nil {
             headerList = curl_slist_append(headerList, "Expect:")
+        }
+        // corelibs sends this on every request (curlHeadersToSet in HTTPURLProtocol).
+        if headers["Connection"] == nil {
+            headerList = curl_slist_append(headerList, "Connection: keep-alive")
         }
         if headers["Accept-Language"] == nil {
             headerList = curl_slist_append(headerList, "Accept-Language: en-US,en;q=0.9")

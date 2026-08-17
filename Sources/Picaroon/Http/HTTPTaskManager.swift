@@ -228,14 +228,10 @@ internal class HTTPTaskManager: Actor {
         
         let task: PicaroonTask
         #if os(Linux) || os(Android)
-        if CurlTransport.enabled {
-            task = CurlTransport.makeTask(session: session,
-                                          request: request,
-                                          proxy: proxy,
-                                          completionHandler)
-        } else {
-            task = session.dataTask(with: request, completionHandler: completionHandler)
-        }
+        task = CurlTransport.makeTask(session: session,
+                                      request: request,
+                                      proxy: proxy,
+                                      completionHandler)
         #else
         task = session.dataTask(with: request, completionHandler: completionHandler)
         #endif
