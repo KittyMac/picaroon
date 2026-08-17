@@ -83,8 +83,32 @@ internal final class CurlTransport {
 
     internal static let shared = CurlTransport()
 
-    /// Lower bound for CURLOPT_CONNECTTIMEOUT, in seconds.
-    private let connectTimeoutFloor = 30
+    /// Seconds allowed for DNS + TCP + TLS. Override with PICAROON_CURL_CONNECT_TIMEOUT.
+    internal static let connectTimeout: Int = {
+        if let value = ProcessInfo.processInfo.environment["PICAROON_CURL_CONNECT_TIMEOUT"],
+           let seconds = Int(value), seconds > 0 {
+            return seconds
+        }
+        return 15
+    }()
+
+    /// Set PICAROON_CURL_IPV4=1 to restrict name resolution to A records.
+    internal static let forceIPv4: Bool = {
+        let value = ProcessInfo.processInfo.environment["PICAROON_CURL_IPV4"]
+        return value != nil && value != "0"
+    }()
+
+    /// Set PICAROON_CURL_VERBOSE=1 for a libcurl protocol trace on stderr.
+    internal static let verbose: Bool = {
+        let value = ProcessInfo.processInfo.environment["PICAROON_CURL_VERBOSE"]
+        return value != nil && value != "0"
+    }()
+
+    private func reusedConnection(_ handle: UnsafeMutableRawPointer) -> Bool {
+        var count: Int = 0
+        _ = picaroon_curl_getinfo_long(handle, CURLINFO_NUM_CONNECTS, &count)
+        return count == 0
+    }
 
     #if os(Android)
     private let workerCount = 16
@@ -138,6 +162,17 @@ internal final class CurlTransport {
         guard let handle = curl_easy_init() else { return }
         defer { curl_easy_cleanup(handle) }
 
+        // Owned by the worker, not the request: a persistent handle keeps the
+        // ERRORBUFFER pointer between requests, so a per-request allocation would
+        // leave the live handle pointing at freed memory.
+        let errorSize = Int(picaroon_curl_error_size())
+        let errorBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: errorSize)
+        errorBuffer.initialize(repeating: 0, count: errorSize)
+        defer {
+            errorBuffer.deinitialize(count: errorSize)
+            errorBuffer.deallocate()
+        }
+
         while true {
             condition.lock()
             while pending.isEmpty {
@@ -147,7 +182,8 @@ internal final class CurlTransport {
             condition.unlock()
 
             curl_easy_reset(handle)
-            perform(task, handle)
+            errorBuffer[0] = 0
+            perform(task, handle, errorBuffer)
         }
     }
 
@@ -164,7 +200,7 @@ internal final class CurlTransport {
         }
     }
 
-    private func perform(_ task: CurlTask, _ handle: UnsafeMutableRawPointer) {
+    private func perform(_ task: CurlTask, _ handle: UnsafeMutableRawPointer, _ errorBuffer: UnsafeMutablePointer<CChar>) {
         guard task.isCancelled == false else {
             return task.finish(nil, nil, urlError(.cancelled, "cancelled", task.request.url))
         }
@@ -175,15 +211,12 @@ internal final class CurlTransport {
         let context = Context(task: task)
         let contextPtr = Unmanaged.passUnretained(context).toOpaque()
 
-        // Must outlive curl_easy_perform, so it cannot be a withUnsafe... scope.
-        let errorSize = Int(picaroon_curl_error_size())
-        let errorBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: errorSize)
-        errorBuffer.initialize(repeating: 0, count: errorSize)
-        defer {
-            errorBuffer.deinitialize(count: errorSize)
-            errorBuffer.deallocate()
-        }
         _ = picaroon_curl_setopt_ptr(handle, CURLOPT_ERRORBUFFER, UnsafeMutableRawPointer(errorBuffer))
+
+        // Opt-in libcurl protocol trace, mirroring URLSessionDebugLibcurl in corelibs.
+        if CurlTransport.verbose {
+            _ = picaroon_curl_setopt_long(handle, CURLOPT_VERBOSE, 1)
+        }
 
         var headerList: UnsafeMutablePointer<curl_slist>? = nil
         defer { if headerList != nil { curl_slist_free_all(headerList) } }
@@ -220,11 +253,20 @@ internal final class CurlTransport {
         // LOW_SPEED_LIMIT/TIME reproduces that: abort a stalled transfer without
         // capping a legitimately slow but progressing download.
         let seconds = max(1, Int(task.timeoutInterval))
-        // CONNECTTIMEOUT covers DNS + TCP + the TLS handshake. A short per-request
-        // timeout (a caller passing 2s, say) would otherwise abort handshakes that are
-        // merely slow, which libcurl reports as "SSL connection timeout". Give it a
-        // floor; overall progress is still bounded by LOW_SPEED_* below.
-        _ = picaroon_curl_setopt_long(handle, CURLOPT_CONNECTTIMEOUT, max(seconds, connectTimeoutFloor))
+        // CONNECTTIMEOUT covers DNS + TCP + the TLS handshake. Deliberately NOT derived
+        // from timeoutInterval: that defaults to 60 on URLRequest, so a handshake that
+        // hangs (blackholed route, captive portal, mobile network transition) pins a
+        // worker thread for a full minute and surfaces as "SSL connection timeout".
+        // Bounded here so a stuck handshake fails fast and the caller's retry can
+        // succeed; progress after connect is still bounded by LOW_SPEED_* below.
+        _ = picaroon_curl_setopt_long(handle, CURLOPT_CONNECTTIMEOUT, CurlTransport.connectTimeout)
+
+        // Escape hatch: carriers that advertise AAAA but blackhole IPv6 are a classic
+        // cause of a TCP connect that succeeds and then stalls in the TLS handshake.
+        // Set PICAROON_CURL_IPV4=1 to test that theory.
+        if CurlTransport.forceIPv4 {
+            _ = picaroon_curl_setopt_long(handle, CURLOPT_IPRESOLVE, 1) // CURL_IPRESOLVE_V4
+        }
         _ = picaroon_curl_setopt_long(handle, CURLOPT_LOW_SPEED_LIMIT, 1)
         _ = picaroon_curl_setopt_long(handle, CURLOPT_LOW_SPEED_TIME, seconds)
 
@@ -344,6 +386,25 @@ internal final class CurlTransport {
             if description.isEmpty {
                 description = String(cString: curl_easy_strerror(code))
             }
+            // Phase timings, so a timeout reports which phase consumed the budget
+            // instead of only surfacing -1001. Seconds since the start of this
+            // transfer; a zero means the phase was never reached.
+            func timing(_ info: CURLINFO) -> Double {
+                var value: Double = 0
+                _ = picaroon_curl_getinfo_double(handle, info, &value)
+                return value
+            }
+            var osErrno: Int = 0
+            _ = picaroon_curl_getinfo_long(handle, CURLINFO_OS_ERRNO, &osErrno)
+            description += String(format: " [curl=%d dns=%.2fs connect=%.2fs tls=%.2fs total=%.2fs errno=%d connectTimeout=%ds reused=%@]",
+                                  code.rawValue,
+                                  timing(CURLINFO_NAMELOOKUP_TIME),
+                                  timing(CURLINFO_CONNECT_TIME),
+                                  timing(CURLINFO_APPCONNECT_TIME),
+                                  timing(CURLINFO_TOTAL_TIME),
+                                  osErrno,
+                                  CurlTransport.connectTimeout,
+                                  reusedConnection(handle) ? "yes" : "no")
             return task.finish(nil, nil, urlError(urlCode(for: code), description, url))
         }
 

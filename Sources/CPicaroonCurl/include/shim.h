@@ -46,6 +46,10 @@ static inline long picaroon_curl_redir_protocols(void) {
     return CURLPROTO_HTTP | CURLPROTO_HTTPS;
 }
 
+static inline CURLcode picaroon_curl_getinfo_double(CURL *handle, CURLINFO info, double *value) {
+    return curl_easy_getinfo(handle, info, value);
+}
+
 static inline CURLcode picaroon_curl_getinfo_long(CURL *handle, CURLINFO info, long *value) {
     return curl_easy_getinfo(handle, info, value);
 }
