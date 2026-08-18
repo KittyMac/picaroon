@@ -96,7 +96,6 @@ internal class HTTPTaskManager: Actor {
                 }
                 
                 var shouldBeRetried: String? = nil
-                var shouldBeRecycled: String? = nil
                                    
                 // Allow specific error to be retried
                 if let error = error as? URLError,
@@ -107,9 +106,6 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1003 ||
                     error.errorCode == -1005) {
                     shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
-                    if error.errorCode == -1001 {
-                        shouldBeRecycled = "error -1001 detected - recycle session"
-                    }
                 }
                 
                 // If we timeout out, go ahead and retry it.
@@ -123,9 +119,6 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1003 ||
                     error.errorCode == -1005) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
-                    if error.errorCode == -1001 {
-                        shouldBeRecycled = "error -1001 detected - recycle session"
-                    }
                 }
                 #else
                 if let error = error as? POSIXError,
@@ -136,9 +129,6 @@ internal class HTTPTaskManager: Actor {
                     error.errorCode == -1003 ||
                     error.errorCode == -1005) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
-                    if error.errorCode == -1001 {
-                        shouldBeRecycled = "error -1001 detected - recycle session"
-                    }
                 }
                 #endif
                 
