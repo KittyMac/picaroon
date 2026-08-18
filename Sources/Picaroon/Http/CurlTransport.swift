@@ -84,19 +84,10 @@ internal final class CurlTransport {
     internal static let shared = CurlTransport()
 
     /// Seconds allowed for DNS + TCP + TLS. Override with PICAROON_CURL_CONNECT_TIMEOUT.
-    internal static let connectTimeout: Int = {
-        if let value = ProcessInfo.processInfo.environment["PICAROON_CURL_CONNECT_TIMEOUT"],
-           let seconds = Int(value), seconds > 0 {
-            return seconds
-        }
-        return 15
-    }()
+    internal static let connectTimeout: Int = 30
 
     /// Set PICAROON_CURL_IPV4=1 to restrict name resolution to A records.
-    internal static let forceIPv4: Bool = {
-        let value = ProcessInfo.processInfo.environment["PICAROON_CURL_IPV4"]
-        return value != nil && value != "0"
-    }()
+    internal static let forceIPv4: Bool = true
 
     /// Set PICAROON_CURL_VERBOSE=1 for a libcurl protocol trace on stderr.
     internal static let verbose: Bool = {

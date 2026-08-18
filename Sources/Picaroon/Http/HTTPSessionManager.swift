@@ -53,9 +53,6 @@ public class HTTPSessionManager: Actor {
         
         unsafePriority = 9999
         unsafeMessageBatchSize = 9999
-        
-        setenv("PICAROON_CURL_CONNECT_TIMEOUT", "30", 1)
-        setenv("PICAROON_CURL_IPV4", "1", 1)
     }
     
     #if os(Windows)
