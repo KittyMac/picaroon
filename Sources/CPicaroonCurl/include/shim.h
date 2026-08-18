@@ -46,6 +46,13 @@ static inline long picaroon_curl_redir_protocols(void) {
     return CURLPROTO_HTTP | CURLPROTO_HTTPS;
 }
 
+/// libcurl's version as a packed integer, 0xMMNNPP. corelibs formats its User-Agent
+/// from the same numbers via CFURLSessionCurlVersionInfo().
+static inline long picaroon_curl_version_num(void) {
+    curl_version_info_data *info = curl_version_info(CURLVERSION_NOW);
+    return info ? (long)info->version_num : 0;
+}
+
 static inline CURLcode picaroon_curl_getinfo_double(CURL *handle, CURLINFO info, double *value) {
     return curl_easy_getinfo(handle, info, value);
 }

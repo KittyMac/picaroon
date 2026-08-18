@@ -83,6 +83,24 @@ internal final class CurlTransport {
 
     internal static let shared = CurlTransport()
 
+    /// Matches what swift-corelibs-foundation sends, so requests look the same
+    /// whether they went through URLSession or this transport. corelibs builds it in
+    /// `userAgentString` (HTTPURLProtocol.swift:688) as:
+    ///
+    ///     "\(ProcessInfo.processName) (unknown version) curl/\(major).\(minor).\(patch)"
+    ///
+    /// e.g. "rover (unknown version) curl/8.5.0". Darwin's CFNetwork uses the same
+    /// shape with its own middle terms, e.g.
+    /// "xctest/23796 CFNetwork/3826.500.131 Darwin/24.5.0".
+    internal static let defaultUserAgent: String = {
+        let name = ProcessInfo.processInfo.processName
+        let packed = picaroon_curl_version_num()
+        let major = (packed >> 16) & 0xff
+        let minor = (packed >> 8) & 0xff
+        let patch = packed & 0xff
+        return "\(name) (unknown version) curl/\(major).\(minor).\(patch)"
+    }()
+
     internal static let idleTimeout: TimeInterval = 6
     internal static let verbose: Bool = false
 
@@ -345,7 +363,7 @@ internal final class CurlTransport {
             headerList = curl_slist_append(headerList, "Cache-Control: no-cache")
         }
         if headers["User-Agent"] == nil {
-            headerList = curl_slist_append(headerList, "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15")
+            headerList = curl_slist_append(headerList, "User-Agent: \(CurlTransport.defaultUserAgent)")
         }
         for (key, value) in headers {
             headerList = curl_slist_append(headerList, "\(key): \(value)")
