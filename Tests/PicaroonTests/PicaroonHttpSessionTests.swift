@@ -402,37 +402,33 @@ final class PicaroonHttpSessionTests: XCTestCase {
     
     func testPolling() {
         let expectation = XCTestExpectation(description: #function)
-        
-        setenv("URLSessionDebugLibcurl", "true", 1)
-        setenv("URLSessionDebug", "true", 1)
-        
+                
         var count = 0
-        //Flynn.Timer(timeInterval: 10.0, immediate: true, repeats: true, Flynn.any) { timer in
-            HTTPSessionManager.shared.beNew(priority: .high,
-                                            Flynn.any) { session in
-                count += 1
-                let callCount = count
-                print("[\(callCount)] BEFORE CALL")
-                session.beRequest(url: "https://httpbun.com/headers",
-                                               httpMethod: "GET",
-                                                params: [:],
-                                               headers: [:],
-                                               cookies: nil,
-                                               timeoutRetry: 0,
-                                               proxy: nil,
-                                               body: nil,
-                                               Flynn.any) { data, httpResponse, error in
-                    print("[\(callCount)] AFTER CALL")
-                    print("[\(callCount)] httpResponse: \(httpResponse)")
-                    print("[\(callCount)] error: \(error)")
-                    if let data = data {
-                        print(Hitch(data: data))
-                    }
-                    
+        Flynn.Timer(timeInterval: 10.0, immediate: true, repeats: true, Flynn.any) { timer in
+            count += 1
+            let callCount = count
+            print("[\(callCount)] BEFORE CALL")
+            HTTPSession.longshot.beRequest(url: "https://wolfe.smallplanet.com/rs/request",
+                                           httpMethod: "GET",
+                                            params: [:],
+                                           headers: [:],
+                                           cookies: nil,
+                                           timeoutRetry: 0,
+                                           proxy: nil,
+                                           body: nil,
+                                           Flynn.any) { data, httpResponse, error in
+                print("[\(callCount)] AFTER CALL")
+                print("[\(callCount)] httpResponse: \(httpResponse)")
+                print("[\(callCount)] error: \(error)")
+                if let data = data {
+                    print(Hitch(data: data).toString())
+                }
+                
+                if count == 6 {
                     expectation.fulfill()
                 }
             }
-        //}
+        }
         
         wait(for: [expectation], timeout: 600)
     }

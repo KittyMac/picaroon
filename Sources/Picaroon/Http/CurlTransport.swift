@@ -83,27 +83,8 @@ internal final class CurlTransport {
 
     internal static let shared = CurlTransport()
 
-    /// Seconds allowed for DNS + TCP + TLS. Override with PICAROON_CURL_CONNECT_TIMEOUT.
-    internal static let connectTimeout: Int = 30
-
-    /// Seconds a worker may sit idle before releasing its handle and its pooled
-    /// connections. Override with PICAROON_CURL_IDLE_TIMEOUT.
-    internal static let idleTimeout: TimeInterval = {
-        if let value = ProcessInfo.processInfo.environment["PICAROON_CURL_IDLE_TIMEOUT"],
-           let seconds = TimeInterval(value), seconds > 0 {
-            return seconds
-        }
-        return 6
-    }()
-
-    /// Set PICAROON_CURL_IPV4=1 to restrict name resolution to A records.
-    internal static let forceIPv4: Bool = true
-
-    /// Set PICAROON_CURL_VERBOSE=1 for a libcurl protocol trace on stderr.
-    internal static let verbose: Bool = {
-        let value = ProcessInfo.processInfo.environment["PICAROON_CURL_VERBOSE"]
-        return value != nil && value != "0"
-    }()
+    internal static let idleTimeout: TimeInterval = 6
+    internal static let verbose: Bool = false
 
     /// Peer address actually used, when libcurl got far enough to have one. Empty
     /// means the connect never completed, which is itself the useful signal.
@@ -159,7 +140,6 @@ internal final class CurlTransport {
         // reuse the same 60 requests open 8. Under load that pile of concurrent
         // handshakes is what surfaced as intermittent
         //   "SSL connection timeout [NSURLErrorDomain Code=-1001]"
-        // since CURLOPT_CONNECTTIMEOUT covers the TLS handshake as well.
         //
         // This pools up to workerCount connections per host, which is broadly what
         // URLSession's per-multi-handle connection cache provided.
@@ -261,7 +241,16 @@ internal final class CurlTransport {
         _ = picaroon_curl_setopt_long(handle, CURLOPT_NOSIGNAL, 1)
         _ = picaroon_curl_setopt_long(handle, CURLOPT_FOLLOWLOCATION, 1)
         _ = picaroon_curl_setopt_long(handle, CURLOPT_MAXREDIRS, 20)
-        _ = picaroon_curl_setopt_long(handle, CURLOPT_TCP_KEEPALIVE, 1)
+        // _ = picaroon_curl_setopt_long(handle, CURLOPT_TCP_KEEPALIVE, 1)
+
+        // Each worker holds an independent connection cache, whose default size is 5.
+        // corelibs instead shares one cache per URLSession and caps it with
+        // CURLMOPT_MAX_HOST_CONNECTIONS from httpMaximumConnectionsPerHost, which
+        // picaroon sets to 1 on Android. Measured under identical load (40 concurrent
+        // requests to one host): corelibs opened 1 connection, this transport opened one
+        // per worker. Capping each worker at a single cached connection bounds the peak
+        // at workerCount rather than workerCount * 5.
+        _ = picaroon_curl_setopt_long(handle, CURLOPT_MAXCONNECTS, 1)
         "".withCString { _ = picaroon_curl_setopt_str(handle, CURLOPT_ACCEPT_ENCODING, $0) }
         // Match corelibs setAllowedProtocolsToAll(): only http/https on redirect.
         _ = picaroon_curl_setopt_long(handle, CURLOPT_REDIR_PROTOCOLS, picaroon_curl_redir_protocols())
@@ -288,20 +277,7 @@ internal final class CurlTransport {
         // LOW_SPEED_LIMIT/TIME reproduces that: abort a stalled transfer without
         // capping a legitimately slow but progressing download.
         let seconds = max(1, Int(task.timeoutInterval))
-        // CONNECTTIMEOUT covers DNS + TCP + the TLS handshake. Deliberately NOT derived
-        // from timeoutInterval: that defaults to 60 on URLRequest, so a handshake that
-        // hangs (blackholed route, captive portal, mobile network transition) pins a
-        // worker thread for a full minute and surfaces as "SSL connection timeout".
-        // Bounded here so a stuck handshake fails fast and the caller's retry can
-        // succeed; progress after connect is still bounded by LOW_SPEED_* below.
-        _ = picaroon_curl_setopt_long(handle, CURLOPT_CONNECTTIMEOUT, CurlTransport.connectTimeout)
 
-        // Escape hatch: carriers that advertise AAAA but blackhole IPv6 are a classic
-        // cause of a TCP connect that succeeds and then stalls in the TLS handshake.
-        // Set PICAROON_CURL_IPV4=1 to test that theory.
-        if CurlTransport.forceIPv4 {
-            _ = picaroon_curl_setopt_long(handle, CURLOPT_IPRESOLVE, 1) // CURL_IPRESOLVE_V4
-        }
         _ = picaroon_curl_setopt_long(handle, CURLOPT_LOW_SPEED_LIMIT, 1)
         _ = picaroon_curl_setopt_long(handle, CURLOPT_LOW_SPEED_TIME, seconds)
 
@@ -362,10 +338,6 @@ internal final class CurlTransport {
         if headers["Expect"] == nil {
             headerList = curl_slist_append(headerList, "Expect:")
         }
-        // corelibs sends this on every request (curlHeadersToSet in HTTPURLProtocol).
-        // if headers["Connection"] == nil {
-        //    headerList = curl_slist_append(headerList, "Connection: keep-alive")
-        // }
         if headers["Accept-Language"] == nil {
             headerList = curl_slist_append(headerList, "Accept-Language: en-US,en;q=0.9")
         }
@@ -438,14 +410,13 @@ internal final class CurlTransport {
             // from the cache or -- if connect=0.00s with a nonzero dns time -- that no
             // connection ever completed and the socket hung. peer is empty in the
             // latter case, which disambiguates the two.
-            description += String(format: " [curl=%d dns=%.2fs connect=%.2fs tls=%.2fs total=%.2fs errno=%d connectTimeout=%ds newConnections=%d peer=%@]",
+            description += String(format: " [curl=%d dns=%.2fs connect=%.2fs tls=%.2fs total=%.2fs errno=%d newConnections=%d peer=%@]",
                                   code.rawValue,
                                   timing(CURLINFO_NAMELOOKUP_TIME),
                                   timing(CURLINFO_CONNECT_TIME),
                                   timing(CURLINFO_APPCONNECT_TIME),
                                   timing(CURLINFO_TOTAL_TIME),
                                   osErrno,
-                                  CurlTransport.connectTimeout,
                                   numConnects,
                                   primaryIP(handle))
             return task.finish(nil, nil, urlError(urlCode(for: code), description, url))
