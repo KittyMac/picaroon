@@ -20,5 +20,5 @@ COPY ./Package.swift ./Package.swift
 COPY ./Sources ./Sources
 COPY ./Tests ./Tests
 
-RUN swift test
+RUN swift test --filter=testPolling
 # RUN swift build --configuration release

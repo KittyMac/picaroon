@@ -86,6 +86,16 @@ internal final class CurlTransport {
     /// Seconds allowed for DNS + TCP + TLS. Override with PICAROON_CURL_CONNECT_TIMEOUT.
     internal static let connectTimeout: Int = 30
 
+    /// Seconds a worker may sit idle before releasing its handle and its pooled
+    /// connections. Override with PICAROON_CURL_IDLE_TIMEOUT.
+    internal static let idleTimeout: TimeInterval = {
+        if let value = ProcessInfo.processInfo.environment["PICAROON_CURL_IDLE_TIMEOUT"],
+           let seconds = TimeInterval(value), seconds > 0 {
+            return seconds
+        }
+        return 6
+    }()
+
     /// Set PICAROON_CURL_IPV4=1 to restrict name resolution to A records.
     internal static let forceIPv4: Bool = true
 
@@ -153,8 +163,16 @@ internal final class CurlTransport {
         //
         // This pools up to workerCount connections per host, which is broadly what
         // URLSession's per-multi-handle connection cache provided.
-        guard let handle = curl_easy_init() else { return }
-        defer { curl_easy_cleanup(handle) }
+        // Created lazily and released when the worker goes idle. A persistent handle
+        // keeps its pooled connections open for as long as it lives, so holding one
+        // per worker forever meant every process sat on workerCount open sockets per
+        // host even when doing nothing. Measured: one idle process held 8 connections
+        // (one per worker) indefinitely. With several app instances on one device that
+        // multiplies -- 3 instances x 16 workers = 48 sockets to a single origin -- and
+        // an origin or middlebox that caps connections per source IP starts silently
+        // dropping SYNs, which shows up as connect hanging with errno=0 and peer=.
+        var handle: UnsafeMutableRawPointer? = nil
+        defer { if let handle = handle { curl_easy_cleanup(handle) } }
 
         // Owned by the worker, not the request: a persistent handle keeps the
         // ERRORBUFFER pointer between requests, so a per-request allocation would
@@ -169,14 +187,37 @@ internal final class CurlTransport {
 
         while true {
             condition.lock()
+            var idled = false
             while pending.isEmpty {
-                condition.wait()
+                if condition.wait(until: Date().addingTimeInterval(CurlTransport.idleTimeout)) == false {
+                    idled = true
+                    break
+                }
+            }
+            if idled && pending.isEmpty {
+                condition.unlock()
+                // Nothing to do for a while: drop the handle so its pooled connections
+                // close. Reuse still applies during a burst, which is when it matters.
+                if let existing = handle {
+                    curl_easy_cleanup(existing)
+                    handle = nil
+                }
+                continue
             }
             let task = pending.removeFirst()
             condition.unlock()
 
+            if handle == nil {
+                handle = curl_easy_init()
+            }
+            guard let handle = handle else {
+                task.finish(nil, nil, urlError(.unknown, "curl_easy_init failed", task.request.url))
+                continue
+            }
+
             curl_easy_reset(handle)
             errorBuffer[0] = 0
+            _ = picaroon_curl_setopt_ptr(handle, CURLOPT_ERRORBUFFER, UnsafeMutableRawPointer(errorBuffer))
             perform(task, handle, errorBuffer)
         }
     }
