@@ -92,6 +92,10 @@ internal final class CurlTransport {
     /// e.g. "rover (unknown version) curl/8.5.0". Darwin's CFNetwork uses the same
     /// shape with its own middle terms, e.g.
     /// "xctest/23796 CFNetwork/3826.500.131 Darwin/24.5.0".
+    /// Mirrors corelibs: `NSLocale.current.languageCode`, e.g. "en". Nil when the
+    /// locale has no language code, in which case the header is not sent at all.
+    internal static let defaultAcceptLanguage: String? = Locale.current.languageCode
+
     internal static let defaultUserAgent: String = {
         let name = ProcessInfo.processInfo.processName
         let packed = picaroon_curl_version_num()
@@ -356,8 +360,13 @@ internal final class CurlTransport {
         if headers["Expect"] == nil {
             headerList = curl_slist_append(headerList, "Expect:")
         }
-        if headers["Accept-Language"] == nil {
-            headerList = curl_slist_append(headerList, "Accept-Language: en-US,en;q=0.9")
+        // corelibs sends the bare language code from the current locale, and omits the
+        // header entirely when it cannot determine one -- see curlHeadersToSet in
+        // HTTPURLProtocol.swift:668. On a typical device that is "en", not the
+        // browser-style quality list a hardcoded value would send.
+        if headers["Accept-Language"] == nil,
+           let language = CurlTransport.defaultAcceptLanguage {
+            headerList = curl_slist_append(headerList, "Accept-Language: \(language)")
         }
         if headers["Cache-Control"] == nil {
             headerList = curl_slist_append(headerList, "Cache-Control: no-cache")
