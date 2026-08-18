@@ -73,40 +73,7 @@ internal class HTTPTaskManager: Actor {
         let task = waitingTasks.removeFirst()
         activeTasks.append(task)
         
-        #if os(Windows)
         task.task.resume()
-        #else
-        // This is super hacky, but here it goes.
-        // We can get per-session-task proxy by setting an environment
-        // variable which libcurl uses to know that this requst should
-        // be proxied. This var is read in the future on a dispatch
-        // queue which URLSessionTask uses internally. We need to
-        // set the var, tell the task to resume, and then call
-        // some other method on the task which we know sync's to
-        // the work queue. Once we return from that, we can clear
-        // the proxy var.
-        // Note: this is also only safe in the context of Picaroon and HttpSessionManager
-        // where all URLSessionTasks are funnelled through the HTTPTaskManager actor
-        // (thus none of these will execute concurrently)
-        // Note: per session proxies are only supported on linux
-        if let proxy = task.proxy,
-           let urlTask = task.task as? URLSessionDataTask {
-#if !os(Linux)
-            if didWarnAbountProxy == false {
-                didWarnAbountProxy = true
-                print("warning: URLSessionDataTasks do not support proxy on this platform")
-            }
-#endif
-            setenv("all_proxy", proxy, 1)
-            urlTask.resume()
-            urlTask.priority = URLSessionTask.defaultPriority
-            unsetenv("all_proxy")
-        } else {
-            // CurlTask carries its proxy on the handle (CURLOPT_PROXY), so it needs
-            // none of the above.
-            task.task.resume()
-        }
-        #endif
     }
     
     internal func _beResume(session: URLSession,
