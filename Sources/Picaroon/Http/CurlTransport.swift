@@ -83,7 +83,6 @@ internal final class CurlTransport {
 
     internal static let shared = CurlTransport()
 
-    internal static let connectTimeout: Int = 15
     internal static let idleTimeout: TimeInterval = 6
     internal static let verbose: Bool = false
 
@@ -278,7 +277,7 @@ internal final class CurlTransport {
         // LOW_SPEED_LIMIT/TIME reproduces that: abort a stalled transfer without
         // capping a legitimately slow but progressing download.
         let seconds = max(1, Int(task.timeoutInterval))
-        _ = picaroon_curl_setopt_long(handle, CURLOPT_CONNECTTIMEOUT, CurlTransport.connectTimeout)
+
         _ = picaroon_curl_setopt_long(handle, CURLOPT_LOW_SPEED_LIMIT, 1)
         _ = picaroon_curl_setopt_long(handle, CURLOPT_LOW_SPEED_TIME, seconds)
 
@@ -411,14 +410,13 @@ internal final class CurlTransport {
             // from the cache or -- if connect=0.00s with a nonzero dns time -- that no
             // connection ever completed and the socket hung. peer is empty in the
             // latter case, which disambiguates the two.
-            description += String(format: " [curl=%d dns=%.2fs connect=%.2fs tls=%.2fs total=%.2fs errno=%d connectTimeout=%ds newConnections=%d peer=%@]",
+            description += String(format: " [curl=%d dns=%.2fs connect=%.2fs tls=%.2fs total=%.2fs errno=%d newConnections=%d peer=%@]",
                                   code.rawValue,
                                   timing(CURLINFO_NAMELOOKUP_TIME),
                                   timing(CURLINFO_CONNECT_TIME),
                                   timing(CURLINFO_APPCONNECT_TIME),
                                   timing(CURLINFO_TOTAL_TIME),
                                   osErrno,
-                                  CurlTransport.connectTimeout,
                                   numConnects,
                                   primaryIP(handle))
             return task.finish(nil, nil, urlError(urlCode(for: code), description, url))
