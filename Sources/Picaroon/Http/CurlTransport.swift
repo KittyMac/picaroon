@@ -125,7 +125,10 @@ internal final class CurlTransport {
 
     private let condition = NSCondition()
     private var pending: [CurlTask] = []
-    private var started = false
+    /// Threads currently alive. Only ever mutated under `condition`.
+    private var activeWorkers = 0
+    /// Subset of `activeWorkers` parked in the wait loop with no task in hand.
+    private var idleWorkers = 0
 
     private init() {
         _ = picaroon_curl_global_init()
@@ -133,46 +136,39 @@ internal final class CurlTransport {
 
     fileprivate func enqueue(_ task: CurlTask) {
         condition.lock()
-        if started == false {
-            started = true
-            for index in 0..<workerCount {
-                let thread = Thread { [weak self] in
-                    Flynn.threadSetName("picaroon-curl-\(index)")
-                    self?.runWorker()
-                }
-                thread.stackSize = 512 * 1024
-                thread.start()
-            }
-        }
         pending.append(task)
+
+        // Spawn on demand rather than starting the whole pool up front: only add a
+        // thread when no parked worker can take this task and we are under the cap.
+        // Workers exit themselves after `idleTimeout`, so a process that is quiet
+        // holds no curl threads, no 512KB stacks and no pooled connections at all.
+        if idleWorkers < pending.count && activeWorkers < workerCount {
+            activeWorkers += 1
+            let index = activeWorkers
+            let thread = Thread { [weak self] in
+                self?.runWorker()
+            }
+            thread.stackSize = 512 * 1024
+            thread.start()
+        }
         condition.signal()
         condition.unlock()
     }
 
     private func runWorker() {
-        // One easy handle per worker, reused for every request that worker serves.
+        // One easy handle per worker, created on first task and released when the
+        // worker goes idle.
         //
         // curl_easy_reset() clears options but explicitly preserves live connections,
         // the DNS cache and the TLS session-id cache, so consecutive requests to the
-        // same host reuse the socket and skip the handshake entirely.
+        // same host reuse the socket and skip the handshake entirely. Measured against
+        // a local TLS server: 60 sequential HTTPS requests opened 60 connections with
+        // a fresh handle per request, and 8 with per-worker reuse.
         //
-        // Creating a fresh handle per request (as this originally did) meant zero
-        // connection reuse: measured against a local TLS server, 60 sequential HTTPS
-        // requests opened 60 TCP connections and performed 60 full handshakes. With
-        // reuse the same 60 requests open 8. Under load that pile of concurrent
-        // handshakes is what surfaced as intermittent
-        //   "SSL connection timeout [NSURLErrorDomain Code=-1001]"
-        //
-        // This pools up to workerCount connections per host, which is broadly what
-        // URLSession's per-multi-handle connection cache provided.
-        // Created lazily and released when the worker goes idle. A persistent handle
-        // keeps its pooled connections open for as long as it lives, so holding one
-        // per worker forever meant every process sat on workerCount open sockets per
-        // host even when doing nothing. Measured: one idle process held 8 connections
-        // (one per worker) indefinitely. With several app instances on one device that
-        // multiplies -- 3 instances x 16 workers = 48 sockets to a single origin -- and
-        // an origin or middlebox that caps connections per source IP starts silently
-        // dropping SYNs, which shows up as connect hanging with errno=0 and peer=.
+        // The handle is dropped after `idleTimeout` and the thread then exits, so a
+        // quiet process holds no threads, no stacks and no pooled sockets. Holding
+        // them forever previously meant every process sat on workerCount open
+        // connections per host while doing nothing.
         var handle: UnsafeMutableRawPointer? = nil
         defer { if let handle = handle { curl_easy_cleanup(handle) } }
 
@@ -190,21 +186,22 @@ internal final class CurlTransport {
         while true {
             condition.lock()
             var idled = false
+            idleWorkers += 1
             while pending.isEmpty {
                 if condition.wait(until: Date().addingTimeInterval(CurlTransport.idleTimeout)) == false {
                     idled = true
                     break
                 }
             }
+            idleWorkers -= 1
             if idled && pending.isEmpty {
+                // Retire. activeWorkers is decremented under the same lock that
+                // enqueue() takes, so there is no window where a task is appended,
+                // enqueue declines to spawn because the cap looks full, and this
+                // thread exits without having seen it.
+                activeWorkers -= 1
                 condition.unlock()
-                // Nothing to do for a while: drop the handle so its pooled connections
-                // close. Reuse still applies during a burst, which is when it matters.
-                if let existing = handle {
-                    curl_easy_cleanup(existing)
-                    handle = nil
-                }
-                continue
+                return
             }
             let task = pending.removeFirst()
             condition.unlock()
