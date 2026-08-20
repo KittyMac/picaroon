@@ -36,7 +36,7 @@ internal final class CurlTask: PicaroonTask {
     fileprivate let proxy: String?
     fileprivate let timeoutInterval: TimeInterval
     fileprivate let cookieStorage: HTTPCookieStorage?
-    fileprivate let completion: (Data?, URLResponse?, Error?) -> ()
+    fileprivate var completion: ((Data?, URLResponse?, Error?) -> ())?
 
     private let lock = NSLock()
     private var cancelled = false
@@ -69,13 +69,17 @@ internal final class CurlTask: PicaroonTask {
         return cancelled
     }
 
-    /// Guarantees the completion closure runs exactly once.
+    /// Guarantees the completion closure runs exactly once, and releases it
+    /// immediately afterwards so the CurlTask -> completion -> DataTaskBox ->
+    /// CurlTask cycle cannot keep the task (and its captures) alive.
     fileprivate func finish(_ data: Data?, _ response: URLResponse?, _ error: Error?) {
         lock.lock()
         guard finished == false else { lock.unlock(); return }
         finished = true
+        let block = completion
+        completion = nil
         lock.unlock()
-        completion(data, response, error)
+        block?(data, response, error)
     }
 }
 
