@@ -301,6 +301,15 @@ internal final class CurlTransport {
         // capping a legitimately slow but progressing download.
         let seconds = max(1, Int(task.timeoutInterval))
 
+        // Bound the connect phase (DNS + TCP + TLS) with the same value, because
+        // that is what URLSession does: corelibs arms its _TimeoutSource watchdog in
+        // configureEasyHandle for Int(timeoutInterval) * 1000 ms and only resets it
+        // from the read/write/header callbacks, none of which fire before the
+        // handshake completes. So timeoutIntervalForRequest is a hard deadline on
+        // connect there, and LOW_SPEED_* below cannot substitute -- it measures
+        // throughput and is inert until bytes move.
+        _ = picaroon_curl_setopt_long(handle, CURLOPT_CONNECTTIMEOUT_MS, seconds * 1000)
+
         _ = picaroon_curl_setopt_long(handle, CURLOPT_LOW_SPEED_LIMIT, 1)
         _ = picaroon_curl_setopt_long(handle, CURLOPT_LOW_SPEED_TIME, seconds)
 
@@ -523,9 +532,11 @@ internal final class CurlTransport {
                                   request: URLRequest,
                                   proxy: String?,
                                   _ completion: @escaping (Data?, URLResponse?, Error?) -> ()) -> CurlTask {
+        // URLSession applies whichever of the two is smaller, so a caller can
+        // shorten a request but not quietly lengthen it past the session's bound.
         var timeout = session.configuration.timeoutIntervalForRequest
         if request.timeoutInterval > 0 {
-            timeout = request.timeoutInterval
+            timeout = min(timeout, request.timeoutInterval)
         }
         return CurlTask(request: request,
                         proxy: proxy,
