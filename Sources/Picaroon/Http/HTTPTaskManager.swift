@@ -150,7 +150,7 @@ internal class HTTPTaskManager: Actor {
                 // If we timeout out, go ahead and retry it.
                 if let shouldBeRetried = shouldBeRetried,
                    timeoutRetry > 0 {
-                    Flynn.syslog("TAG", shouldBeRetried)
+                    // Flynn.syslog("TAG", shouldBeRetried)
                     
                     Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
                         guard let self = self else { return returnCallback(nil, nil, nil) }
