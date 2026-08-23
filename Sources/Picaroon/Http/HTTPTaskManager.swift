@@ -107,42 +107,19 @@ internal class HTTPTaskManager: Actor {
                     nsError.code == -1001 || nsError.code == -1003 || nsError.code == -1005) {
                     shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
-                
-                if let error = error as? URLError,
-                   (error.code == .timedOut ||
-                    error.code == .networkConnectionLost ||
-                    error.errorCode == 104 ||
-                    error.errorCode == -1001 ||
-                    error.errorCode == -1003 ||
-                    error.errorCode == -1005) {
-                    shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
-                }
-                
-                // If we timeout out, go ahead and retry it.
-                #if !os(Windows)
-                if let error = error as? POSIXError,
-                   (error.code == .ENOSPC ||
-                    error.code == .ECONNRESET ||
-                    error.errorCode == 54 ||
-                    error.errorCode == 104 ||
-                    error.errorCode == -1001 ||
-                    error.errorCode == -1003 ||
-                    error.errorCode == -1005) {
+                                
+                if let nsError = error as? NSError,
+                   nsError.domain == NSPOSIXErrorDomain,
+                   (nsError.code == Int(ENOSPC) ||
+                    nsError.code == Int(ECONNRESET) ||
+                    nsError.code == 54 ||
+                    nsError.code == 104) {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
-                #else
-                if let error = error as? POSIXError,
-                   (error.code == .ENOSPC ||
-                    error.errorCode == 104 ||
-                    error.errorCode == 104 ||
-                    error.errorCode == -1001 ||
-                    error.errorCode == -1003 ||
-                    error.errorCode == -1005) {
-                    shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
-                }
-                #endif
                 
-                if error.debugDescription.contains("hostname could not be found") {
+                if let nsError = error as? NSError,
+                   nsError.domain == NSURLErrorDomain,
+                   nsError.code == NSURLErrorCannotFindHost {
                     shouldBeRetried = nil
                 }
                 
