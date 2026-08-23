@@ -98,6 +98,16 @@ internal class HTTPTaskManager: Actor {
                 var shouldBeRetried: String? = nil
                                    
                 // Allow specific error to be retried
+                if let nsError = error as? NSError,
+                   nsError.domain == NSURLErrorDomain,
+                   (nsError.code == NSURLErrorTimedOut ||
+                    nsError.code == NSURLErrorNetworkConnectionLost ||
+                    nsError.code == NSURLErrorCannotFindHost ||
+                    nsError.code == NSURLErrorCannotConnectToHost ||
+                    nsError.code == -1001 || nsError.code == -1003 || nsError.code == -1005) {
+                    shouldBeRetried = "timeout detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
+                }
+                
                 if let error = error as? URLError,
                    (error.code == .timedOut ||
                     error.code == .networkConnectionLost ||
@@ -163,7 +173,7 @@ internal class HTTPTaskManager: Actor {
                 // If we timeout out, go ahead and retry it.
                 if let shouldBeRetried = shouldBeRetried,
                    timeoutRetry > 0 {
-                    print(shouldBeRetried)
+                    Flynn.syslog("TAG", shouldBeRetried)
                     
                     Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
                         guard let self = self else { return returnCallback(nil, nil, nil) }
