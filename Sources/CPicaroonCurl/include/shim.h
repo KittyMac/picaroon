@@ -56,8 +56,14 @@ static inline long picaroon_curl_version_num(void) {
 /// Whether the headers we compiled against know CURLOPT_CAINFO_BLOB (libcurl 7.77+).
 /// A 1 here does not guarantee the *runtime* libcurl supports it -- an older library
 /// answers CURLE_UNKNOWN_OPTION (48) -- so callers must check the setopt result too.
+// CURLOPT_CAINFO_BLOB is an *enumerator* in the CURLoption enum, not a #define, so
+// `#if defined(CURLOPT_CAINFO_BLOB)` is always false and silently disables the whole
+// blob path. Gate on the version macro instead: the option arrived in 7.77.0, and
+// struct curl_blob in 7.71.0.
+#define PICAROON_HAS_CAINFO_BLOB (LIBCURL_VERSION_NUM >= 0x074D00)
+
 static inline int picaroon_curl_has_cainfo_blob(void) {
-#if defined(CURLOPT_CAINFO_BLOB)
+#if PICAROON_HAS_CAINFO_BLOB
     return 1;
 #else
     return 0;
@@ -67,7 +73,7 @@ static inline int picaroon_curl_has_cainfo_blob(void) {
 /// Supply the CA bundle as PEM bytes rather than a file path. CURL_BLOB_COPY makes
 /// libcurl take its own copy, so the caller's buffer need not outlive the call.
 static inline CURLcode picaroon_curl_setopt_cainfo_blob(CURL *handle, const void *bytes, size_t length) {
-#if defined(CURLOPT_CAINFO_BLOB)
+#if PICAROON_HAS_CAINFO_BLOB
     struct curl_blob blob;
     blob.data = (void *)bytes;
     blob.len = length;

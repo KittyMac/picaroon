@@ -29,8 +29,23 @@ public enum PicaroonCertificateAuthority {
     private static var storedPEM: Data?
     private static var storedFallbackPath: String?
     private static var storedInsecure = false
+    private static var storedDirectory: String?
 
     /// Use these PEM bytes as the CA bundle for every subsequent request.
+    /// Use these PEM bytes, and when a file has to be written (libcurl older than
+    /// 7.77, which lacks CURLOPT_CAINFO_BLOB) put it in `directory`.
+    ///
+    /// Supply a directory the OS will not empty underneath you. On Android that
+    /// means `context.filesDir`, NOT `context.cacheDir` -- and note that
+    /// NSTemporaryDirectory() resolves to the cache directory there, which is why
+    /// it is not a safe default.
+    public static func use(pem: Data, directory: String) {
+        lock.lock()
+        storedDirectory = directory
+        lock.unlock()
+        use(pem: pem)
+    }
+
     public static func use(pem: Data) {
         lock.lock()
         storedPEM = pem
@@ -81,6 +96,25 @@ public enum PicaroonCertificateAuthority {
         return environmentPath == "INSECURE_SSL_NO_VERIFY"
     }()
 
+    /// Forget any file we wrote, so the next request rewrites it. Called when
+    /// libcurl reports the CA file unreadable, which is how a cleared cache
+    /// directory manifests.
+    internal static func invalidateFallbackFile() {
+        lock.lock()
+        if let path = storedFallbackPath {
+            try? FileManager.default.removeItem(atPath: path)
+            storedFallbackPath = nil
+        }
+        lock.unlock()
+    }
+
+    /// Set PICAROON_FORCE_CAINFO_FILE=1 to exercise the file fallback even where
+    /// CURLOPT_CAINFO_BLOB is available.
+    internal static let forceFallbackFile: Bool = {
+        let value = ProcessInfo.processInfo.environment["PICAROON_FORCE_CAINFO_FILE"]
+        return value != nil && value != "0"
+    }()
+
     internal static var pem: Data? {
         lock.lock(); defer { lock.unlock() }
         return storedPEM
@@ -102,10 +136,15 @@ public enum PicaroonCertificateAuthority {
         }
         guard let pem = storedPEM else { return nil }
 
-        // NSTemporaryDirectory() maps to the app's own tmp dir on Android, which the
-        // OS does not clear out from under a running process the way it does cache.
-        let path = NSTemporaryDirectory()
-            + "cacert.pem"
+        // Default to NSTemporaryDirectory(), but be aware that on Android it resolves
+        // to the app's CACHE directory, which the OS may empty at any moment without
+        // notifying the process. That produces an intermittent
+        //   "error setting certificate file: .../cache/cacert.pem"  (CURLE_SSL_CACERT_BADFILE)
+        // in the middle of otherwise healthy traffic. Pass a directory to
+        // use(pem:directory:) -- context.filesDir on Android -- to avoid it.
+        let directory = storedDirectory ?? NSTemporaryDirectory()
+        let separator = directory.hasSuffix("/") ? "" : "/"
+        let path = directory + separator + "picaroon-cacert.pem"
         do {
             try pem.write(to: URL(fileURLWithPath: path), options: .atomic)
             storedFallbackPath = path
