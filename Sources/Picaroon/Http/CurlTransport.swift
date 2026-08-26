@@ -238,6 +238,43 @@ internal final class CurlTransport {
         }
     }
 
+    /// Resolve the CA bundle for this request, preferring bytes supplied through
+    /// PicaroonCertificateAuthority over any path.
+    ///
+    /// CURLOPT_CAINFO_BLOB (libcurl 7.77+) keeps the bundle in memory, which avoids
+    /// both a filesystem round trip and the Android cache directory being emptied
+    /// underneath a running process. The header may know the option while the
+    /// runtime library does not, in which case setopt answers CURLE_UNKNOWN_OPTION
+    /// and we fall back to a file written once into the app's own temp directory.
+    private func applyCertificateAuthority(_ handle: UnsafeMutableRawPointer) {
+        if PicaroonCertificateAuthority.isInsecure {
+            _ = picaroon_curl_setopt_long(handle, CURLOPT_SSL_VERIFYPEER, 0)
+            _ = picaroon_curl_setopt_long(handle, CURLOPT_SSL_VERIFYHOST, 0)
+            return
+        }
+
+        if let pem = PicaroonCertificateAuthority.pem {
+            if picaroon_curl_has_cainfo_blob() != 0 {
+                let result = pem.withUnsafeBytes { raw -> CURLcode in
+                    guard let base = raw.baseAddress else { return CURLE_UNKNOWN_OPTION }
+                    return picaroon_curl_setopt_cainfo_blob(handle, base, raw.count)
+                }
+                if result == CURLE_OK {
+                    return
+                }
+            }
+            // Older libcurl: hand it a path instead, written once.
+            if let path = PicaroonCertificateAuthority.fallbackFilePath() {
+                path.withCString { _ = picaroon_curl_setopt_str(handle, CURLOPT_CAINFO, $0) }
+                return
+            }
+        }
+
+        if let path = PicaroonCertificateAuthority.environmentPath {
+            path.withCString { _ = picaroon_curl_setopt_str(handle, CURLOPT_CAINFO, $0) }
+        }
+    }
+
     private func perform(_ task: CurlTask, _ handle: UnsafeMutableRawPointer, _ errorBuffer: UnsafeMutablePointer<CChar>) {
         guard task.isCancelled == false else {
             return task.finish(nil, nil, urlError(.cancelled, "cancelled", task.request.url))
@@ -286,14 +323,7 @@ internal final class CurlTransport {
         // (CURLE_SSL_CACERT_BADFILE). See EasyHandle.swift:196-209.
         // corelibs only reads this on Android; we read it on every platform, so the same
         // variable also covers minimal Linux containers that ship no CA bundle.
-        if let caInfo = getenv(caInfoEnvironmentVariable) {
-            if String(cString: caInfo) == insecureNoVerifySentinel {
-                _ = picaroon_curl_setopt_long(handle, CURLOPT_SSL_VERIFYPEER, 0)
-                _ = picaroon_curl_setopt_long(handle, CURLOPT_SSL_VERIFYHOST, 0)
-            } else {
-                _ = picaroon_curl_setopt_ptr(handle, CURLOPT_CAINFO, UnsafeMutableRawPointer(mutating: caInfo))
-            }
-        }
+        applyCertificateAuthority(handle)
 
         // corelibs' watchdog resets on every read/write callback, so
         // timeoutIntervalForRequest was always an idle bound rather than a total one.

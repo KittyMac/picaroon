@@ -53,6 +53,32 @@ static inline long picaroon_curl_version_num(void) {
     return info ? (long)info->version_num : 0;
 }
 
+/// Whether the headers we compiled against know CURLOPT_CAINFO_BLOB (libcurl 7.77+).
+/// A 1 here does not guarantee the *runtime* libcurl supports it -- an older library
+/// answers CURLE_UNKNOWN_OPTION (48) -- so callers must check the setopt result too.
+static inline int picaroon_curl_has_cainfo_blob(void) {
+#if defined(CURLOPT_CAINFO_BLOB)
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+/// Supply the CA bundle as PEM bytes rather than a file path. CURL_BLOB_COPY makes
+/// libcurl take its own copy, so the caller's buffer need not outlive the call.
+static inline CURLcode picaroon_curl_setopt_cainfo_blob(CURL *handle, const void *bytes, size_t length) {
+#if defined(CURLOPT_CAINFO_BLOB)
+    struct curl_blob blob;
+    blob.data = (void *)bytes;
+    blob.len = length;
+    blob.flags = CURL_BLOB_COPY;
+    return curl_easy_setopt(handle, CURLOPT_CAINFO_BLOB, &blob);
+#else
+    (void)handle; (void)bytes; (void)length;
+    return CURLE_UNKNOWN_OPTION;
+#endif
+}
+
 static inline CURLcode picaroon_curl_getinfo_double(CURL *handle, CURLINFO info, double *value) {
     return curl_easy_getinfo(handle, info, value);
 }
