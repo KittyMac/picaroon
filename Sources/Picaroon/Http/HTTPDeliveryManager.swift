@@ -58,9 +58,11 @@ public class HTTPDeliveryManager: Actor {
         
         super.init()
         
-        Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: true, self) { [weak self] timer in
-            guard let self = self else { return }
-            self.checkForMore()
+        unsafeSend { _ in
+            Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: true, self) { [weak self] timer in
+                guard let self = self else { return }
+                self.checkForMore()
+            }
         }
     }
     
