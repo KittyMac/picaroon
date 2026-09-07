@@ -328,7 +328,9 @@ public class HTTPSession: Actor {
         var returnResponse: HTTPURLResponse? = nil
         var returnError: String? = nil
                 
-        urlSession.dataTask(with: request) { data, response, error in
+        makeUnsafeTask(urlSession: urlSession,
+                       request: request,
+                       proxy: proxy) { data, response, error in
             (returnData, returnResponse, returnError) = handleTaskResponse(data: data,
                                                                            response: response,
                                                                            error: error)
@@ -370,13 +372,29 @@ public class HTTPSession: Actor {
             return
         }
 
-        urlSession.dataTask(with: request) { data, response, error in
+        makeUnsafeTask(urlSession: urlSession,
+                       request: request,
+                       proxy: proxy) { data, response, error in
             let (returnData, returnResponse, returnError) = handleTaskResponse(data: data,
                                                                                response: response,
                                                                                error: error)
             returnCallback(returnData, returnResponse, returnError)
         }.resume()
     }
+}
+
+fileprivate func makeUnsafeTask(urlSession: URLSession,
+                                request: URLRequest,
+                                proxy: String?,
+                                _ completion: @escaping (Data?, URLResponse?, Error?) -> ()) -> PicaroonTask {
+    #if os(Linux) || os(Android)
+    return CurlTransport.makeTask(session: urlSession,
+                                  request: request,
+                                  proxy: proxy,
+                                  completion)
+    #else
+    return urlSession.dataTask(with: request, completionHandler: completion)
+    #endif
 }
 
 fileprivate func handleTaskResponse(data: Data?,
