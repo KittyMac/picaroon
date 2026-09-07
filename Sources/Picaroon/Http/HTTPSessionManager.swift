@@ -45,8 +45,7 @@ public class HTTPSessionManager: Actor {
             config.httpCookieAcceptPolicy = .always
             config.httpShouldUsePipelining = false
 
-            let urlSession = URLSession(configuration: config)
-            waitingURLSessions.append(urlSession)
+            waitingTransports.append(HTTPTransportSession(configuration: config))
         }
         
         super.init()
@@ -65,7 +64,7 @@ public class HTTPSessionManager: Actor {
     private let maxConcurrentSessions = min(max(Flynn.cores * 4, 4), 64)
     #endif
     
-    private var waitingURLSessions: [URLSession] = []
+    private var waitingTransports: [HTTPTransportSession] = []
     
     private var waitingSessionsLow: [HTTPSession] = []
     private var waitingSessionsMedium: [HTTPSession] = []
@@ -75,9 +74,9 @@ public class HTTPSessionManager: Actor {
         guard waitingSessionsLow.isEmpty == false ||
                 waitingSessionsMedium.isEmpty == false ||
                 waitingSessionsHigh.isEmpty == false else { return }
-        guard waitingURLSessions.isEmpty == false else { return }
+        guard waitingTransports.isEmpty == false else { return }
         
-        let urlSession = waitingURLSessions.removeFirst()
+        let transport = waitingTransports.removeFirst()
         var httpSession: HTTPSession? = nil
         
         if waitingSessionsHigh.isEmpty == false {
@@ -90,9 +89,9 @@ public class HTTPSessionManager: Actor {
         
         guard let httpSession = httpSession else { return }
         
-        httpSession.beBegin(urlSession: urlSession) { urlSession in
+        httpSession.beBegin(transport: transport) { returnedTransport in
             self.unsafeSend { _ in
-                self.waitingURLSessions.append(urlSession)
+                self.waitingTransports.append(returnedTransport)
                 self.checkForMoreSessions()
             }
         }

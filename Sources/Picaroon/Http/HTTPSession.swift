@@ -33,9 +33,9 @@ public class HTTPSession: Actor {
     public static let oneshot: HTTPSession = HTTPSession(oneshot: true)
     public static let longshot: HTTPSession = HTTPSession(longshot: true)
     
-    private var urlSession: URLSession = URLSession.shared
+    private var transport: HTTPTransportSession?
     private var beginCallback: ((HTTPSession) -> ())?
-    private var deinitCallback: ((URLSession) -> ())?
+    private var deinitCallback: ((HTTPTransportSession) -> ())?
     private var sessionCookies: [HTTPCookie] = []
     
     internal var safeS3Key: String?
@@ -70,7 +70,7 @@ public class HTTPSession: Actor {
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         config.httpShouldUsePipelining = false
-        urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
+        transport = HTTPTransportSession(configuration: config)
         retryAnyError = false
         
         super.init()
@@ -93,7 +93,7 @@ public class HTTPSession: Actor {
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         config.httpShouldUsePipelining = false
-        urlSession = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
+        transport = HTTPTransportSession(configuration: config)
         retryAnyError = true
         
         super.init()
@@ -101,35 +101,35 @@ public class HTTPSession: Actor {
         unsafeMessageBatchSize = 100
     }
     
-    private func releaseUrlSession() {
-        if let deinitCallback = deinitCallback {
+    private func releaseTransport() {
+        if let deinitCallback = deinitCallback,
+           let returnedTransport = transport {
             self.deinitCallback = nil
-            let returnedURLSession = urlSession
-            self.urlSession = URLSession.shared
+            self.transport = nil
             HTTPSessionManager.shared.unsafeSend { _ in
-                deinitCallback(returnedURLSession)
+                deinitCallback(returnedTransport)
             }
         }
     }
     
     deinit {
-        releaseUrlSession()
+        releaseTransport()
     }
     
     // Note: we define the behavior this way because we don't want it exposed outside of the module
-    internal func beBegin(urlSession: URLSession,
-                          _ deinitCallback: @escaping (URLSession) -> ()) {
+    internal func beBegin(transport: HTTPTransportSession,
+                          _ deinitCallback: @escaping (HTTPTransportSession) -> ()) {
         unsafeSend { _ in
             guard let beginCallback = self.beginCallback else { fatalError("cannot call beBegin() on HTTPSession twice") }
             self.beginCallback = nil
-            self.urlSession = urlSession
+            self.transport = transport
             self.deinitCallback = deinitCallback
             
             #if os(Linux) || os(Android)
             _ = signal(SIGPIPE, SIG_IGN)
             #endif
             
-            if let httpCookieStorage = urlSession.configuration.httpCookieStorage {
+            if let httpCookieStorage = transport.configuration.httpCookieStorage {
                 httpCookieStorage.removeCookies(since: Date.distantPast)
                 for cookie in self.sessionCookies {
                     httpCookieStorage.setCookie(cookie)
@@ -140,18 +140,29 @@ public class HTTPSession: Actor {
         }
     }
     
+    // NOTE: on Linux and Android this only drops the transport; it does not stop
+    // requests already in flight. Those are CurlTasks owned by HTTPTaskManager,
+    // and cancelling them needs per-session task tracking that does not exist
+    // yet. Nothing in Picaroon calls this, so the gap is latent rather than live,
+    // but a downstream caller expecting cancellation will not get it here.
     internal func _beCancel() {
         guard self != HTTPSession.oneshot else { fatalError("You cannot cancel the oneshot HTTPSession") }
-        urlSession.invalidateAndCancel()
-        urlSession = URLSession.shared
+        guard self != HTTPSession.longshot else { fatalError("You cannot cancel the longshot HTTPSession") }
+        transport?.invalidateAndCancel()
+        transport = nil
     }
         
     internal func _beRequest(request: URLRequest,
                              timeoutRetry: Int?,
                              proxy: String?,
                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> ()) {
+        guard let transport = transport else {
+            returnCallback(nil, nil, "HTTPSession has no transport (beBegin() has not run, or the session was already released)")
+            return
+        }
+
         outstandingRequests += 1
-        HTTPTaskManager.shared.beResume(session: urlSession,
+        HTTPTaskManager.shared.beResume(session: transport,
                                         request: request,
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
@@ -164,7 +175,7 @@ public class HTTPSession: Actor {
             
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                self.releaseUrlSession()
+                self.releaseTransport()
             }
         }
     }
@@ -178,13 +189,12 @@ public class HTTPSession: Actor {
                              proxy: String?,
                              body: Data?,
                              _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
-        guard urlSession != URLSession.shared else {
-            returnCallback(nil, nil, "HTTPSession is not allowed to use URLSession.shared")
+        guard let transport = transport else {
+            returnCallback(nil, nil, "HTTPSession has no transport (beBegin() has not run, or the session was already released)")
             return
         }
         
-        let (request, error) = makeRequest(urlSession: urlSession,
-                                           url: url,
+        let (request, error) = makeRequest(url: url,
                                            httpMethod: httpMethod,
                                            params: params,
                                            headers: headers,
@@ -199,7 +209,7 @@ public class HTTPSession: Actor {
         }
                 
         outstandingRequests += 1
-        HTTPTaskManager.shared.beResume(session: urlSession,
+        HTTPTaskManager.shared.beResume(session: transport,
                                         request: request,
                                         proxy: proxy,
                                         timeoutRetry: timeoutRetry ?? 3,
@@ -212,14 +222,13 @@ public class HTTPSession: Actor {
 
             self.outstandingRequests -= 1
             if self.outstandingRequests == 0 {
-                self.releaseUrlSession()
+                self.releaseTransport()
             }
 
         }
     }
     
-    private func makeRequest(urlSession: URLSession,
-                             url: String,
+    private func makeRequest(url: String,
                              httpMethod: String,
                              params: [String: String],
                              headers: [String: String],
@@ -303,12 +312,11 @@ public class HTTPSession: Actor {
                                          proxy: String?,
                                          body: Data?) -> (Data?, HTTPURLResponse?, String?) {
         // NOTE: it is important not to reference self in this method!
-        guard urlSession != URLSession.shared else {
-            return (nil, nil, "HTTPSession is not allowed to use URLSession.shared")
+        guard let transport = transport else {
+            return (nil, nil, "HTTPSession has no transport (beBegin() has not run, or the session was already released)")
         }
 
-        let (request, error) = makeRequest(urlSession: urlSession,
-                                           url: url,
+        let (request, error) = makeRequest(url: url,
                                            httpMethod: httpMethod,
                                            params: params,
                                            headers: headers,
@@ -328,7 +336,7 @@ public class HTTPSession: Actor {
         var returnResponse: HTTPURLResponse? = nil
         var returnError: String? = nil
                 
-        makeUnsafeTask(urlSession: urlSession,
+        makeUnsafeTask(transport: transport,
                        request: request,
                        proxy: proxy) { data, response, error in
             (returnData, returnResponse, returnError) = handleTaskResponse(data: data,
@@ -352,13 +360,12 @@ public class HTTPSession: Actor {
                                           body: Data?,
                                           _ returnCallback: @escaping (Data?, HTTPURLResponse?, String?) -> Void) {
         // NOTE: it is important not to reference self in this method!
-        guard urlSession != URLSession.shared else {
-            returnCallback(nil, nil, "HTTPSession is not allowed to use URLSession.shared")
+        guard let transport = transport else {
+            returnCallback(nil, nil, "HTTPSession has no transport (beBegin() has not run, or the session was already released)")
             return
         }
 
-        let (request, error) = makeRequest(urlSession: urlSession,
-                                           url: url,
+        let (request, error) = makeRequest(url: url,
                                            httpMethod: httpMethod,
                                            params: params,
                                            headers: headers,
@@ -372,7 +379,7 @@ public class HTTPSession: Actor {
             return
         }
 
-        makeUnsafeTask(urlSession: urlSession,
+        makeUnsafeTask(transport: transport,
                        request: request,
                        proxy: proxy) { data, response, error in
             let (returnData, returnResponse, returnError) = handleTaskResponse(data: data,
@@ -383,17 +390,19 @@ public class HTTPSession: Actor {
     }
 }
 
-fileprivate func makeUnsafeTask(urlSession: URLSession,
+/// A free function rather than a method because these two call sites must not
+/// reference self; see the note in unsafeSynchronousRequest.
+fileprivate func makeUnsafeTask(transport: HTTPTransportSession,
                                 request: URLRequest,
                                 proxy: String?,
                                 _ completion: @escaping (Data?, URLResponse?, Error?) -> ()) -> PicaroonTask {
     #if os(Linux) || os(Android)
-    return CurlTransport.makeTask(session: urlSession,
+    return CurlTransport.makeTask(session: transport,
                                   request: request,
                                   proxy: proxy,
                                   completion)
     #else
-    return urlSession.dataTask(with: request, completionHandler: completion)
+    return transport.urlSession.dataTask(with: request, completionHandler: completion)
     #endif
 }
 

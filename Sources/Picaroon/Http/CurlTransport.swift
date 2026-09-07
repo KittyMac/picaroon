@@ -589,7 +589,7 @@ internal final class CurlTransport {
         return NSError(domain: NSURLErrorDomain, code: code.rawValue, userInfo: info)
     }
 
-    internal static func makeTask(session: URLSession,
+    internal static func makeTask(session: HTTPTransportSession,
                                   request: URLRequest,
                                   proxy: String?,
                                   _ completion: @escaping (Data?, URLResponse?, Error?) -> ()) -> CurlTask {

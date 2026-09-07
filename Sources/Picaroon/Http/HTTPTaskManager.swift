@@ -76,7 +76,7 @@ internal class HTTPTaskManager: Actor {
         task.task.resume()
     }
     
-    internal func _beResume(session: URLSession,
+    internal func _beResume(session: HTTPTransportSession,
                             request _request: URLRequest,
                             proxy: String?,
                             timeoutRetry: Int,
@@ -177,7 +177,7 @@ internal class HTTPTaskManager: Actor {
                                       proxy: proxy,
                                       completionHandler)
         #else
-        task = session.dataTask(with: request, completionHandler: completionHandler)
+        task = session.urlSession.dataTask(with: request, completionHandler: completionHandler)
         #endif
         taskBox.task = task
         
