@@ -39,71 +39,123 @@ private let posix_accept = Android.accept
 
 
 public class Socket {
-    
-    @usableFromInline
-    var socketFd: Int32
-        
+
+    private let lock = NSLock()
+
+    private var lockedSocketFd: Int32
+    private var lockedUseCount = 0
+
+    private let closing = AtomicBool(false)
+
     public init?(socketFd: Int32,
                  blocking: Bool = true) {
-        self.socketFd = socketFd
-        
-        guard socketFd >= 0 else { return nil }
-        
-        applyOptions(blocking: blocking)
-    }
-    
-    public init?(udp: Bool) {
-        #if os(Android)
-        socketFd = socket(AF_INET, SOCK_DGRAM, 0)
-        #elseif os(Linux)
-        socketFd = socket(AF_INET, Int32(SOCK_DGRAM.rawValue), 0)
-        #else
-        socketFd = socket(AF_INET, SOCK_DGRAM, 0)
-        #endif
+        lockedSocketFd = socketFd
 
         guard socketFd >= 0 else { return nil }
-        
+
+        applyOptions(blocking: blocking)
+    }
+
+    public init?(udp: Bool) {
+        #if os(Android)
+        let newFd = socket(AF_INET, SOCK_DGRAM, 0)
+        #elseif os(Linux)
+        let newFd = socket(AF_INET, Int32(SOCK_DGRAM.rawValue), 0)
+        #else
+        let newFd = socket(AF_INET, SOCK_DGRAM, 0)
+        #endif
+
+        lockedSocketFd = newFd
+
+        guard newFd >= 0 else { return nil }
+
         setReadTimeout(milliseconds: 2000)
         setWriteTimeout(milliseconds: 2000)
     }
-        
+
     public init?(blocking: Bool = true) {
         #if os(Android)
+        let newFd: Int32
         if blocking {
-            socketFd = socket(AF_INET, SOCK_STREAM, 0)
+            newFd = socket(AF_INET, SOCK_STREAM, 0)
         } else {
-            socketFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)
+            newFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)
         }
         #elseif os(Linux)
+        let newFd: Int32
         if blocking {
-            socketFd = socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
+            newFd = socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
         } else {
-            socketFd = socket(AF_INET, Int32(SOCK_STREAM.rawValue | SOCK_NONBLOCK.rawValue), 0)
+            newFd = socket(AF_INET, Int32(SOCK_STREAM.rawValue | SOCK_NONBLOCK.rawValue), 0)
         }
         #else
-        socketFd = socket(AF_INET, SOCK_STREAM, 0)
+        let newFd = socket(AF_INET, SOCK_STREAM, 0)
         #endif
-        
-        guard socketFd >= 0 else { return nil }
-        
+
+        lockedSocketFd = newFd
+
+        guard newFd >= 0 else { return nil }
+
         applyOptions(blocking: blocking)
     }
-    
+
     deinit {
         self.close()
     }
-    
+
+    // MARK: - Descriptor lifetime
+
+    private func acquireFd() -> Int32? {
+        // Fast reject: monotonic, so true here is final and needs no lock.
+        if closing.value { return nil }
+
+        lock.lock()
+        defer { lock.unlock() }
+
+        // The reading above may have been stale; this one decides.
+        guard closing.value == false,
+              lockedSocketFd >= 0 else { return nil }
+
+        lockedUseCount += 1
+        return lockedSocketFd
+    }
+
+    private func releaseFd() {
+        lock.lock()
+        lockedUseCount -= 1
+        let fd = takeFdIfDrainedLocked()
+        lock.unlock()
+
+        // Deliberately outside the lock: posix_close can block on a lingering
+        // socket, and the watch thread wants this lock every 50ms.
+        if fd >= 0 {
+            _ = posix_close(fd)
+        }
+    }
+
+    private func takeFdIfDrainedLocked() -> Int32 {
+        guard closing.value,
+              lockedUseCount == 0 else { return -1 }
+
+        let fd = lockedSocketFd
+        lockedSocketFd = -1
+        return fd
+    }
+
     private func applyOptions(blocking: Bool) {
         #if os(Linux) || os(Android)
         #else
+        // Runs from init before this Socket has been published to any other
+        // thread, so the descriptor is read directly rather than acquired.
+        let fd = lockedSocketFd
         var one: Int32 = 1
-        setsockopt(socketFd, SOL_SOCKET, SO_NOSIGPIPE, &one, socklen_t(MemoryLayout<timeval>.stride))
-        
-        let flags = fcntl(socketFd, F_GETFL)
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &one, socklen_t(MemoryLayout<timeval>.stride))
+
+        let flags = fcntl(fd, F_GETFL)
         if blocking {
-            _ = fcntl(socketFd, F_SETFL, flags & ~O_NONBLOCK)
+            _ = fcntl(fd, F_SETFL, flags & ~O_NONBLOCK)
         } else {
-            _ = fcntl(socketFd, F_SETFL, flags | O_NONBLOCK)
+            _ = fcntl(fd, F_SETFL, flags | O_NONBLOCK)
         }
         #endif
     }
@@ -129,8 +181,11 @@ public class Socket {
             #endif
         }
         
-        guard setsockopt(socketFd, SOL_SOCKET, Self.soRcvTimeo, &timeout, socklen_t(MemoryLayout<timeval>.stride)) == 0 else {
-            Flynn.syslog("TAG", "warning: failed to set read timeout of \(value)ms on socket \(socketFd), errno \(errno)")
+        guard let fd = acquireFd() else { return false }
+        defer { releaseFd() }
+
+        guard setsockopt(fd, SOL_SOCKET, Self.soRcvTimeo, &timeout, socklen_t(MemoryLayout<timeval>.stride)) == 0 else {
+            Flynn.syslog("TAG", "warning: failed to set read timeout of \(value)ms on socket \(fd), errno \(errno)")
             return false
         }
         return true
@@ -149,28 +204,42 @@ public class Socket {
             #endif
         }
         
-        guard setsockopt(socketFd, SOL_SOCKET, Self.soSndTimeo, &timeout, socklen_t(MemoryLayout<timeval>.stride)) == 0 else {
-            Flynn.syslog("TAG", "warning: failed to set write timeout of \(milliseconds)ms on socket \(socketFd), errno \(errno)")
+        guard let fd = acquireFd() else { return false }
+        defer { releaseFd() }
+
+        guard setsockopt(fd, SOL_SOCKET, Self.soSndTimeo, &timeout, socklen_t(MemoryLayout<timeval>.stride)) == 0 else {
+            Flynn.syslog("TAG", "warning: failed to set write timeout of \(milliseconds)ms on socket \(fd), errno \(errno)")
             return false
         }
         return true
     }
     
     public func close() {
-        guard socketFd >= 0 else { return }
-        _ = shutdown(socketFd, Int32(SHUT_RDWR))
-        _ = posix_close(socketFd)
-        socketFd = -1
+        guard closing.exchange(true) == false else { return }
+
+        lock.lock()
+
+        let live = lockedSocketFd
+        if live >= 0 {
+            _ = shutdown(live, Int32(SHUT_RDWR))
+        }
+
+        let fd = takeFdIfDrainedLocked()
+        lock.unlock()
+
+        if fd >= 0 {
+            _ = posix_close(fd)
+        }
     }
-    
-    @inlinable
+
     public func isClosed() -> Bool {
-        return socketFd < 0
+        return closing.value
     }
-    
-    @inlinable
+
     public func fd() -> Int32 {
-        return socketFd
+        lock.lock()
+        defer { lock.unlock() }
+        return lockedSocketFd
     }
     
     @discardableResult
@@ -194,7 +263,9 @@ public class Socket {
     public func send(chunked bytes: UnsafePointer<UInt8>?,
                      count: Int) -> Int {
         guard let bytes = bytes else { return -1 }
-        guard socketFd >= 0 else { return -1 }
+        guard acquireFd() != nil else { return -1 }
+        defer { releaseFd() }
+
         var cptr = bytes
         let startPtr = bytes
         let endPtr = startPtr + count
@@ -245,13 +316,15 @@ public class Socket {
     public func send(bytes: UnsafePointer<UInt8>?,
                      count: Int) -> Int {
         guard let bytes = bytes else { return -1 }
-        guard socketFd >= 0 else { return -1 }
+        guard let fd = acquireFd() else { return -1 }
+        defer { releaseFd() }
+
         var cptr = bytes
         let startPtr = bytes
         let endPtr = startPtr + count
         
         while cptr < endPtr {
-            let bytesWritten = posix_send(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
+            let bytesWritten = posix_send(fd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
             
             if (bytesWritten < 0) {
                 if errno == EWOULDBLOCK || errno == EAGAIN {
@@ -270,11 +343,12 @@ public class Socket {
     
     @discardableResult
     public func poll() -> Int {
-        guard socketFd >= 0 else { return -1 }
-        
+        guard let fd = acquireFd() else { return -1 }
+        defer { releaseFd() }
+
         let nfds: nfds_t = 1
         let timeout: Int32 = 0
-        var fds: pollfd = pollfd(fd: socketFd,
+        var fds: pollfd = pollfd(fd: fd,
                                  events: Int16(POLLIN),
                                  revents: 0)
         return Int(posix_poll(&fds, nfds, timeout))
@@ -284,12 +358,14 @@ public class Socket {
     public func recv(bytes: UnsafeMutablePointer<UInt8>?,
                      count: Int) -> Int {
         guard let bytes = bytes else { return -1 }
-        guard socketFd >= 0 else { return -1 }
+        guard let fd = acquireFd() else { return -1 }
+        defer { releaseFd() }
+
         let cptr = bytes
         let startPtr = bytes
         let endPtr = startPtr + count
                             
-        let bytesRead = posix_recv(socketFd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
+        let bytesRead = posix_recv(fd, cptr, endPtr - cptr, Int32(MSG_NOSIGNAL))
         
         if (bytesRead <= 0) {
             if bytesRead < 0 && (errno == EWOULDBLOCK || errno == EAGAIN) {
@@ -304,10 +380,11 @@ public class Socket {
     @discardableResult
     public func listen(address: String,
                        port: Int) -> Int {
-        guard socketFd >= 0 else { return -1 }
-        
+        guard let fd = acquireFd() else { return -1 }
+        defer { releaseFd() }
+
         var one: Int32 = 1
-        setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &one, socklen_t(MemoryLayout<timeval>.stride))
+        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, socklen_t(MemoryLayout<timeval>.stride))
         
         var sockAddressIn = sockaddr_in()
         let sockAddrInSize = socklen_t(MemoryLayout<sockaddr_in>.size)
@@ -318,7 +395,7 @@ public class Socket {
         
         let result = withUnsafePointer(to: &sockAddressIn) {
             return $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                return bind(socketFd, $0, sockAddrInSize)
+                return bind(fd, $0, sockAddrInSize)
             }
         }
                 
@@ -326,7 +403,7 @@ public class Socket {
             return -1
         }
         
-        let ret = posix_listen(socketFd, 128)
+        let ret = posix_listen(fd, 128)
         if ret < 0 {
             self.close()
             return -1
@@ -339,12 +416,15 @@ public class Socket {
     public func accept(blocking: Bool = true, clientAddress: inout String) -> Socket? {
         clientAddress = ""
         
+        guard let fd = acquireFd() else { return nil }
+        defer { releaseFd() }
+
         var clientAddr = sockaddr_in()
         var sockAddrInSize = socklen_t(MemoryLayout<sockaddr_in>.size)
 
         let clientFd: Int32 = withUnsafeMutablePointer(to: &clientAddr) {
             return $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                return posix_accept(socketFd, $0, &sockAddrInSize)
+                return posix_accept(fd, $0, &sockAddrInSize)
             }
         }
         
@@ -375,6 +455,9 @@ public class Socket {
     public func clientAddress() -> String {
         var clientAddress = ""
         
+        guard let fd = acquireFd() else { return clientAddress }
+        defer { releaseFd() }
+
         var clientAddr = sockaddr_in()
         var sockAddrInSize = socklen_t(MemoryLayout<sockaddr_in>.size)
         
@@ -383,7 +466,7 @@ public class Socket {
         
         _ = withUnsafeMutablePointer(to: &clientAddr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                getpeername(socketFd, $0, &sockAddrInSize)
+                getpeername(fd, $0, &sockAddrInSize)
             }
         }
 
@@ -402,8 +485,9 @@ public class Socket {
     @discardableResult
     public func connectTo(address: String,
                           port: Int) -> Int {
-        guard socketFd >= 0 else { return -1 }
-        
+        guard let fd = acquireFd() else { return -1 }
+        defer { releaseFd() }
+
         var sockAddressIn = sockaddr_in()
         sockAddressIn.sin_family = sa_family_t(AF_INET)
         inet_pton(AF_INET, address, &(sockAddressIn.sin_addr))
@@ -411,7 +495,7 @@ public class Socket {
                         
         let _ = withUnsafePointer(to: &sockAddressIn) {
             return $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                return connect(socketFd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+                return connect(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
             }
         }
         
