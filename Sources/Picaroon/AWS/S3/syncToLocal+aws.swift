@@ -130,28 +130,64 @@ extension HTTPSession {
                 let outputPipe = Pipe()
                 process.standardOutput = outputPipe
                 
-                try? process.run()
-                
+                do {
+                    try process.run()
+                } catch {
+                    return returnCallback([], [], nil, "failed to run aws cli: \(error)")
+                }
+
                 var error: String? = nil
                 
                 outputPipe.fileHandleForWriting.closeFile()
-                outputPipe.fileHandleForReading.readabilityHandler = { handle in
-                    if let lines = String(data: handle.availableData, encoding: .utf8), !lines.isEmpty {
-                        for line in lines.components(separatedBy: "\n") {
-                            let line = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                            guard line.isEmpty == false else { continue }
-                            
-                            if let object = S3Object.from(awsLog: line) {
-                                allObjects.append(object)
-                                modifiedObjects.append(object)
-                            } else {
-                                error = "failed to parse aws output: \(line)"
-                            }
+                
+                let readHandle = outputPipe.fileHandleForReading
+                let newline = UInt8(ascii: "\n")
+                var pending = Data()
+                
+                func consume(line rawLine: String) {
+                    let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard line.isEmpty == false else { return }
+                    
+                    if let object = S3Object.from(awsLog: line) {
+                        allObjects.append(object)
+                        modifiedObjects.append(object)
+                    } else {
+                        error = "failed to parse aws output: \(line)"
+                    }
+                }
+                
+                while true {
+                    let chunk = readHandle.availableData
+                    if chunk.isEmpty { break } // EOF
+                    
+                    pending.append(chunk)
+                    
+                    var parsedLines = 0
+                    while let index = pending.firstIndex(of: newline) {
+                        if let line = String(data: pending.subdata(in: pending.startIndex..<index),
+                                             encoding: .utf8) {
+                            consume(line: line)
                         }
-                        
+                        pending.removeSubrange(pending.startIndex...index)
+                        parsedLines += 1
+                    }
+                    
+                    if parsedLines > 0 {
+                        let total = allObjects.count
                         sender.unsafeSend { _ in
-                            progressCallback(0, allObjects.count, allObjects.count)
+                            progressCallback(0, total, total)
                         }
+                    }
+                }
+                
+                // A final line with no trailing newline, if aws ended that way.
+                if pending.isEmpty == false {
+                    if let line = String(data: pending, encoding: .utf8) {
+                        consume(line: line)
+                    }
+                    let total = allObjects.count
+                    sender.unsafeSend { _ in
+                        progressCallback(0, total, total)
                     }
                 }
                 

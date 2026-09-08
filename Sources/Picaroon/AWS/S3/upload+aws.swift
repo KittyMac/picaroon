@@ -49,7 +49,16 @@ extension HTTPSession {
             let outputPipe = Pipe()
             process.standardOutput = outputPipe
             
-            try? process.run()
+            do {
+                try process.run()
+            } catch {
+                return returnCallback("failed to run aws cli: \(error)")
+            }
+            
+            outputPipe.fileHandleForWriting.closeFile()
+            
+            let readHandle = outputPipe.fileHandleForReading
+            while readHandle.availableData.isEmpty == false { }
             
             process.waitUntilExit()
             
