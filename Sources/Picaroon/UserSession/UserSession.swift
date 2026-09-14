@@ -37,7 +37,7 @@ open class UserSession: Actor {
         return javascriptSessionUUID
     }
 
-    var unsafeCookieSessionUUID: Hitch {
+    public var unsafeCookieSessionUUID: Hitch {
         return cookieSessionUUID
     }
 
