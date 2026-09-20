@@ -3,13 +3,6 @@ import Foundation
 import Hitch
 import Spanker
 
-
-// swiftlint:disable function_body_length
-// swiftlint:disable cyclomatic_complexity
-// swiftlint:disable identifier_name
-// swiftlint:disable type_body_length
-// swiftlint:disable file_length
-
 @inline(__always)
 fileprivate func peek(_ ptr: UnsafePointer<UInt8>,
                       _ endPtr: UnsafePointer<UInt8>) -> UInt8 {

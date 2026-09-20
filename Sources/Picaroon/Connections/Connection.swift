@@ -1,12 +1,6 @@
-// flynn:ignore Access Level Violation
-
 import Flynn
 import Foundation
 import Hitch
-
-// swiftlint:disable function_body_length
-// swiftlint:disable line_length
-// swiftlint:disable cyclomatic_complexity
 
 public protocol AnyConnection {
     @discardableResult func beSend(httpResponse: HttpResponse) -> Self

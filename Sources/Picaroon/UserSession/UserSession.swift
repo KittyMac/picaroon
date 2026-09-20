@@ -10,9 +10,6 @@ extension UUID {
     }
 }
 
-// swiftlint:disable function_parameter_count
-// swiftlint:disable line_length
-
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif

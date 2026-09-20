@@ -2,8 +2,6 @@ import Flynn
 import Foundation
 import Hitch
 
-// swiftlint:disable identifier_name
-
 public enum HttpMethod {
     case UNKNOWN
     case GET
