@@ -550,18 +550,20 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
         var timeout = timeout
         var localCallback: ((Hitch?, String?) -> ())? = returnCallback
         var outstandingEvaluate = false
-        Flynn.Timer(timeInterval: 0.1, immediate: false, repeats: true, self) { [weak self] timer in
+        let step = 0.2
+        Flynn.Timer(timeInterval: step, immediate: false, repeats: true, self) { [weak self] timer in
             guard let self = self else { return }
             guard localCallback != nil else { return }
-            guard outstandingEvaluate == false else { return }
             
-            timeout -= 0.2
+            timeout -= step
             if timeout < 0 {
                 timer.cancel()
                 localCallback?(nil, "timeout")
                 localCallback = nil
                 return
             }
+            
+            guard outstandingEvaluate == false else { return }
             
             outstandingEvaluate = true
             beEvaluate(webviewUUID: webviewUUID,
