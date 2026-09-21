@@ -403,7 +403,6 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
         }
         
         let until = until ?? "(document.readyState === 'complete' || document.readyState === 'interactive')"
-        var timeout = timeout ?? 16
 
         beSend(method: "Page.navigate",
                sessionId: activeWindow.sessionUUID,
@@ -428,8 +427,6 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
         guard let activeWindow = activeWindows[webviewUUID] else {
             return returnCallback(nil, "\(webviewUUID) does not exist")
         }
-
-        var timeout = timeout ?? 16
         
         beSend(method: "Runtime.evaluate",
                sessionId: activeWindow.sessionUUID,
@@ -579,9 +576,9 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
     private func fence(webviewUUID: String,
                        result: Hitch?,
                        until: String,
-                       timeout: TimeInterval,
+                       timeout: TimeInterval?,
                        _ returnCallback: @escaping (Hitch?, String?) -> ()) {
-        var timeout = timeout
+        var timeout = timeout ?? 16
         var localCallback: ((Hitch?, String?) -> ())? = returnCallback
         var outstandingEvaluate = false
         let step = 0.2
@@ -592,7 +589,7 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
             timeout -= step
             if timeout < 0 {
                 timer.cancel()
-                localCallback?(nil, "timeout")
+                localCallback?(nil, nil)
                 localCallback = nil
                 return
             }
@@ -609,7 +606,7 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                 guard localCallback != nil else { return }
                 if waitResult == "true" {
                     timer.cancel()
-                    localCallback?(result, error)
+                    localCallback?(result, nil)
                     localCallback = nil
                     return
                 }
