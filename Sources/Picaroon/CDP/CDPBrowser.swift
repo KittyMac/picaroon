@@ -377,10 +377,14 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                resultPath: nil,
                self) { _, _, error in
             
+            var finished = false
             Flynn.Timer(timeInterval: 0.1, immediate: false, repeats: true, self) { [weak self] timer in
                 guard let self = self else { return }
+                guard finished == false else { return }
+                
                 timeout -= 0.1
                 if timeout < 0 {
+                    finished = true
                     timer.cancel()
                     return returnCallback("timeout")
                 }
@@ -390,6 +394,7 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                            timeout: nil,
                            Flynn.any) { result, error in
                     if result == "true" {
+                        finished = true
                         timer.cancel()
                         return returnCallback(error)
                     }
@@ -422,10 +427,14 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                 return returnCallback(result, error)
             }
             
+            var finished = false
             Flynn.Timer(timeInterval: 0.1, immediate: false, repeats: true, self) { [weak self] timer in
                 guard let self = self else { return }
+                guard finished == false else { return }
+                
                 timeout -= 0.1
                 if timeout < 0 {
+                    finished = true
                     timer.cancel()
                     return returnCallback(nil, "timeout")
                 }
@@ -435,6 +444,7 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                            timeout: nil,
                            Flynn.any) { waitResult, error in
                     if waitResult == "true" {
+                        finished = true
                         timer.cancel()
                         return returnCallback(result, error)
                     }
@@ -446,19 +456,19 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
     internal func _beSetCookies(webviewUUID: String,
                                 cookiesJson: String,
                                 _ returnCallback: @escaping (String?) -> ()) {
-        //{
-        //    "cookies": [
-        //        {
-        //            "domain": ".amazon.com",
-        //            "expires": 1801369867,
-        //            "httpOnly": false,
-        //            "name": "session-id",
-        //            "path": "/",
-        //            "secure": true,
-        //            "value": "000-0000000-0000000"
-        //        }
-        //    ]
-        //}
+        // {
+        //     "cookies": [
+        //         {
+        //             "domain": ".amazon.com",
+        //             "expires": 1801369867,
+        //             "httpOnly": false,
+        //             "name": "session-id",
+        //             "path": "/",
+        //             "secure": true,
+        //             "value": "000-0000000-0000000"
+        //         }
+        //     ]
+        // }
         guard let activeWindow = activeWindows[webviewUUID] else {
             return returnCallback("\(webviewUUID) does not exist")
         }
