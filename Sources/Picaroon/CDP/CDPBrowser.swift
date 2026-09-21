@@ -377,28 +377,11 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                resultPath: nil,
                self) { _, _, error in
             
-            var finished = false
-            Flynn.Timer(timeInterval: 0.1, immediate: false, repeats: true, self) { [weak self] timer in
-                guard let self = self else { return }
-                guard finished == false else { return }
-                
-                timeout -= 0.1
-                if timeout < 0 {
-                    finished = true
-                    timer.cancel()
-                    return returnCallback("timeout")
-                }
-                beEvaluate(webviewUUID: webviewUUID,
-                           script: until,
-                           until: nil,
-                           timeout: nil,
-                           Flynn.any) { result, error in
-                    if result == "true" {
-                        finished = true
-                        timer.cancel()
-                        return returnCallback(error)
-                    }
-                }
+            self.fence(webviewUUID: webviewUUID,
+                       result: nil,
+                       until: until,
+                       timeout: timeout) { result, error in
+                returnCallback(error)
             }
         }
     }
@@ -427,29 +410,11 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                 return returnCallback(result, error)
             }
             
-            var finished = false
-            Flynn.Timer(timeInterval: 0.1, immediate: false, repeats: true, self) { [weak self] timer in
-                guard let self = self else { return }
-                guard finished == false else { return }
-                
-                timeout -= 0.1
-                if timeout < 0 {
-                    finished = true
-                    timer.cancel()
-                    return returnCallback(nil, "timeout")
-                }
-                beEvaluate(webviewUUID: webviewUUID,
-                           script: until,
-                           until: nil,
-                           timeout: nil,
-                           Flynn.any) { waitResult, error in
-                    if waitResult == "true" {
-                        finished = true
-                        timer.cancel()
-                        return returnCallback(result, error)
-                    }
-                }
-            }
+            self.fence(webviewUUID: webviewUUID,
+                       result: result,
+                       until: until,
+                       timeout: timeout,
+                       returnCallback)
         }
     }
     
@@ -574,6 +539,45 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                resultPath: "$.result.data",
                self) { result, _, error in
             returnCallback(result, error)
+        }
+    }
+    
+    private func fence(webviewUUID: String,
+                       result: Hitch?,
+                       until: String,
+                       timeout: TimeInterval,
+                       _ returnCallback: @escaping (Hitch?, String?) -> ()) {
+        var timeout = timeout
+        var localCallback: ((Hitch?, String?) -> ())? = returnCallback
+        var outstandingEvaluate = false
+        Flynn.Timer(timeInterval: 0.1, immediate: false, repeats: true, self) { [weak self] timer in
+            guard let self = self else { return }
+            guard localCallback != nil else { return }
+            guard outstandingEvaluate == false else { return }
+            
+            timeout -= 0.2
+            if timeout < 0 {
+                timer.cancel()
+                localCallback?(nil, "timeout")
+                localCallback = nil
+                return
+            }
+            
+            outstandingEvaluate = true
+            beEvaluate(webviewUUID: webviewUUID,
+                       script: until,
+                       until: nil,
+                       timeout: nil,
+                       Flynn.any) { waitResult, error in
+                outstandingEvaluate = false
+                guard localCallback != nil else { return }
+                if waitResult == "true" {
+                    timer.cancel()
+                    localCallback?(result, error)
+                    localCallback = nil
+                    return
+                }
+            }
         }
     }
 }
