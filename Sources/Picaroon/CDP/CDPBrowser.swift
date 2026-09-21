@@ -331,14 +331,27 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                                     sessionId: sessionUUID,
                                     params: nil,
                                     resultPath: nil,
-                                    self) { sessionUUID, resultJson, error in
+                                    self) { result, resultJson, error in
                             if let error = error {
                                 returnCallback(nil, "Page.enable failed: \(error)")
                                 return
                             }
                             
-                            
-                            returnCallback(webviewUUID, nil)
+                            // disable webauthn
+                            self.beSend(method: "WebAuthn.enable",
+                                        sessionId: sessionUUID,
+                                        params: ^[
+                                            "enableUI": false
+                                        ],
+                                        resultPath: nil,
+                                        self) { result, resultJson, error in
+                                if let error = error {
+                                    returnCallback(nil, "WebAuthn.enable failed: \(error)")
+                                    return
+                                }
+                                
+                                returnCallback(webviewUUID, nil)
+                            }
                         }
                     }
                 }
