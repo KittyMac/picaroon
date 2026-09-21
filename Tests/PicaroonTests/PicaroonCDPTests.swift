@@ -12,8 +12,9 @@ func getSharedBrowser() -> CDPBrowser {
         return sharedBrowser
     }
     sharedBrowser = CDPBrowser(host: "127.0.0.1",
-                         port: 9222,
-                         disposeOnDetach: true)
+                               port: 9222,
+                               disposeOnDetach: true,
+                               debug: true)
     
     sharedBrowser!.beConnect(Flynn.any) { error in
         XCTAssertNil(error)

@@ -29,6 +29,7 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
     private let host: String
     private let port: Int
     private let disposeOnDetach: Bool
+    private let debug: Bool
     
     private var client: WebSocketClient? = nil
     
@@ -40,11 +41,13 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
 
     public init(host: String = "127.0.0.1",
                 port: Int = 9222,
-                disposeOnDetach: Bool = true) {
+                disposeOnDetach: Bool = true,
+                debug: Bool = false) {
         self.host = host
         self.port = port
         self.disposeOnDetach = disposeOnDetach
-
+        self.debug = debug
+        
         super.init()
     }
 
@@ -127,9 +130,9 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
     internal func _beWebSocketOnMessage(message: WebSocketMessage) {
         // The root must outlive the dispatch below: sub-elements are handed to
         // callbacks that may hold them.
-        #if DEBUG
-        print("message: \(message)")
-        #endif
+        if debug {
+            print("message: \(message)")
+        }
         
         guard case .text(let resultJson) = message else { return }
 
@@ -182,8 +185,9 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                 return
             }
             
-            print("unknown: \(method)")
-            //onEvent?(method, root["params"] as JsonElement?)
+            if debug {
+                print("unknown: \(method)")
+            }
             return
         }
         
@@ -195,8 +199,7 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
     }
     
     internal func _beWebSocketOnError(error: String) {
-        print("_beWebSocketOnError: \(error)")
-        // handleClose()
+        
     }
     
     private func handleClose(code: UInt16) {
@@ -246,7 +249,9 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
         }
         
         let request = requestElement.toHitch()
-        print(request)
+        if debug {
+            print(request)
+        }
         client.beSend(text: request)
     }
     
