@@ -7,11 +7,57 @@ public enum WebSocketMessage {
     case binary(Data)
 }
 
-public typealias WebSocketOnOpen = () -> ()
-public typealias WebSocketOnMessage = (WebSocketMessage) -> ()
-/// code, reason. 1006 means the socket went away without a close handshake.
-public typealias WebSocketOnClose = (UInt16, Hitch?) -> ()
-public typealias WebSocketOnError = (String) -> ()
+public protocol WebSocketDelegate {
+    @discardableResult func beWebSocketOnOpen() -> Self
+    @discardableResult func beWebSocketOnMessage(message: WebSocketMessage) -> Self
+    @discardableResult func beWebSocketOnClose(code: UInt16, reason: Hitch?) -> Self
+    @discardableResult func beWebSocketOnError(error: String) -> Self
+}
+
+public class LocalWebSocketDelegate: Actor, WebSocketDelegate {
+    private let sender: Actor
+    private let webSocketOnOpen: (() -> ())?
+    private let webSocketOnMessage: ((WebSocketMessage) -> ())?
+    private let webSocketOnClose: ((UInt16, Hitch?) -> ())?
+    private let webSocketOnError: ((String) -> ())?
+    
+    public init(sender: Actor,
+                onOpen: (() -> ())?,
+                onMessage: ((WebSocketMessage) -> ())?,
+                onClose: ((UInt16, Hitch?) -> ())?,
+                onError: ((String) -> ())?) {
+        self.sender = sender
+        webSocketOnOpen = onOpen
+        webSocketOnMessage = onMessage
+        webSocketOnClose = onClose
+        webSocketOnError = onError
+    }
+    
+    internal func _beWebSocketOnOpen() {
+        guard let localWebSocketOnOpen = webSocketOnOpen else { return }
+        sender.unsafeSend { _ in
+            localWebSocketOnOpen()
+        }
+    }
+    internal func _beWebSocketOnMessage(message: WebSocketMessage) {
+        guard let localWebSocketOnMessage = webSocketOnMessage else { return }
+        sender.unsafeSend { _ in
+            localWebSocketOnMessage(message)
+        }
+    }
+    internal func _beWebSocketOnClose(code: UInt16, reason: Hitch?) {
+        guard let localWebSocketOnClose = webSocketOnClose else { return }
+        sender.unsafeSend { _ in
+            localWebSocketOnClose(code, reason)
+        }
+    }
+    internal func _beWebSocketOnError(error: String) {
+        guard let localWebSocketOnError = webSocketOnError else { return }
+        sender.unsafeSend { _ in
+            localWebSocketOnError(error)
+        }
+    }
+}
 
 public class WebSocketClient: Actor {
 
@@ -114,10 +160,7 @@ public class WebSocketClient: Actor {
     private let extraHeaders: [String: String]
     private let maxMessageInBytes: Int
 
-    private let onOpen: WebSocketOnOpen?
-    private let onMessage: WebSocketOnMessage?
-    private let onClose: WebSocketOnClose?
-    private let onError: WebSocketOnError?
+    private let delegate: WebSocketDelegate
 
     private var state: State = .idle
     private var socket: Socket?
@@ -138,17 +181,11 @@ public class WebSocketClient: Actor {
     public init(url: String,
                 headers: [String: String] = [:],
                 maxMessageInBytes: Int = 64 * 1024 * 1024,
-                onOpen: WebSocketOnOpen? = nil,
-                onMessage: WebSocketOnMessage? = nil,
-                onClose: WebSocketOnClose? = nil,
-                onError: WebSocketOnError? = nil) {
+                delegate: WebSocketDelegate) {
         self.url = url
         self.extraHeaders = headers
         self.maxMessageInBytes = maxMessageInBytes
-        self.onOpen = onOpen
-        self.onMessage = onMessage
-        self.onClose = onClose
-        self.onError = onError
+        self.delegate = delegate
 
         self.bufferCapacity = 64 * 1024
         self.buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferCapacity)
@@ -300,7 +337,7 @@ public class WebSocketClient: Actor {
             self.handshake = nil
             self.state = .open
 
-            onOpen?()
+            delegate.beWebSocketOnOpen()
 
             flushOutbound()
             return true
@@ -436,9 +473,9 @@ public class WebSocketClient: Actor {
                          hitch: Hitch) {
         switch opcode {
         case .binary:
-            onMessage?(.binary(hitch.exportAsData()))
+            delegate.beWebSocketOnMessage(message: .binary(hitch.exportAsData()))
         default:
-            onMessage?(.text(hitch))
+            delegate.beWebSocketOnMessage(message: .text(hitch))
         }
     }
 
@@ -578,13 +615,14 @@ public class WebSocketClient: Actor {
     }
 
     private func report(error: String) {
-        onError?(error)
+        delegate.beWebSocketOnError(error: error)
     }
 
     private func report(close code: UInt16, reason: Hitch?) {
         guard didReportClose == false else { return }
         didReportClose = true
 
-        onClose?(code, reason)
+        delegate.beWebSocketOnClose(code: code,
+                                    reason: reason)
     }
 }

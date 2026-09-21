@@ -30,29 +30,31 @@ final class PicaroonWebSocketClientTests: XCTestCase {
         let expectation = XCTestExpectation(description: #function)
         let lock = NSLock()
         var received: [Int] = []
-
+        
         let client = WebSocketClient(
             url: url,
-            onOpen: nil,
-            onMessage: { message in
-                guard case .text(let hitch) = message else { return XCTFail("expected text") }
-
-                lock.lock()
-                received.append(hitch.count)
-                let done = received.count == sizes.count
-                lock.unlock()
-
-                // Content, not just length: a masking bug would round-trip the
-                // right number of bytes and the wrong ones.
-                for index in 0..<hitch.count where hitch[index] != UInt8(65 + (index % 26)) {
-                    XCTFail("payload corrupted at \(index) of \(hitch.count)")
-                    break
-                }
-
-                if done { expectation.fulfill() }
-            },
-            onClose: nil,
-            onError: { error in XCTFail("unexpected error: \(error)") }
+            delegate: LocalWebSocketDelegate(sender: Flynn.any,
+                                             onOpen: nil,
+                                             onMessage: { message in
+                                                 guard case .text(let hitch) = message else { return XCTFail("expected text") }
+                                                 
+                                                 lock.lock()
+                                                 received.append(hitch.count)
+                                                 let done = received.count == sizes.count
+                                                 lock.unlock()
+                                                 
+                                                 // Content, not just length: a masking bug would round-trip the
+                                                 // right number of bytes and the wrong ones.
+                                                 for index in 0..<hitch.count where hitch[index] != UInt8(65 + (index % 26)) {
+                                                     XCTFail("payload corrupted at \(index) of \(hitch.count)")
+                                                     break
+                                                 }
+                                                 
+                                                 if done { expectation.fulfill() }
+                                             },
+                                             onClose: nil,
+                                             onError: { error in XCTFail("unexpected error: \(error)") }
+                                            )
         )
 
         client.beConnect()
@@ -79,15 +81,18 @@ final class PicaroonWebSocketClientTests: XCTestCase {
         guard let url = url() else { throw XCTSkip("PICAROON_WS_TEST_PORT not set") }
 
         let expectation = XCTestExpectation(description: #function)
-
+        
         let client = WebSocketClient(
             url: url,
-            onMessage: { message in
-                guard case .text(let hitch) = message else { return XCTFail("expected text") }
-                XCTAssertEqual(hitch.toString(), "queued")
-                expectation.fulfill()
-            },
-            onError: { error in XCTFail("unexpected error: \(error)") }
+            delegate: LocalWebSocketDelegate(sender: Flynn.any,
+                                             onOpen: nil,
+                                             onMessage: { message in
+                                                 guard case .text(let hitch) = message else { return XCTFail("expected text") }
+                                                 XCTAssertEqual(hitch.toString(), "queued")
+                                                 expectation.fulfill()
+                                             },
+                                             onClose: nil,
+                                             onError: { error in XCTFail("unexpected error: \(error)") })
         )
 
         // Both before the watcher has had a chance to run the handshake.
@@ -103,16 +108,20 @@ final class PicaroonWebSocketClientTests: XCTestCase {
         // A pong is not surfaced as a message, so this asserts the negative:
         // the connection survives a ping and keeps echoing afterwards.
         let expectation = XCTestExpectation(description: #function)
+        
+        
 
         let client = WebSocketClient(
             url: url,
-            onOpen: nil,
-            onMessage: { message in
-                guard case .text(let hitch) = message else { return XCTFail("expected text") }
-                XCTAssertEqual(hitch.toString(), "after-ping")
-                expectation.fulfill()
-            },
-            onError: { error in XCTFail("unexpected error: \(error)") }
+            delegate: LocalWebSocketDelegate(sender: Flynn.any,
+                                             onOpen: nil,
+                                             onMessage: { message in
+                                                 guard case .text(let hitch) = message else { return XCTFail("expected text") }
+                                                 XCTAssertEqual(hitch.toString(), "after-ping")
+                                                 expectation.fulfill()
+                                             },
+                                             onClose: nil,
+                                             onError: { error in XCTFail("unexpected error: \(error)") })
         )
 
         client.beConnect()
@@ -133,14 +142,16 @@ final class PicaroonWebSocketClientTests: XCTestCase {
 
         let client = WebSocketClient(
             url: url,
-            onOpen: { opened.fulfill() },
-            onClose: { code, _ in
-                lock.lock()
-                closeCode = code
-                lock.unlock()
-                closed.fulfill()
-            },
-            onError: { error in XCTFail("unexpected error: \(error)") }
+            delegate: LocalWebSocketDelegate(sender: Flynn.any,
+                                             onOpen: { opened.fulfill() },
+                                             onMessage: nil,
+                                             onClose: { code, _ in
+                                                 lock.lock()
+                                                 closeCode = code
+                                                 lock.unlock()
+                                                 closed.fulfill()
+                                             },
+                                             onError: { error in XCTFail("unexpected error: \(error)") })
         )
 
         client.beConnect()
@@ -175,21 +186,24 @@ final class PicaroonWebSocketClientTests: XCTestCase {
 
             let client = WebSocketClient(
                 url: url,
-                onMessage: { message in
-                    guard case .text(let hitch) = message else { return XCTFail("expected text") }
+                delegate: LocalWebSocketDelegate(sender: Flynn.any,
+                                                 onOpen: nil,
+                                                 onMessage: { message in
+                                                     guard case .text(let hitch) = message else { return XCTFail("expected text") }
 
-                    // Cross-talk between sockets would show up here as a
-                    // payload belonging to a different client.
-                    XCTAssertEqual(hitch.toString(), expected)
+                                                     // Cross-talk between sockets would show up here as a
+                                                     // payload belonging to a different client.
+                                                     XCTAssertEqual(hitch.toString(), expected)
 
-                    lock.lock()
-                    remaining -= 1
-                    let done = remaining == 0
-                    lock.unlock()
+                                                     lock.lock()
+                                                     remaining -= 1
+                                                     let done = remaining == 0
+                                                     lock.unlock()
 
-                    if done { expectation.fulfill() }
-                },
-                onError: { error in XCTFail("client \(clientIndex): \(error)") }
+                                                     if done { expectation.fulfill() }
+                                                 },
+                                                 onClose: nil,
+                                                 onError: { error in XCTFail("client \(clientIndex): \(error)") })
             )
 
             client.beConnect()
@@ -214,13 +228,16 @@ final class PicaroonWebSocketClientTests: XCTestCase {
 
         let client = WebSocketClient(
             url: url,
-            onMessage: { message in
-                guard case .text(let hitch) = message else { return XCTFail("expected text") }
-                XCTAssertEqual(hitch.count, payload.count)
-                XCTAssertEqual(hitch.toString(), payload)
-                expectation.fulfill()
-            },
-            onError: { error in XCTFail("unexpected error: \(error)") }
+            delegate: LocalWebSocketDelegate(sender: Flynn.any,
+                                             onOpen: nil,
+                                             onMessage: { message in
+                                                 guard case .text(let hitch) = message else { return XCTFail("expected text") }
+                                                 XCTAssertEqual(hitch.count, payload.count)
+                                                 XCTAssertEqual(hitch.toString(), payload)
+                                                 expectation.fulfill()
+                                             },
+                                             onClose: nil,
+                                             onError: { error in XCTFail("unexpected error: \(error)") })
         )
 
         client.beConnect()
@@ -236,8 +253,11 @@ final class PicaroonWebSocketClientTests: XCTestCase {
 
         let client = WebSocketClient(
             url: "ws://127.0.0.1:9",
-            onOpen: { XCTFail("should not have opened") },
-            onError: { _ in expectation.fulfill() }
+            delegate: LocalWebSocketDelegate(sender: Flynn.any,
+                                             onOpen: { XCTFail("should not have opened") },
+                                             onMessage: nil,
+                                             onClose: nil,
+                                             onError: { _ in expectation.fulfill() })
         )
 
         client.beConnect()
@@ -249,10 +269,14 @@ final class PicaroonWebSocketClientTests: XCTestCase {
 
         let client = WebSocketClient(
             url: "wss://example.com/secure",
-            onError: { error in
-                XCTAssertTrue(error.contains("ws://"))
-                expectation.fulfill()
-            }
+            delegate: LocalWebSocketDelegate(sender: Flynn.any,
+                                             onOpen: nil,
+                                             onMessage: nil,
+                                             onClose: nil,
+                                             onError: { error in
+                                                 XCTAssertTrue(error.contains("ws://"))
+                                                 expectation.fulfill()
+                                             })
         )
 
         client.beConnect()
