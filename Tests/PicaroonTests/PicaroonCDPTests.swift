@@ -28,11 +28,11 @@ final class PicaroonCDPTests: XCTestCase {
         let expectation = XCTestExpectation(description: #function)
         let browser = getSharedBrowser()
         
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
-            XCTAssertNotNil(windowUUID)
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
+            XCTAssertNotNil(webviewUUID)
             XCTAssertNil(error)
             
-            print(windowUUID!)
+            print(webviewUUID!)
             
             expectation.fulfill()
         }
@@ -44,11 +44,11 @@ final class PicaroonCDPTests: XCTestCase {
         let expectation = XCTestExpectation(description: #function)
         let browser = getSharedBrowser()
         
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
             XCTAssertNil(error)
-            XCTAssertNotNil(windowUUID)
+            XCTAssertNotNil(webviewUUID)
             
-            browser.beLoadURL(webviewUUID: windowUUID!,
+            browser.beLoadURL(webviewUUID: webviewUUID!,
                               url: "https://www.apple.com",
                               until: nil,
                               timeout: nil,
@@ -66,11 +66,11 @@ final class PicaroonCDPTests: XCTestCase {
         let expectation = XCTestExpectation(description: #function)
         let browser = getSharedBrowser()
         
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
             XCTAssertNil(error)
-            XCTAssertNotNil(windowUUID)
+            XCTAssertNotNil(webviewUUID)
             
-            browser.beEvaluate(webviewUUID: windowUUID!,
+            browser.beEvaluate(webviewUUID: webviewUUID!,
                                script: "6 * 7",
                                until: nil,
                                timeout: nil,
@@ -92,14 +92,14 @@ final class PicaroonCDPTests: XCTestCase {
         let group = DispatchGroup()
         
         group.enter()
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
-            browser.beLoadURL(webviewUUID: windowUUID!,
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
+            browser.beLoadURL(webviewUUID: webviewUUID!,
                               url: "https://www.apple.com",
                               until: nil,
                               timeout: nil,
                               referrer: nil,
                               Flynn.any) { error in
-                browser.beEvaluate(webviewUUID: windowUUID!,
+                browser.beEvaluate(webviewUUID: webviewUUID!,
                                    script: "localStorage.setItem('who', 'first');",
                                    until: nil,
                                    timeout: nil,
@@ -107,7 +107,7 @@ final class PicaroonCDPTests: XCTestCase {
                     XCTAssertEqual(result, nil)
                 }
                 
-                browser.beEvaluate(webviewUUID: windowUUID!,
+                browser.beEvaluate(webviewUUID: webviewUUID!,
                                    script: "localStorage.getItem('who')",
                                    until: nil,
                                    timeout: nil,
@@ -119,14 +119,14 @@ final class PicaroonCDPTests: XCTestCase {
         }
         
         group.enter()
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
-            browser.beLoadURL(webviewUUID: windowUUID!,
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
+            browser.beLoadURL(webviewUUID: webviewUUID!,
                               url: "https://www.apple.com",
                               until: nil,
                               timeout: nil,
                               referrer: nil,
                               Flynn.any) { error in
-                browser.beEvaluate(webviewUUID: windowUUID!,
+                browser.beEvaluate(webviewUUID: webviewUUID!,
                                    script: "localStorage.getItem('who')",
                                    until: nil,
                                    timeout: nil,
@@ -148,9 +148,9 @@ final class PicaroonCDPTests: XCTestCase {
         let expectation = XCTestExpectation(description: #function)
         let browser = getSharedBrowser()
         
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
             XCTAssertNil(error)
-            browser.beCloseWindow(webviewUUID: windowUUID!,
+            browser.beCloseWindow(webviewUUID: webviewUUID!,
                                   Flynn.any) { error in
                 XCTAssertNil(error)
                 expectation.fulfill()
@@ -164,21 +164,21 @@ final class PicaroonCDPTests: XCTestCase {
         let browser = getSharedBrowser()
 
         let group = DispatchGroup()
-        var windowUUIDs: [String] = []
+        var webviewUUIDs: [String] = []
         
         for _ in 0..<4 {
             group.enter()
-            browser.beNewWindow(Flynn.any) { windowUUID, error in
+            browser.beNewWindow(Flynn.any) { webviewUUID, error in
                 XCTAssertNil(error)
-                windowUUIDs.append(windowUUID!)
+                webviewUUIDs.append(webviewUUID!)
                 group.leave()
             }
         }
         
         group.notify(actor: Flynn.any) {
-            for (index, windowUUID) in windowUUIDs.enumerated() {
+            for (index, webviewUUID) in webviewUUIDs.enumerated() {
                 group.enter()
-                browser.beEvaluate(webviewUUID: windowUUID,
+                browser.beEvaluate(webviewUUID: webviewUUID,
                                    script: "\(index) * 111",
                                    until: nil,
                                    timeout: nil,
@@ -199,7 +199,7 @@ final class PicaroonCDPTests: XCTestCase {
         let expectation = XCTestExpectation(description: #function)
         let browser = getSharedBrowser()
 
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
             XCTAssertNil(error)
             browser.beSend(method: "Picaroon.notARealMethod",
                            sessionId: nil,
@@ -218,11 +218,11 @@ final class PicaroonCDPTests: XCTestCase {
         let expectation = XCTestExpectation(description: #function)
         let browser = getSharedBrowser()
 
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
             XCTAssertNil(error)
             
             let size = 4 * 1024 * 1024
-            browser.beEvaluate(webviewUUID: windowUUID!,
+            browser.beEvaluate(webviewUUID: webviewUUID!,
                                script: "'x'.repeat(\(size))",
                                until: nil,
                                timeout: nil,
@@ -241,21 +241,21 @@ final class PicaroonCDPTests: XCTestCase {
 
         let cookies = #"{"cookies":[{"domain":".example.com","expires":1801369867,"httpOnly":false,"name":"session-id","path":"/","secure":true,"value":"000-0000000-0000000"}]}"#
         
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
             XCTAssertNil(error)
             
-            browser.beSetCookies(webviewUUID: windowUUID!,
+            browser.beSetCookies(webviewUUID: webviewUUID!,
                                  cookiesJson: cookies,
                                  Flynn.any) { error in
                 XCTAssertNil(error)
-            }.then().doGetCookies(webviewUUID: windowUUID!,
+            }.then().doGetCookies(webviewUUID: webviewUUID!,
                                   Flynn.any) { cookies, error in
                 XCTAssertNil(error)
                 XCTAssertEqual(cookies?.contains("000-0000000-0000000"), true)
-            }.then().doClearCookies(webviewUUID: windowUUID!,
+            }.then().doClearCookies(webviewUUID: webviewUUID!,
                                     Flynn.any) { error in
                 XCTAssertNil(error)
-            }.then().doGetCookies(webviewUUID: windowUUID!,
+            }.then().doGetCookies(webviewUUID: webviewUUID!,
                                   Flynn.any) { cookies, error in
                 XCTAssertNil(error)
                 XCTAssertEqual(cookies?.contains("000-0000000-0000000"), false)
@@ -270,17 +270,17 @@ final class PicaroonCDPTests: XCTestCase {
         let expectation = XCTestExpectation(description: #function)
         let browser = getSharedBrowser()
         
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
             XCTAssertNil(error)
             
-            browser.beEvaluate(webviewUUID: windowUUID!,
+            browser.beEvaluate(webviewUUID: webviewUUID!,
                                script: "alert('hello world')",
                                until: nil,
                                timeout: nil,
                                Flynn.any) { result, error in
                 XCTAssertNil(error)
 
-            }.then().doEvaluate(webviewUUID: windowUUID!,
+            }.then().doEvaluate(webviewUUID: webviewUUID!,
                                 script: "1+1",
                                 until: nil,
                                 timeout: nil,
@@ -300,14 +300,14 @@ final class PicaroonCDPTests: XCTestCase {
         
         let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Safari/605.1.15"
         
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
             XCTAssertNil(error)
             
-            browser.beConfigure(webviewUUID: windowUUID!,
+            browser.beConfigure(webviewUUID: webviewUUID!,
                                 userAgent: userAgent,
                                 Flynn.any) { error in
                 XCTAssertNil(error)
-            }.then().doEvaluate(webviewUUID: windowUUID!,
+            }.then().doEvaluate(webviewUUID: webviewUUID!,
                                 script: "navigator.userAgent",
                                 until: nil,
                                 timeout: nil,
@@ -325,22 +325,22 @@ final class PicaroonCDPTests: XCTestCase {
         let expectation = XCTestExpectation(description: #function)
         let browser = getSharedBrowser()
         
-        browser.beNewWindow(Flynn.any) { windowUUID, error in
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
             XCTAssertNil(error)
-            XCTAssertNotNil(windowUUID)
+            XCTAssertNotNil(webviewUUID)
             
-            browser.beConfigure(webviewUUID: windowUUID!,
+            browser.beConfigure(webviewUUID: webviewUUID!,
                                 onPageLoadScript: "window.kjhgbdf = 42;",
                                 Flynn.any) { error in
                 XCTAssertNil(error)
-            }.then().doLoadURL(webviewUUID: windowUUID!,
+            }.then().doLoadURL(webviewUUID: webviewUUID!,
                                url: "https://www.apple.com",
                                until: nil,
                                timeout: nil,
                                referrer: nil,
                                Flynn.any) { error in
                 XCTAssertNil(error)
-            }.then().doEvaluate(webviewUUID: windowUUID!,
+            }.then().doEvaluate(webviewUUID: webviewUUID!,
                                 script: "window.kjhgbdf",
                                 until: nil,
                                 timeout: nil,

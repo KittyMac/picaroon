@@ -14,7 +14,7 @@ import FoundationNetworking
 // to route target level commands
 public struct CDPWindow {
     public let profileUUID: String
-    public let windowUUID: String
+    public let webviewUUID: String
     public let sessionUUID: String
 }
 
@@ -277,12 +277,12 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                             "newWindow": true
                         ],
                         resultPath: "$.result.targetId",
-                        self) { windowUUID, resultJson, error in
+                        self) { webviewUUID, resultJson, error in
                 if let error = error {
                     returnCallback(nil, "Target.createTarget failed: \(error)")
                     return
                 }
-                guard let windowUUID = windowUUID?.toString() else {
+                guard let webviewUUID = webviewUUID?.toString() else {
                     returnCallback(nil, "Target.createTarget returned no targetId")
                     return
                 }
@@ -290,7 +290,7 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                 self.beSend(method: "Target.attachToTarget",
                             sessionId: nil,
                             params: ^[
-                                "targetId": windowUUID,
+                                "targetId": webviewUUID,
                                 "flatten": true
                             ],
                             resultPath: "$.result.sessionId",
@@ -304,8 +304,8 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                         return
                     }
                     
-                    self.activeWindows[windowUUID] = CDPWindow(profileUUID: profileUUID,
-                                                               windowUUID: windowUUID,
+                    self.activeWindows[webviewUUID] = CDPWindow(profileUUID: profileUUID,
+                                                               webviewUUID: webviewUUID,
                                                                sessionUUID: sessionUUID)
                     
                     self.beSend(method: "Page.enable",
@@ -318,7 +318,7 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                             return
                         }
                         
-                        returnCallback(windowUUID, nil)
+                        returnCallback(webviewUUID, nil)
                     }
                 }
             }
@@ -335,7 +335,7 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
         beSend(method: "Target.closeTarget",
                sessionId: nil,
                params: ^[
-                "targetId": activeWindow.windowUUID
+                "targetId": activeWindow.webviewUUID
                ],
                resultPath: nil,
                self) { _, _, error in
