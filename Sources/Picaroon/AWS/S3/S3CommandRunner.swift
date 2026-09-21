@@ -6,8 +6,6 @@ import Hitch
 import FoundationNetworking
 #endif
 
-#if os(macOS) || os(Linux)
-
 internal final class S3CommandRunner: IOActor {
 
     private static let poolSize = min(max(Flynn.cores / 2, 2), 8)
@@ -54,6 +52,7 @@ internal final class S3CommandRunner: IOActor {
                      arguments: [String],
                      environment: [String: String],
                      onLine: (String) -> ()) -> String? {
+#if os(macOS) || os(Linux)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
@@ -103,6 +102,9 @@ internal final class S3CommandRunner: IOActor {
             return "aws cli failed code \(process.terminationStatus)"
         }
         return nil
+#else
+        return "unsupported platform"
+#endif
     }
 
     // MARK: - behaviors
@@ -228,4 +230,3 @@ internal final class S3CommandRunner: IOActor {
     }
 }
 
-#endif
