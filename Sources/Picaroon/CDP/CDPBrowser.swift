@@ -178,7 +178,7 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                 beSend(method: "Page.handleJavaScriptDialog",
                        sessionId: root["sessionId"],
                        params: ^[
-                        "accept": true
+                        "accept": false
                        ],
                        resultPath: nil,
                        self) { _, _, _ in }
@@ -274,56 +274,72 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                 return
             }
             
-            self.beSend(method: "Target.createTarget",
+            // deny all user permissions
+            self.beSend(method: "Browser.grantPermissions",
                         sessionId: nil,
                         params: ^[
-                            "url": "about:blank",
-                            "browserContextId": profileUUID,
-                            "newWindow": true
+                            "permissions": ^[],
+                            "browserContextId": profileUUID
                         ],
-                        resultPath: "$.result.targetId",
-                        self) { webviewUUID, resultJson, error in
+                        resultPath: nil,
+                        self) { sessionUUID, resultJson, error in
                 if let error = error {
-                    returnCallback(nil, "Target.createTarget failed: \(error)")
-                    return
-                }
-                guard let webviewUUID = webviewUUID?.toString() else {
-                    returnCallback(nil, "Target.createTarget returned no targetId")
+                    returnCallback(nil, "Browser.grantPermissions failed: \(error)")
                     return
                 }
                 
-                self.beSend(method: "Target.attachToTarget",
+                self.beSend(method: "Target.createTarget",
                             sessionId: nil,
                             params: ^[
-                                "targetId": webviewUUID,
-                                "flatten": true
+                                "url": "about:blank",
+                                "browserContextId": profileUUID,
+                                "newWindow": true
                             ],
-                            resultPath: "$.result.sessionId",
-                            self) { sessionUUID, resultJson, error in
+                            resultPath: "$.result.targetId",
+                            self) { webviewUUID, resultJson, error in
                     if let error = error {
-                        returnCallback(nil, "Target.attachToTarget failed: \(error)")
+                        returnCallback(nil, "Target.createTarget failed: \(error)")
                         return
                     }
-                    guard let sessionUUID = sessionUUID?.toString() else {
-                        returnCallback(nil, "Target.attachToTarget returned no targetId")
+                    guard let webviewUUID = webviewUUID?.toString() else {
+                        returnCallback(nil, "Target.createTarget returned no targetId")
                         return
                     }
                     
-                    self.activeWindows[webviewUUID] = CDPWindow(profileUUID: profileUUID,
-                                                               webviewUUID: webviewUUID,
-                                                               sessionUUID: sessionUUID)
-                    
-                    self.beSend(method: "Page.enable",
-                                sessionId: sessionUUID,
-                                params: nil,
-                                resultPath: nil,
+                    self.beSend(method: "Target.attachToTarget",
+                                sessionId: nil,
+                                params: ^[
+                                    "targetId": webviewUUID,
+                                    "flatten": true
+                                ],
+                                resultPath: "$.result.sessionId",
                                 self) { sessionUUID, resultJson, error in
                         if let error = error {
-                            returnCallback(nil, "Page.enable failed: \(error)")
+                            returnCallback(nil, "Target.attachToTarget failed: \(error)")
+                            return
+                        }
+                        guard let sessionUUID = sessionUUID?.toString() else {
+                            returnCallback(nil, "Target.attachToTarget returned no targetId")
                             return
                         }
                         
-                        returnCallback(webviewUUID, nil)
+                        self.activeWindows[webviewUUID] = CDPWindow(profileUUID: profileUUID,
+                                                                    webviewUUID: webviewUUID,
+                                                                    sessionUUID: sessionUUID)
+                        
+                        self.beSend(method: "Page.enable",
+                                    sessionId: sessionUUID,
+                                    params: nil,
+                                    resultPath: nil,
+                                    self) { sessionUUID, resultJson, error in
+                            if let error = error {
+                                returnCallback(nil, "Page.enable failed: \(error)")
+                                return
+                            }
+                            
+                            
+                            returnCallback(webviewUUID, nil)
+                        }
                     }
                 }
             }
