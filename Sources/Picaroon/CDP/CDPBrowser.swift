@@ -155,7 +155,6 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                 return
             }
             
-            // TODO: extract the JS result
             if let resultPath = pendingResult.resultPath,
                let result = root.query(element: resultPath) {
                 if let hitchValue = result.hitchValue {
@@ -170,6 +169,19 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
         // NOTE: events which are shared from the chrome client which are not a
         // direct response to a command we sent
         if let method: Hitch = root["method"] {
+            
+            // automatically close alert dialogs
+            if method == "Page.javascriptDialogOpening" {
+                beSend(method: "Page.handleJavaScriptDialog",
+                       sessionId: root["sessionId"],
+                       params: ^[
+                        "accept": true
+                       ],
+                       resultPath: nil,
+                       self) { _, _, _ in }
+                return
+            }
+            
             print("unknown: \(method)")
             //onEvent?(method, root["params"] as JsonElement?)
             return
@@ -296,7 +308,18 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                                                                windowUUID: windowUUID,
                                                                sessionUUID: sessionUUID)
                     
-                    returnCallback(windowUUID, nil)
+                    self.beSend(method: "Page.enable",
+                                sessionId: sessionUUID,
+                                params: nil,
+                                resultPath: nil,
+                                self) { sessionUUID, resultJson, error in
+                        if let error = error {
+                            returnCallback(nil, "Page.enable failed: \(error)")
+                            return
+                        }
+                        
+                        returnCallback(windowUUID, nil)
+                    }
                 }
             }
         }
@@ -330,6 +353,8 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
     
     internal func _beLoadURL(webviewUUID: String,
                              url: String,
+                             until: String?,
+                             timeout: TimeInterval?,
                              referrer: String?,
                              _ returnCallback: @escaping (String?) -> ()) {
         guard let activeWindow = activeWindows[webviewUUID] else {
@@ -342,23 +367,48 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
         if let referrer = referrer {
             params.set(key: "referrer", value: referrer)
         }
+        
+        let until = until ?? "(document.readyState === 'complete' || document.readyState === 'interactive')"
+        var timeout = timeout ?? 16
 
         beSend(method: "Page.navigate",
                sessionId: activeWindow.sessionUUID,
                params: params,
                resultPath: nil,
                self) { _, _, error in
-            returnCallback(error)
+            
+            Flynn.Timer(timeInterval: 0.1, immediate: false, repeats: true, self) { [weak self] timer in
+                guard let self = self else { return }
+                timeout -= 0.1
+                if timeout < 0 {
+                    timer.cancel()
+                    return returnCallback("timeout")
+                }
+                beEvaluate(webviewUUID: webviewUUID,
+                           script: until,
+                           until: nil,
+                           timeout: nil,
+                           Flynn.any) { result, error in
+                    if result == "true" {
+                        timer.cancel()
+                        return returnCallback(error)
+                    }
+                }
+            }
         }
     }
     
     internal func _beEvaluate(webviewUUID: String,
                               script: String,
+                              until: String?,
+                              timeout: TimeInterval?,
                               _ returnCallback: @escaping (Hitch?, String?) -> ()) {
         guard let activeWindow = activeWindows[webviewUUID] else {
             return returnCallback(nil, "\(webviewUUID) does not exist")
         }
 
+        var timeout = timeout ?? 16
+        
         beSend(method: "Runtime.evaluate",
                sessionId: activeWindow.sessionUUID,
                params: ^[
@@ -367,7 +417,98 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
                ],
                resultPath: "$.result.result.value",
                self) { result, resultJson, error in
+            
+            guard let until = until else {
+                return returnCallback(result, error)
+            }
+            
+            Flynn.Timer(timeInterval: 0.1, immediate: false, repeats: true, self) { [weak self] timer in
+                guard let self = self else { return }
+                timeout -= 0.1
+                if timeout < 0 {
+                    timer.cancel()
+                    return returnCallback(nil, "timeout")
+                }
+                beEvaluate(webviewUUID: webviewUUID,
+                           script: until,
+                           until: nil,
+                           timeout: nil,
+                           Flynn.any) { waitResult, error in
+                    if waitResult == "true" {
+                        timer.cancel()
+                        return returnCallback(result, error)
+                    }
+                }
+            }
+        }
+    }
+    
+    internal func _beSetCookies(webviewUUID: String,
+                                cookiesJson: String,
+                                _ returnCallback: @escaping (String?) -> ()) {
+        //{
+        //    "cookies": [
+        //        {
+        //            "domain": ".amazon.com",
+        //            "expires": 1801369867,
+        //            "httpOnly": false,
+        //            "name": "session-id",
+        //            "path": "/",
+        //            "secure": true,
+        //            "value": "000-0000000-0000000"
+        //        }
+        //    ]
+        //}
+        guard let activeWindow = activeWindows[webviewUUID] else {
+            return returnCallback("\(webviewUUID) does not exist")
+        }
+        
+        guard let params = Spanker.parse(string: cookiesJson) else {
+            return returnCallback("failed to parse cookies json")
+        }
+        params.set(key: "browserContextId",
+                   value: activeWindow.profileUUID)
+        
+        beSend(method: "Storage.setCookies",
+               sessionId: nil,
+               params: params,
+               resultPath: nil,
+               self) { _, _, error in
+            returnCallback(error)
+        }
+    }
+    
+    internal func _beGetCookies(webviewUUID: String,
+                                _ returnCallback: @escaping (Hitch?, String?) -> ()) {
+        guard let activeWindow = activeWindows[webviewUUID] else {
+            return returnCallback(nil, "\(webviewUUID) does not exist")
+        }
+
+        beSend(method: "Storage.getCookies",
+               sessionId: nil,
+               params: ^[
+                "browserContextId": activeWindow.profileUUID
+               ],
+               resultPath: "$.result",
+               self) { result, resultJson, error in
             returnCallback(result, error)
+        }
+    }
+    
+    internal func _beClearCookies(webviewUUID: String,
+                                  _ returnCallback: @escaping (String?) -> ()) {
+        guard let activeWindow = activeWindows[webviewUUID] else {
+            return returnCallback("\(webviewUUID) does not exist")
+        }
+
+        beSend(method: "Storage.clearCookies",
+               sessionId: nil,
+               params: ^[
+                "browserContextId": activeWindow.profileUUID
+               ],
+               resultPath: nil,
+               self) { _, _, error in
+            returnCallback(error)
         }
     }
 }

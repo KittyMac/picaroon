@@ -50,6 +50,8 @@ final class PicaroonCDPTests: XCTestCase {
             
             browser.beLoadURL(webviewUUID: windowUUID!,
                               url: "https://www.apple.com",
+                              until: nil,
+                              timeout: nil,
                               referrer: nil,
                               Flynn.any) { error in
                 XCTAssertNil(error)
@@ -70,6 +72,8 @@ final class PicaroonCDPTests: XCTestCase {
             
             browser.beEvaluate(webviewUUID: windowUUID!,
                                script: "6 * 7",
+                               until: nil,
+                               timeout: nil,
                                Flynn.any) { result, error in
                 XCTAssertNil(error, "\(error ?? "")")
                 XCTAssertEqual(result?.toInt(), 42)
@@ -91,16 +95,22 @@ final class PicaroonCDPTests: XCTestCase {
         browser.beNewWindow(Flynn.any) { windowUUID, error in
             browser.beLoadURL(webviewUUID: windowUUID!,
                               url: "https://www.apple.com",
+                              until: nil,
+                              timeout: nil,
                               referrer: nil,
                               Flynn.any) { error in
                 browser.beEvaluate(webviewUUID: windowUUID!,
                                    script: "localStorage.setItem('who', 'first');",
+                                   until: nil,
+                                   timeout: nil,
                                    Flynn.any) { result, error in
                     XCTAssertEqual(result, nil)
                 }
                 
                 browser.beEvaluate(webviewUUID: windowUUID!,
                                    script: "localStorage.getItem('who')",
+                                   until: nil,
+                                   timeout: nil,
                                    Flynn.any) { result, error in
                     XCTAssertEqual(result, "first")
                     group.leave()
@@ -112,10 +122,14 @@ final class PicaroonCDPTests: XCTestCase {
         browser.beNewWindow(Flynn.any) { windowUUID, error in
             browser.beLoadURL(webviewUUID: windowUUID!,
                               url: "https://www.apple.com",
+                              until: nil,
+                              timeout: nil,
                               referrer: nil,
                               Flynn.any) { error in
                 browser.beEvaluate(webviewUUID: windowUUID!,
                                    script: "localStorage.getItem('who')",
+                                   until: nil,
+                                   timeout: nil,
                                    Flynn.any) { result, error in
                     XCTAssertEqual(result, "null")
                     group.leave()
@@ -166,6 +180,8 @@ final class PicaroonCDPTests: XCTestCase {
                 group.enter()
                 browser.beEvaluate(webviewUUID: windowUUID,
                                    script: "\(index) * 111",
+                                   until: nil,
+                                   timeout: nil,
                                    Flynn.any) { result, error in
                     XCTAssertEqual(result, "{0}" <<< [index * 111])
                     group.leave()
@@ -208,12 +224,73 @@ final class PicaroonCDPTests: XCTestCase {
             let size = 4 * 1024 * 1024
             browser.beEvaluate(webviewUUID: windowUUID!,
                                script: "'x'.repeat(\(size))",
+                               until: nil,
+                               timeout: nil,
                                Flynn.any) { result, error in
                 XCTAssertNil(error)
                 XCTAssertEqual(result?.count, size)
                 expectation.fulfill()
             }
         }
+        wait(for: [expectation], timeout: 60)
+    }
+    
+    func testCookies() throws {
+        let expectation = XCTestExpectation(description: #function)
+        let browser = getSharedBrowser()
+
+        let cookies = #"{"cookies":[{"domain":".example.com","expires":1801369867,"httpOnly":false,"name":"session-id","path":"/","secure":true,"value":"000-0000000-0000000"}]}"#
+        
+        browser.beNewWindow(Flynn.any) { windowUUID, error in
+            XCTAssertNil(error)
+            
+            browser.beSetCookies(webviewUUID: windowUUID!,
+                                 cookiesJson: cookies,
+                                 Flynn.any) { error in
+                XCTAssertNil(error)
+            }.then().doGetCookies(webviewUUID: windowUUID!,
+                                  Flynn.any) { cookies, error in
+                XCTAssertNil(error)
+                XCTAssertEqual(cookies?.contains("000-0000000-0000000"), true)
+            }.then().doClearCookies(webviewUUID: windowUUID!,
+                                    Flynn.any) { error in
+                XCTAssertNil(error)
+            }.then().doGetCookies(webviewUUID: windowUUID!,
+                                  Flynn.any) { cookies, error in
+                XCTAssertNil(error)
+                XCTAssertEqual(cookies?.contains("000-0000000-0000000"), false)
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 60)
+    }
+    
+    func testAlertHandling() throws {
+        let expectation = XCTestExpectation(description: #function)
+        let browser = getSharedBrowser()
+        
+        browser.beNewWindow(Flynn.any) { windowUUID, error in
+            XCTAssertNil(error)
+            
+            browser.beEvaluate(webviewUUID: windowUUID!,
+                               script: "alert('hello world')",
+                               until: nil,
+                               timeout: nil,
+                               Flynn.any) { result, error in
+                XCTAssertNil(error)
+
+            }.then().doEvaluate(webviewUUID: windowUUID!,
+                                script: "1+1",
+                                until: nil,
+                                timeout: nil,
+                                Flynn.any) { result, error in
+                XCTAssertNil(error)
+                XCTAssertEqual(result, "2")
+                expectation.fulfill()
+            }
+        }
+        
         wait(for: [expectation], timeout: 60)
     }
 }
