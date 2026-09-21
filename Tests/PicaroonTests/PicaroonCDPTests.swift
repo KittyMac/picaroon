@@ -353,4 +353,35 @@ final class PicaroonCDPTests: XCTestCase {
         
         wait(for: [expectation], timeout: 20)
     }
+    
+    func testScreenshot() throws {
+        let expectation = XCTestExpectation(description: #function)
+        let browser = getSharedBrowser()
+        
+        browser.beNewWindow(Flynn.any) { webviewUUID, error in
+            XCTAssertNil(error)
+            XCTAssertNotNil(webviewUUID)
+            
+            browser.beLoadURL(webviewUUID: webviewUUID!,
+                              url: "https://www.apple.com",
+                              until: nil,
+                              timeout: nil,
+                              referrer: nil,
+                              Flynn.any) { error in
+                XCTAssertNil(error)
+            }.then().doScreenshot(webviewUUID: webviewUUID!,
+                                  Flynn.any) { result, error in
+                XCTAssertNil(error)
+                XCTAssertNotNil(result)
+
+                if let result = result,
+                   let data = result.base64Decoded() {
+                    try? data.write(to: URL(fileURLWithPath: "/tmp/screenshot.jpg"), options: .atomic)
+                }
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 20)
+    }
 }

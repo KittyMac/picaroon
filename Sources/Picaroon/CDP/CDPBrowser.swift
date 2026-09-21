@@ -548,4 +548,22 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
             returnCallback(error)
         }
     }
+    
+    internal func _beScreenshot(webviewUUID: String,
+                               _ returnCallback: @escaping (Hitch?, String?) -> ()) {
+        guard let activeWindow = activeWindows[webviewUUID] else {
+            return returnCallback(nil, "\(webviewUUID) does not exist")
+        }
+
+        beSend(method: "Page.captureScreenshot",
+               sessionId: activeWindow.sessionUUID,
+               params: ^[
+                "format": "jpeg",
+                "quality": 25,
+               ],
+               resultPath: "$.result.data",
+               self) { result, _, error in
+            returnCallback(result, error)
+        }
+    }
 }
