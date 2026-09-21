@@ -511,4 +511,41 @@ public class CDPBrowser: IOActor, WebSocketDelegate {
             returnCallback(error)
         }
     }
+    
+    internal func _beConfigure(webviewUUID: String,
+                               userAgent: String,
+                               _ returnCallback: @escaping (String?) -> ()) {
+        guard let activeWindow = activeWindows[webviewUUID] else {
+            return returnCallback("\(webviewUUID) does not exist")
+        }
+
+        beSend(method: "Emulation.setUserAgentOverride",
+               sessionId: activeWindow.sessionUUID,
+               params: ^[
+                "userAgent": userAgent
+               ],
+               resultPath: nil,
+               self) { _, _, error in
+            returnCallback(error)
+        }
+    }
+    
+    internal func _beConfigure(webviewUUID: String,
+                               onPageLoadScript: String,
+                               _ returnCallback: @escaping (String?) -> ()) {
+        guard let activeWindow = activeWindows[webviewUUID] else {
+            return returnCallback("\(webviewUUID) does not exist")
+        }
+
+        beSend(method: "Page.addScriptToEvaluateOnNewDocument",
+               sessionId: activeWindow.sessionUUID,
+               params: ^[
+                "source": onPageLoadScript,
+                "runImmediately": true,
+               ],
+               resultPath: nil,
+               self) { _, _, error in
+            returnCallback(error)
+        }
+    }
 }

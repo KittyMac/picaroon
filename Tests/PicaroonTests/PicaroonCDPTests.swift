@@ -293,4 +293,64 @@ final class PicaroonCDPTests: XCTestCase {
         
         wait(for: [expectation], timeout: 60)
     }
+    
+    func testUserAgent() throws {
+        let expectation = XCTestExpectation(description: #function)
+        let browser = getSharedBrowser()
+        
+        let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Safari/605.1.15"
+        
+        browser.beNewWindow(Flynn.any) { windowUUID, error in
+            XCTAssertNil(error)
+            
+            browser.beConfigure(webviewUUID: windowUUID!,
+                                userAgent: userAgent,
+                                Flynn.any) { error in
+                XCTAssertNil(error)
+            }.then().doEvaluate(webviewUUID: windowUUID!,
+                                script: "navigator.userAgent",
+                                until: nil,
+                                timeout: nil,
+                                Flynn.any) { result, error in
+                XCTAssertNil(error)
+                XCTAssertEqual(result?.toString(), userAgent)
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 60)
+    }
+    
+    func testOnPageLoadScript() throws {
+        let expectation = XCTestExpectation(description: #function)
+        let browser = getSharedBrowser()
+        
+        browser.beNewWindow(Flynn.any) { windowUUID, error in
+            XCTAssertNil(error)
+            XCTAssertNotNil(windowUUID)
+            
+            browser.beConfigure(webviewUUID: windowUUID!,
+                                onPageLoadScript: "window.kjhgbdf = 42;",
+                                Flynn.any) { error in
+                XCTAssertNil(error)
+            }.then().doLoadURL(webviewUUID: windowUUID!,
+                               url: "https://www.apple.com",
+                               until: nil,
+                               timeout: nil,
+                               referrer: nil,
+                               Flynn.any) { error in
+                XCTAssertNil(error)
+            }.then().doEvaluate(webviewUUID: windowUUID!,
+                                script: "window.kjhgbdf",
+                                until: nil,
+                                timeout: nil,
+                                Flynn.any) { result, error in
+                XCTAssertNil(error)
+                XCTAssertEqual(result?.toString(), "42")
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 20)
+    }
 }
