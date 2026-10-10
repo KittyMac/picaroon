@@ -32,6 +32,7 @@ import Android
 public class HTTPSession: Actor {
     public static let oneshot: HTTPSession = HTTPSession(oneshot: true)
     public static let longshot: HTTPSession = HTTPSession(longshot: true)
+    public static let glacial: HTTPSession = HTTPSession(glacial: true)
     
     private var transport: HTTPTransportSession?
     private var beginCallback: ((HTTPSession) -> ())?
@@ -82,6 +83,29 @@ public class HTTPSession: Actor {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 120.0
         config.timeoutIntervalForResource = 120.0
+#if os(Android)
+        config.httpMaximumConnectionsPerHost = 1
+#else
+        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+#endif
+        config.httpShouldSetCookies = false
+        config.httpCookieAcceptPolicy = .never
+        config.httpCookieStorage = nil
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        config.httpShouldUsePipelining = false
+        transport = HTTPTransportSession(configuration: config)
+        retryAnyError = true
+        
+        super.init()
+        unsafePriority = 9999
+        unsafeMessageBatchSize = 100
+    }
+    
+    fileprivate init(glacial: Bool) {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 60.0 * 60.0
+        config.timeoutIntervalForResource = 60.0 * 60.0
 #if os(Android)
         config.httpMaximumConnectionsPerHost = 1
 #else
