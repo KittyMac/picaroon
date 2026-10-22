@@ -117,10 +117,18 @@ internal class HTTPTaskManager: Actor {
                     shouldBeRetried = "no space detected \(timeoutRetry), retrying \(request.url?.absoluteString ?? "unknown url")..."
                 }
                 
+                // Host-not-found is almost always transient: a resolver timeout
+                // (EAI_AGAIN from glibc/bionic, which curl reports as
+                // CURLE_COULDNT_RESOLVE_HOST) rather than a name that does not
+                // exist. Retry it, but with a small cap and a longer delay so a
+                // genuinely bad hostname still fails in seconds, not minutes.
+                var retriesLeft = timeoutRetry
+                var retryDelay = 1.0
                 if let nsError = error as? NSError,
                    nsError.domain == NSURLErrorDomain,
                    nsError.code == NSURLErrorCannotFindHost {
-                    shouldBeRetried = nil
+                    retriesLeft = min(timeoutRetry, 3)
+                    retryDelay = 2.0
                 }
                 
                 if retryAnyError {
@@ -149,15 +157,15 @@ internal class HTTPTaskManager: Actor {
                 
                 // If we timeout out, go ahead and retry it.
                 if let shouldBeRetried = shouldBeRetried,
-                   timeoutRetry > 0 {
+                   retriesLeft > 0 {
                     // Flynn.syslog("TAG", shouldBeRetried)
                     
-                    Flynn.Timer(timeInterval: 1.0, immediate: false, repeats: false, self) { [weak self] timer in
+                    Flynn.Timer(timeInterval: retryDelay, immediate: false, repeats: false, self) { [weak self] timer in
                         guard let self = self else { return returnCallback(nil, nil, nil) }
                         self.beResume(session: session,
                                       request: request,
                                       proxy: proxy,
-                                      timeoutRetry: timeoutRetry - 1,
+                                      timeoutRetry: retriesLeft - 1,
                                       retryAnyError: retryAnyError,
                                       self,
                                       returnCallback)
