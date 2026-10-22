@@ -12,7 +12,7 @@ internal struct LocalFile: Equatable, Comparable {
         return lhs.s3Key == rhs.s3Key
     }
     static func < (lhs: Self, rhs: Self) -> Bool {
-        return lhs.s3Key.lexicographicallyPrecedes(rhs.s3Key)
+        return lhs.s3Key.utf8.lexicographicallyPrecedes(rhs.s3Key.utf8)
     }
     
     let name: String
