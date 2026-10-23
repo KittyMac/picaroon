@@ -29,6 +29,40 @@ public enum HTTPSessionPriority {
     }
 }
 
+/// FIFO with O(1) dequeue. Array.removeFirst() shifts every remaining element, which
+/// turns into O(n) per dequeue when callers queue sessions faster than transports free
+/// up (beSyncToLocal used to queue one session per object listed). Dequeued slots are
+/// set to nil immediately so a waiting HTTPSession is never kept alive by the queue,
+/// since HTTPSession returns its transport from deinit.
+fileprivate struct SessionQueue {
+    private var items: [HTTPSession?] = []
+    private var head = 0
+    
+    var isEmpty: Bool {
+        return head >= items.count
+    }
+    
+    mutating func append(_ session: HTTPSession) {
+        items.append(session)
+    }
+    
+    mutating func removeFirst() -> HTTPSession? {
+        guard head < items.count else { return nil }
+        let session = items[head]
+        items[head] = nil
+        head += 1
+        
+        if head == items.count {
+            items.removeAll(keepingCapacity: true)
+            head = 0
+        } else if head >= 1024 && head * 2 >= items.count {
+            items.removeFirst(head)
+            head = 0
+        }
+        return session
+    }
+}
+
 public class HTTPSessionManager: Actor {
     public static let shared = HTTPSessionManager()
     private override init() {
@@ -66,9 +100,9 @@ public class HTTPSessionManager: Actor {
     
     private var waitingTransports: [HTTPTransportSession] = []
     
-    private var waitingSessionsLow: [HTTPSession] = []
-    private var waitingSessionsMedium: [HTTPSession] = []
-    private var waitingSessionsHigh: [HTTPSession] = []
+    private var waitingSessionsLow = SessionQueue()
+    private var waitingSessionsMedium = SessionQueue()
+    private var waitingSessionsHigh = SessionQueue()
         
     private func checkForMoreSessions() {
         guard waitingSessionsLow.isEmpty == false ||

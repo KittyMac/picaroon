@@ -98,47 +98,45 @@ extension HTTPSession {
             var downloadCount = 0
             var skippedCount = 0
             
-            let processObjects: ([S3Object]) -> () = { objects in
-                
-                // Record the delta objects into all objects
-                allObjects.append(contentsOf: objects)
-                
-                // Make a quick look up table of delta s3 objects by their key
-                var mutableObjectsByKey: [String: S3Object] = [:]
-                for object in objects {
-                    allObjectsByKey[object.key] = object
-                    if localFilesByS3Key[object.key] == nil {
-                        mutableObjectsByKey[object.key] = object
-                    } else {
-                        skippedCount += 1
+            // Downloads are started through a bounded window instead of all at once.
+            // Listing runs at a higher priority than downloading, so it races ahead;
+            // queueing every object straight into HTTPSessionManager meant millions of
+            // HTTPSession actors waiting there, each dequeue an O(n) Array.removeFirst.
+            // Objects waiting here are just references in an array read by index.
+            let maxDownloadsInFlight = 128
+            var pendingDownloads: [S3Object?] = []
+            var pendingHead = 0
+            var downloadsInFlight = 0
+            
+            func startMoreDownloads() {
+                while downloadsInFlight < maxDownloadsInFlight && pendingHead < pendingDownloads.count {
+                    guard let object = pendingDownloads[pendingHead] else { break }
+                    pendingDownloads[pendingHead] = nil
+                    pendingHead += 1
+                    
+                    // Compact once the consumed prefix dominates, so the array does not
+                    // hold a slot for every object ever listed.
+                    if pendingHead >= 4096 && pendingHead * 2 >= pendingDownloads.count {
+                        pendingDownloads.removeFirst(pendingHead)
+                        pendingHead = 0
                     }
-                }
-                
-                sender.unsafeSend { _ in
-                    progressCallback(skippedCount, downloadCount, allObjects.count)
-                }
-                
-                for object in mutableObjectsByKey.values {
+                    
+                    downloadsInFlight += 1
                     group.enter()
+                    
                     HTTPSessionManager.shared.beNew(priority: priority, self) { session in
+                        // The callback runs on the download's own session rather than on this
+                        // actor, so writing files and setting dates happens in parallel across
+                        // sessions instead of serially on the one actor running the sync.
                         session.beDownloadFromS3(credentials: credentials.noCloudFront(),
                                                  key: object.key,
                                                  contentType: .any,
-                                                 self) { data, source, response, error in
-                            if let error = error {
-                                lastError = error
-                            }
-                            
-                            downloadCount += 1
-                            
-                            sender.unsafeSend { _ in
-                                progressCallback(skippedCount, downloadCount, allObjects.count)
-                            }
-                            
+                                                 session) { data, source, response, error in
+                            var wroteFile = false
                             if let data = data,
                                error == nil {
                                 let objectKey = makeRelativePath(key: object.key)
-                                
+                            
                                 let fileUrl = localDirectoryUrl.appendingPathComponent(objectKey)
                                 if (try? data.write(to: fileUrl)) == nil {
                                     // probably directory does not exist...
@@ -146,23 +144,66 @@ extension HTTPSession {
                                                                              withIntermediateDirectories: true)
                                     try? data.write(to: fileUrl)
                                 }
-                                
+                            
                                 // Update the modification date of the file to match the date of the s3 object
                                 try? FileManager.default.setAttributes([
                                     FileAttributeKey.creationDate: object.modifiedDate,
                                 ], ofItemAtPath: fileUrl.path)
-                                
+                            
                                 try? FileManager.default.setAttributes([
                                     FileAttributeKey.modificationDate: object.modifiedDate,
                                 ], ofItemAtPath: fileUrl.path)
-                                
-                                modifiedObjects.append(object)
-                            }
                             
-                            group.leave()
+                                wroteFile = true
+                            }
+                        
+                            // Shared state is only touched back on this actor.
+                            self.unsafeSend { _ in
+                                if let error = error {
+                                    lastError = error
+                                }
+                                if wroteFile {
+                                    modifiedObjects.append(object)
+                                }
+                            
+                                downloadCount += 1
+                                downloadsInFlight -= 1
+                            
+                                let skipped = skippedCount, downloaded = downloadCount, total = allObjects.count
+                                sender.unsafeSend { _ in
+                                    progressCallback(skipped, downloaded, total)
+                                }
+                            
+                                // Start the next download before leaving, so the group cannot
+                                // reach zero while objects are still waiting.
+                                startMoreDownloads()
+                                group.leave()
+                            }
                         }
                     }
                 }
+            }
+            
+            let processObjects: ([S3Object]) -> () = { objects in
+                
+                // Record the delta objects into all objects
+                allObjects.append(contentsOf: objects)
+                
+                for object in objects {
+                    allObjectsByKey[object.key] = object
+                    if localFilesByS3Key[object.key] == nil {
+                        pendingDownloads.append(object)
+                    } else {
+                        skippedCount += 1
+                    }
+                }
+                
+                let skipped = skippedCount, downloaded = downloadCount, total = allObjects.count
+                sender.unsafeSend { _ in
+                    progressCallback(skipped, downloaded, total)
+                }
+                
+                startMoreDownloads()
             }
             
             group.enter()
