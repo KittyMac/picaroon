@@ -46,6 +46,16 @@ public class S3Object: Equatable {
         }
     }
     
+    public init(keyPrefix: String,
+                key: String,
+                size: Int64,
+                modifiedDate: Date) {
+        self.keyPrefix = keyPrefix
+        self.key = key
+        self.size = size
+        self.modifiedDate = modifiedDate
+    }
+    
     public init?(xmlElement: XmlElement,
                  keyPrefix: String = "") {
         guard let key = xmlElement["Key"]?.text else { return nil }
