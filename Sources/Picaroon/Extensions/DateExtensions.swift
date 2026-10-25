@@ -10,10 +10,10 @@ public extension Date {
         return formatter.string(from: self)
     }
     func toISO8601() -> String {
-        return ISO8601DateFormatter().string(from: self)
+        return Hitch(capacity: 32).append(iso8601: self).toString()
     }
     func toISO8601Hitch() -> Hitch {
-        return Hitch(string: ISO8601DateFormatter().string(from: self))
+        return Hitch(capacity: 32).append(iso8601: self)
     }
 }
 

@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Flynn.git",
       "state" : {
-        "revision" : "89c4870c6cd5ad32c54cc6fc57b9ddaa6706c295",
-        "version" : "0.5.15"
+        "revision" : "bfe8b99ee030353e61e0ebce9d0c383c9bbb8112",
+        "version" : "0.5.18"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/KittyMac/Hitch.git",
       "state" : {
-        "revision" : "4aae7a72b4e237cc45ea3dc35bd72258228a7089",
-        "version" : "0.4.159"
+        "revision" : "9548f2b5b8c59e72d46010fbbaaf61a469c18b63",
+        "version" : "0.4.161"
       }
     },
     {
