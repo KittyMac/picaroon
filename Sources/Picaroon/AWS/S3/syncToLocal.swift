@@ -170,8 +170,10 @@ extension HTTPSession {
                                 downloadsInFlight -= 1
                             
                                 let skipped = skippedCount, downloaded = downloadCount, total = allObjects.count
-                                sender.unsafeSend { _ in
-                                    progressCallback(skipped, downloaded, total)
+                                if sender.unsafeMessagesCount < 100 {
+                                    sender.unsafeSend { _ in
+                                        progressCallback(skipped, downloaded, total)
+                                    }
                                 }
                             
                                 // Start the next download before leaving, so the group cannot
@@ -199,8 +201,10 @@ extension HTTPSession {
                 }
                 
                 let skipped = skippedCount, downloaded = downloadCount, total = allObjects.count
-                sender.unsafeSend { _ in
-                    progressCallback(skipped, downloaded, total)
+                if sender.unsafeMessagesCount < 100 {
+                    sender.unsafeSend { _ in
+                        progressCallback(skipped, downloaded, total)
+                    }
                 }
                 
                 startMoreDownloads()

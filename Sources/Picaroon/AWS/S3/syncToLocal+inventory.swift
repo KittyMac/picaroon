@@ -359,8 +359,10 @@ extension HTTPSession {
             
             func reportProgress() {
                 let skipped = skippedCount, downloaded = downloadCount, total = allObjects.count
-                sender.unsafeSend { _ in
-                    progressCallback(skipped, downloaded, total)
+                if sender.unsafeMessagesCount < 100 {
+                    sender.unsafeSend { _ in
+                        progressCallback(skipped, downloaded, total)
+                    }
                 }
             }
             

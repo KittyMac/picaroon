@@ -49,9 +49,11 @@ extension HTTPSession {
                                                  localDirectory: localDirectory,
                                                  continuous: continuous,
                                                  { count in
-                                                     sender.unsafeSend { _ in
-                                                         progressCallback(0, count, count)
-                                                     }
+                                                    if sender.unsafeMessagesCount < 100 {
+                                                        sender.unsafeSend { _ in
+                                                            progressCallback(0, count, count)
+                                                        }
+                                                    }
                                                  },
                                                  sender,
                                                  returnCallback)
