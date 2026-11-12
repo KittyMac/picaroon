@@ -279,10 +279,8 @@ extension HTTPSession {
                         
                         allObjects.append(contentsOf: moreObjects)
                         
-                        if sender.unsafeMessagesCount < 100 {
-                            sender.unsafeSend { _ in
-                                progressCallback(moreObjects)
-                            }
+                        sender.unsafeSend { _ in
+                            progressCallback(moreObjects)
                         }
                         
                         if isDone {

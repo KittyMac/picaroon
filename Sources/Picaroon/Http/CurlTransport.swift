@@ -138,7 +138,7 @@ internal final class CurlTransport {
     #if os(Android)
     private let workerCount = 16
     #else
-    private let workerCount = min(max(Flynn.cores * 4, 8), 64)
+    private let workerCount = min(max(picaroonCoreCount * 4, 8), 64)
     #endif
 
     private let condition = NSCondition()

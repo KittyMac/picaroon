@@ -72,7 +72,7 @@ public class HTTPSessionManager: Actor {
 #if os(Android)
             config.httpMaximumConnectionsPerHost = 1
 #else
-            config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+            config.httpMaximumConnectionsPerHost = min(max(picaroonCoreCount * 3, 4), 32)
 #endif
             config.urlCache = nil
             config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
@@ -91,11 +91,11 @@ public class HTTPSessionManager: Actor {
     #if os(Windows)
     private let maxConcurrentSessions = 16
     #elseif os(Linux)
-    private let maxConcurrentSessions = Flynn.cores <= 4 ? 8 : 128
+    private let maxConcurrentSessions = picaroonCoreCount <= 4 ? 8 : 128
     #elseif os(Android)
     private let maxConcurrentSessions = 8
     #else
-    private let maxConcurrentSessions = min(max(Flynn.cores * 4, 4), 64)
+    private let maxConcurrentSessions = min(max(picaroonCoreCount * 4, 4), 64)
     #endif
     
     private var waitingTransports: [HTTPTransportSession] = []

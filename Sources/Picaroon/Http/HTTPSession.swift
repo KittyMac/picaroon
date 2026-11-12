@@ -63,7 +63,7 @@ public class HTTPSession: Actor {
 #if os(Android)
         config.httpMaximumConnectionsPerHost = 1
 #else
-        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+        config.httpMaximumConnectionsPerHost = min(max(picaroonCoreCount * 3, 4), 32)
 #endif
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
@@ -86,7 +86,7 @@ public class HTTPSession: Actor {
 #if os(Android)
         config.httpMaximumConnectionsPerHost = 1
 #else
-        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+        config.httpMaximumConnectionsPerHost = min(max(picaroonCoreCount * 3, 4), 32)
 #endif
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never
@@ -109,7 +109,7 @@ public class HTTPSession: Actor {
 #if os(Android)
         config.httpMaximumConnectionsPerHost = 1
 #else
-        config.httpMaximumConnectionsPerHost = min(max(Flynn.cores * 3, 4), 32)
+        config.httpMaximumConnectionsPerHost = min(max(picaroonCoreCount * 3, 4), 32)
 #endif
         config.httpShouldSetCookies = false
         config.httpCookieAcceptPolicy = .never

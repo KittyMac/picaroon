@@ -8,7 +8,7 @@ import FoundationNetworking
 
 internal final class S3CommandRunner: IOActor {
 
-    private static let poolSize = min(max(Flynn.cores / 2, 2), 8)
+    private static let poolSize = min(max(picaroonCoreCount / 2, 2), 8)
 
     private static let pool: [S3CommandRunner] = (0..<poolSize).map { _ in S3CommandRunner() }
 

@@ -58,7 +58,7 @@ internal class HTTPTaskManager: Actor {
     #elseif os(Android)
     private let maxConcurrentTasks = 8
     #else
-    private let maxConcurrentTasks = min(max(Flynn.cores * 4, 4), 64)
+    private let maxConcurrentTasks = min(max(picaroonCoreCount * 4, 4), 64)
     #endif
     
     private var waitingTasks: [DataTask] = []
