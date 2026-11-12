@@ -59,6 +59,29 @@ final class PicaroonAmazonS3Tests: XCTestCase {
         wait(for: [expectation], timeout: 600)
     }
     
+    func testSyncToLocalWithKeyFilter() {
+        let expectation = XCTestExpectation(description: #function)
+
+        HTTPSession.oneshot.beSyncToLocal(credentials: credentials,
+                                          keyPrefix: "v1/many/",
+                                          keyFilter: { $0.contains("file") },
+                                          localDirectory: "/tmp/many/",
+                                          continuous: false,
+                                          priority: .low,
+                                          progressCallback: { skipped, downloaded, total in print(" skipped: \(skipped), downloaded: \(downloaded), total: \(total)") },
+                                          Flynn.any) { allObjects, newObjects, continuationMarker, error in
+            XCTAssertNil(error)
+            for object in allObjects {
+                XCTAssertTrue(object.key.split(separator: "/").last?.hasPrefix("file") == true)
+            }
+            print("TOTAL MATCHING OBJECTS: \(allObjects.count)")
+            print("DOWNLOADED: \(newObjects.count)")
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 600)
+    }
+    
     func testSyncToLocalAWS() {
         let expectation = XCTestExpectation(description: #function)
 

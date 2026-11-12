@@ -21,9 +21,10 @@ internal struct LocalFile: Equatable, Comparable {
 }
 
 extension HTTPSession {
-        
+    
     public func beSyncToLocal(credentials: S3Credentials,
                               keyPrefix: String,
+                              keyFilter: ((String) -> Bool)? = nil,
                               localDirectory: String,
                               continuous: Bool,
                               priority: HTTPSessionPriority,
@@ -47,6 +48,11 @@ extension HTTPSession {
                 return objectKey
             }
             
+            func includeKey(_ key: String) -> Bool {
+                guard let keyFilter = keyFilter else { return true }
+                return keyFilter(makeRelativePath(key: key))
+            }
+            
             let localDirectoryUrl = URL(fileURLWithPath: localDirectory)
             var localFilesByS3Key: [String: LocalFile] = [:]
             var localFilesSorted: [LocalFile] = []
@@ -61,6 +67,10 @@ extension HTTPSession {
                     guard let relativePath = fileURL.path.components(separatedBy: localDirectoryUrl.path).last else { continue }
                     var s3Key = keyPrefix + relativePath
                     s3Key = s3Key.replacingOccurrences(of: "//", with: "/")
+                    
+                    // Local files outside the filter are ignored entirely, so they
+                    // never skew the marker and are never deleted
+                    guard includeKey(s3Key) else { continue }
                     
                     let localFile = LocalFile(name: fileURL.lastPathComponent,
                                               path: fileURL.path,
@@ -186,7 +196,8 @@ extension HTTPSession {
                 }
             }
             
-            let processObjects: ([S3Object]) -> () = { objects in
+            let processObjects: ([S3Object]) -> () = { listedObjects in
+                let objects = keyFilter == nil ? listedObjects : listedObjects.filter { includeKey($0.key) }
                 
                 // Record the delta objects into all objects
                 allObjects.append(contentsOf: objects)
@@ -218,6 +229,7 @@ extension HTTPSession {
                                      progressCallback: processObjects,
                                      self) { objects, localContinuationMarker, error in
                 if let error = error {
+                    let objects = keyFilter == nil ? objects : objects.filter { includeKey($0.key) }
                     sender.unsafeSend { _ in
                         returnCallback(objects, [], localContinuationMarker, error)
                     }
