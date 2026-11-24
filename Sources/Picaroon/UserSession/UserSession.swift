@@ -42,7 +42,9 @@ open class UserSession: Actor {
     private var cookieSessionUUID: Hitch
     private var javascriptSessionUUID: Hitch
 
-    private var allowReassociationFromDate: Date?
+    // Set by the UserSessionManager which owns this session. Reassociation tokens live in the
+    // manager (under its lock), never on the session itself.
+    internal weak var unsafeReassociationIssuer: ReassociationTokenIssuer?
     
     var unsafeSessionHeaders: [Hitch] = []
     
@@ -59,12 +61,6 @@ open class UserSession: Actor {
         return lastActivityEpoch + safeSessionActivityTimeout
     }
     
-    func unsafeReassociationIsAllowed() -> Bool {
-        guard let date = allowReassociationFromDate else { return false }
-        allowReassociationFromDate = nil
-        return abs(date.timeIntervalSinceNow) < 5 * 60
-    }
-
     func unsafeUpdateSessionUUIDs(_ cookieSessionUUID: Hitch?,
                                   _ javascriptSessionUUID: Hitch?) {
         self.cookieSessionUUID = cookieSessionUUID ?? UUID().uuidHitch
@@ -116,7 +112,22 @@ open class UserSession: Actor {
                           httpRequest: httpRequest)
     }
 
-    internal func _beAllowReassociation() {
-        allowReassociationFromDate = Date()
+    /// Allow this session to be picked up by a client which no longer has its cookie (for example
+    /// the browser is coming back from a third party login). Returns a single-use reassociation
+    /// token, or nil if this session is no longer live. Pass the token back to the server as the
+    /// `sid` url parameter (ideally carried through the third party's `state` parameter).
+    ///
+    /// The token is unrelated to the session's own identifiers, works exactly once, expires after
+    /// `timeout` seconds, and replaces any token previously issued for this session. Redeeming it
+    /// rotates both of the session's identifiers.
+    ///
+    /// Call this from within the session (ie from safeHandleRequest); from elsewhere use
+    /// beAllowReassociation(sender) { token in ... }.
+    public func unsafeAllowReassociation(timeout: TimeInterval = 120) -> Hitch? {
+        return unsafeReassociationIssuer?.issueReassociationToken(for: self, timeout: timeout)
+    }
+
+    internal func _beAllowReassociation() -> Hitch? {
+        return unsafeAllowReassociation()
     }
 }

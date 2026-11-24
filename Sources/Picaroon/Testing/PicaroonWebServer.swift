@@ -30,18 +30,27 @@ extension PicaroonTesting {
     open class WebUserSession: UserSession {
         open override func safeHandleRequest(connection: AnyConnection,
                                              httpRequest: HttpRequest) {
+            // ajax: allow reassociation, hand the single-use token back to the page
             if let content = httpRequest.content,
                content.contains("Server_AllowReassociation") {
-                beAllowReassociation()
+                guard let token = unsafeAllowReassociation() else {
+                    connection.beSendInternalError()
+                    return
+                }
+                connection.beSend(httpResponse: HttpResponse(text: token))
+                return
             }
 
-            if httpRequest.url?[0] == .forwardSlash || httpRequest.urlParameters?.contains("sid=") == true {
+            // page load (including a return with ?sid=<token>): bootstrap the page with the session's
+            // current javascript UUID, which reassociation will have rotated
+            if httpRequest.method == .GET {
                 connection.beSend(httpResponse:
                                     HttpResponse(javascript: "sessionStorage.setItem('Session-Id', '{0}');" << [unsafeJavascriptSessionUUID])
                 )
                 return
             }
 
+            // ajax: report which server side actor handled us
             connection.beSend(httpResponse: HttpResponse(text: HalfHitch(string: unsafeUUID)))
         }
     }

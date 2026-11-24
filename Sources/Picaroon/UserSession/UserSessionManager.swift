@@ -5,11 +5,14 @@ import Hitch
 public typealias GetUserSessionCallback = (UserSession?) -> Void
 
 public protocol AnyUserSessionManager {
-    func reassociate(cookieSessionUUID: Hitch?,
-                     _ oldJavascriptSessionUUID: Hitch,
-                     _ newJavascriptSessionUUID: Hitch) -> UserSession?
+    func reassociate(reassociationToken: Hitch,
+                     cookieSessionUUID: Hitch?) -> UserSession?
     func get(_ cookieSessionUUID: Hitch?, _ javascriptSessionUUID: Hitch?) -> UserSession?
     func end(_ userSession: UserSession)
+}
+
+internal protocol ReassociationTokenIssuer: AnyObject {
+    func issueReassociationToken(for userSession: UserSession, timeout: TimeInterval) -> Hitch?
 }
 
 /// Session identifiers are always minted by the server. Identifiers supplied by the client
@@ -19,7 +22,11 @@ public protocol AnyUserSessionManager {
 /// browser in .window mode). A client-supplied javascript session UUID is never adopted for a new
 /// session. This prevents session fixation, stops logout from silently "resurrecting" the same
 /// identifiers, and stops a client from clobbering another session's index entries.
-public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
+///
+/// Moving a session to a client which has lost its cookie ("reassociation") requires a single-use
+/// token issued by UserSession.unsafeAllowReassociation(). Knowing a session's identifiers is never
+/// enough to move it.
+public class UserSessionManager<T: UserSession>: AnyUserSessionManager, ReassociationTokenIssuer {
 
     private let config: ServerConfig
 
@@ -27,6 +34,14 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
     // In .window mode many sessions (one per window) legitimately share the same cookie
     private var sessionsByCookieSessionUUID: [Hitch: [UserSession]] = [:]
     private var sessionsByCombinedSessionUUID: [Hitch: UserSession] = [:]
+
+    private struct ReassociationToken {
+        weak var userSession: UserSession?
+        let expiresEpoch: TimeInterval
+    }
+    private var reassociationTokens: [Hitch: ReassociationToken] = [:]
+    private var reassociationTokenBySession: [ObjectIdentifier: Hitch] = [:]
+
     private var lock = NSLock()
 
     class func combined(_ cookieSessionUUID: Hitch, _ javascriptSessionUUID: Hitch) -> Hitch {
@@ -75,6 +90,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
     // MARK: - Index maintenance (call with lock held)
 
     private func unsafeIndex(_ userSession: UserSession) {
+        userSession.unsafeReassociationIssuer = self
         sessionsByCombinedSessionUUID[userSession.unsafeSessionUUID] = userSession
         sessionsByJavascriptSessionUUID[userSession.unsafeJavascriptSessionUUID] = userSession
         sessionsByCookieSessionUUID[userSession.unsafeCookieSessionUUID, default: []].append(userSession)
@@ -83,6 +99,8 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
     /// Removes index entries only if they point at this exact session, so removing one
     /// session can never drop another session's entry that happens to share a key.
     private func unsafeUnindex(_ userSession: UserSession) {
+        unsafeRevokeReassociationToken(for: userSession)
+
         let sessionUUID = userSession.unsafeSessionUUID
         if sessionsByCombinedSessionUUID[sessionUUID] === userSession {
             sessionsByCombinedSessionUUID.removeValue(forKey: sessionUUID)
@@ -112,17 +130,69 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
 
     // MARK: - Public API
 
-    public func reassociate(cookieSessionUUID: Hitch?,
-                            _ oldJavascriptSessionUUID: Hitch,
-                            _ newJavascriptSessionUUID: Hitch) -> UserSession? {
+    private func unsafeIsIndexed(_ userSession: UserSession) -> Bool {
+        return sessionsByCombinedSessionUUID[userSession.unsafeSessionUUID] === userSession
+    }
+
+    // MARK: - Reassociation tokens
+
+    private func unsafeRevokeReassociationToken(for userSession: UserSession) {
+        if let token = reassociationTokenBySession.removeValue(forKey: ObjectIdentifier(userSession)) {
+            reassociationTokens.removeValue(forKey: token)
+        }
+    }
+
+    func issueReassociationToken(for userSession: UserSession, timeout: TimeInterval) -> Hitch? {
         lock.lock()
         defer {
             lock.unlock()
         }
 
-        return self.reassociate(cookieSessionUUID: Self.validated(cookieSessionUUID),
-                                old: Self.validated(oldJavascriptSessionUUID),
-                                new: Self.validated(newJavascriptSessionUUID))
+        guard unsafeIsIndexed(userSession) else { return nil }
+
+        // only one outstanding token per session
+        unsafeRevokeReassociationToken(for: userSession)
+
+        let token = UUID().uuidHitch
+        reassociationTokens[token] = ReassociationToken(userSession: userSession,
+                                                        expiresEpoch: Date().timeIntervalSince1970 + max(0, timeout))
+        reassociationTokenBySession[ObjectIdentifier(userSession)] = token
+        return token
+    }
+
+    /// Redeems a reassociation token. The token is consumed whether or not redemption succeeds.
+    /// On success both of the session's identifiers are rotated: the javascript UUID is always newly
+    /// minted, and the cookie UUID is the client's only if we issued it and it is still live.
+    /// The new identifiers reach the client via the Set-Cookie (and, for .api, Session-Id) headers
+    /// of the response; in .window mode the response to the sid request must hand the new
+    /// javascript UUID to the page.
+    public func reassociate(reassociationToken: Hitch,
+                            cookieSessionUUID: Hitch?) -> UserSession? {
+        lock.lock()
+        defer {
+            lock.unlock()
+        }
+
+        guard let reassociationToken = Self.validated(reassociationToken),
+              let entry = reassociationTokens.removeValue(forKey: reassociationToken) else { return nil }
+
+        guard let userSession = entry.userSession else { return nil }
+        reassociationTokenBySession.removeValue(forKey: ObjectIdentifier(userSession))
+
+        guard Date().timeIntervalSince1970 <= entry.expiresEpoch,
+              unsafeIsIndexed(userSession) else { return nil }
+
+        let cookieSessionUUID = Self.validated(cookieSessionUUID)
+        let newCookieSessionUUID = unsafeIsLiveCookie(cookieSessionUUID) ? cookieSessionUUID! : UUID().uuidHitch
+
+        //print("REASSOCIATING SESSION: \(userSession.unsafeSessionUUID) -> \(newCookieSessionUUID)")
+
+        userSession.unsafeExpirationCode = 3
+        unsafeUnindex(userSession)
+        userSession.unsafeUpdateSessionUUIDs(newCookieSessionUUID, UUID().uuidHitch)
+        unsafeIndex(userSession)
+
+        return userSession
     }
 
     private func checkExpiredSessions() {
@@ -133,6 +203,15 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
             userSession.unsafeExpirationCode = 1
             unsafeUnindex(userSession)
             ConnectionManager_CloseConnection(session: userSession)
+        }
+
+        // Remove expired reassociation tokens
+        let now = Date().timeIntervalSince1970
+        for (token, entry) in reassociationTokens where entry.expiresEpoch < now || entry.userSession == nil {
+            reassociationTokens.removeValue(forKey: token)
+            if let userSession = entry.userSession {
+                reassociationTokenBySession.removeValue(forKey: ObjectIdentifier(userSession))
+            }
         }
 
         // Remove the sessions with the shorted inactivity timeouts
@@ -147,43 +226,6 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
         }
 
         lock.unlock()
-    }
-
-    /// Expects already-validated identifiers.
-    private func reassociate(cookieSessionUUID: Hitch?,
-                             old oldJavascriptSessionUUID: Hitch?,
-                             new newJavascriptSessionUUID: Hitch?) -> UserSession? {
-        guard let oldJavascriptSessionUUID = oldJavascriptSessionUUID else { return nil }
-
-        // protect callers from trying to reassociation a session which already exists verbatim
-        if let cookieSessionUUID = cookieSessionUUID,
-           let newJavascriptSessionUUID = newJavascriptSessionUUID {
-            let newSessionUUID = Self.combined(cookieSessionUUID, newJavascriptSessionUUID)
-            if let userSession = sessionsByCombinedSessionUUID[newSessionUUID] {
-                return userSession
-            }
-        }
-
-        guard let userSession = sessionsByJavascriptSessionUUID[oldJavascriptSessionUUID],
-              userSession.unsafeReassociationIsAllowed() else { return nil }
-
-        // Keep the client's cookie only if we issued it and it is live; otherwise mint a new one
-        // (it reaches the client through the Set-Cookie on this response).
-        let newCookieSessionUUID = unsafeIsLiveCookie(cookieSessionUUID) ? cookieSessionUUID! : UUID().uuidHitch
-
-        // If the client asked for a different javascript UUID we never adopt its value; we mint one.
-        // Per the reassociation contract (see Connection) the response to the sid request is responsible
-        // for handing the session's current UUIDs back to the client.
-        let finalJavascriptSessionUUID = (newJavascriptSessionUUID == nil || newJavascriptSessionUUID == oldJavascriptSessionUUID) ? oldJavascriptSessionUUID : UUID().uuidHitch
-
-        //print("REASSOCIATING SESSION: \(userSession.unsafeSessionUUID) -> \(newCookieSessionUUID)")
-
-        userSession.unsafeExpirationCode = 3
-        unsafeUnindex(userSession)
-        userSession.unsafeUpdateSessionUUIDs(newCookieSessionUUID, finalJavascriptSessionUUID)
-        unsafeIndex(userSession)
-
-        return userSession
     }
 
     public func get(_ cookieSessionUUID: Hitch?,
@@ -220,14 +262,8 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager {
             return userSession
         }
 
-        // Potential reassociation path: we have a javascript sessionUUID but no matching cookie sessionUUID.
-        // We allow a user's session to be reassociated to a new cookie sessionUUID under limited circumstances
-        if let javascriptSessionUUID = javascriptSessionUUID,
-           let userSession = reassociate(cookieSessionUUID: cookieSessionUUID,
-                                         old: javascriptSessionUUID,
-                                         new: javascriptSessionUUID) {
-            return userSession
-        }
+        // Note: knowing a session's javascript UUID is not enough to move it to a new cookie; that
+        // requires a reassociation token (see reassociate(reassociationToken:cookieSessionUUID:))
 
         // Otherwise, this must be a new incoming session. Its identifiers are minted here; the only
         // client value we keep is a cookie we issued that is still live (another window, same browser).

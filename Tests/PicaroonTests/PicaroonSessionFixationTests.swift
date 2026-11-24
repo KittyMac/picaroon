@@ -65,8 +65,8 @@ final class PicaroonSessionFixationTests: XCTestCase {
         XCTAssertTrue(sessions.get(victimCookie, victimJavascript) === victim)
 
         // and the victim's legitimate reassociation still works
-        victim._beAllowReassociation()
-        XCTAssertTrue(sessions.get(nil, victimJavascript) === victim)
+        guard let token = victim.unsafeAllowReassociation() else { return XCTFail() }
+        XCTAssertTrue(sessions.reassociate(reassociationToken: token, cookieSessionUUID: nil) === victim)
     }
 
     func testSecondWindowReusesLiveCookie() {
@@ -106,50 +106,13 @@ final class PicaroonSessionFixationTests: XCTestCase {
         XCTAssertNotEqual(next.unsafeJavascriptSessionUUID, oldJavascript)
     }
 
-    func testReassociationMintsJavascriptIdInsteadOfAdoptingClientValue() {
-        let sessions = manager(.window)
-        guard let session = sessions.get(nil, nil) else { return XCTFail() }
-        let oldJavascript = session.unsafeJavascriptSessionUUID
-        session._beAllowReassociation()
-
-        let chosenJavascript = attackerUUID()
-        let result = sessions.reassociate(cookieSessionUUID: nil, oldJavascript, chosenJavascript)
-        XCTAssertTrue(result === session)
-        XCTAssertNotEqual(session.unsafeJavascriptSessionUUID, chosenJavascript)
-        XCTAssertNotEqual(session.unsafeJavascriptSessionUUID, oldJavascript)
-        XCTAssertNotNil(UserSessionManager<UserSession>.validated(session.unsafeJavascriptSessionUUID))
-
-        // the chosen value does not lead anywhere, and the old one no longer does either
-        XCTAssertFalse(sessions.get(nil, chosenJavascript) === session)
-        XCTAssertFalse(sessions.get(nil, oldJavascript) === session)
-        XCTAssertTrue(sessions.get(session.unsafeCookieSessionUUID, session.unsafeJavascriptSessionUUID) === session)
-    }
-
-    func testReassociationIsStillOneShot() {
-        let sessions = manager(.window)
-        guard let session = sessions.get(nil, nil) else { return XCTFail() }
-        let javascript = session.unsafeJavascriptSessionUUID
-        session._beAllowReassociation()
-
-        XCTAssertTrue(sessions.reassociate(cookieSessionUUID: nil, javascript, javascript) === session)
-        XCTAssertNil(sessions.reassociate(cookieSessionUUID: nil, javascript, javascript))
-    }
-
-    func testReassociationWithoutPermissionFails() {
-        let sessions = manager(.window)
-        guard let session = sessions.get(nil, nil) else { return XCTFail() }
-        let javascript = session.unsafeJavascriptSessionUUID
-        XCTAssertNil(sessions.reassociate(cookieSessionUUID: attackerUUID(), javascript, attackerUUID()))
-        XCTAssertFalse(sessions.get(attackerUUID(), javascript) === session)
-    }
-
     func testReassociationDoesNotAdoptUnknownCookie() {
         let sessions = manager(.window)
         guard let session = sessions.get(nil, nil) else { return XCTFail() }
-        session._beAllowReassociation()
+        guard let token = session.unsafeAllowReassociation() else { return XCTFail() }
 
         let chosenCookie = attackerUUID()
-        let result = sessions.get(chosenCookie, session.unsafeJavascriptSessionUUID)
+        let result = sessions.reassociate(reassociationToken: token, cookieSessionUUID: chosenCookie)
         XCTAssertTrue(result === session)
         XCTAssertNotEqual(session.unsafeCookieSessionUUID, chosenCookie)
     }

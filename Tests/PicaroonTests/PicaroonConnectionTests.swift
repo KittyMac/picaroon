@@ -169,6 +169,8 @@ final class picaroonConnectionTests: XCTestCase {
     }
     
     func testConnectionReassociation() {
+        // Same browser loses its cookie (third party login round trip) and comes back with the token.
+        // It still sends its stale Session-Id header, which must not matter.
         let expectation = XCTestExpectation(description: "success")
         
         let port = Int.random(in: 8000..<65500)
@@ -178,26 +180,34 @@ final class picaroonConnectionTests: XCTestCase {
         let webview1 = PicaroonTesting.WebView()
         let baseUrl = "http://127.0.0.1:\(port)/"
         
-        // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
         webview1.load(url: baseUrl) { data, response, error in
-            XCTAssertNotNil(data)
             XCTAssertNil(error)
-                            
-            webview1.ajax(payload: #"{"service":"Server_AllowReassociation"}"#) { data, response, error in
-                XCTAssertNotNil(data)
+            let oldJavascriptSessionUUID = webview1.javascriptSessionUUID
+            
+            webview1.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
                 XCTAssertNil(error)
-                
                 let firstActorSessionUUID = webview1.serverActorSessionUUID
-                webview1.clearCookies()
                 
-                webview1.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
-                    XCTAssertNotNil(data)
+                webview1.ajax(payload: #"{"service":"Server_AllowReassociation"}"#) { data, response, error in
                     XCTAssertNil(error)
+                    guard let data = data, let token = String(data: data, encoding: .utf8) else { return XCTFail() }
+                    XCTAssertNotEqual(token, oldJavascriptSessionUUID)
                     
-                    XCTAssertEqual(webserver.numberOfUserSessions(), 1)
-                    XCTAssertEqual(firstActorSessionUUID, webview1.serverActorSessionUUID)
-
-                    expectation.fulfill()
+                    webview1.clearCookies()
+                    
+                    webview1.load(url: baseUrl + "?sid=\(token)") { data, response, error in
+                        XCTAssertNil(error)
+                        // reassociation rotated the javascript session UUID
+                        XCTAssertNotEqual(webview1.javascriptSessionUUID, oldJavascriptSessionUUID)
+                        
+                        // follow up ajax goes to the same url (sid now spent) and must still find the session
+                        webview1.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
+                            XCTAssertNil(error)
+                            XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                            XCTAssertEqual(firstActorSessionUUID, webview1.serverActorSessionUUID)
+                            expectation.fulfill()
+                        }
+                    }
                 }
             }
         }
@@ -215,37 +225,106 @@ final class picaroonConnectionTests: XCTestCase {
         let webview1 = PicaroonTesting.WebView()
         let baseUrl = "http://127.0.0.1:\(port)/"
         
-        // Initial page load will generate a UserSession on thes server and send us back a cookie sessionUUID
         webview1.load(url: baseUrl) { data, response, error in
-            XCTAssertNotNil(data)
             XCTAssertNil(error)
-                        
-            webview1.ajax(payload: #"{"service":"Server_AllowReassociation"}"#) { data, response, error in
-                XCTAssertNotNil(data)
-                XCTAssertNil(error)
+            webview1.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
+                let firstActorSessionUUID = webview1.serverActorSessionUUID
                 
-                let webview2 = PicaroonTesting.WebView()
-                let sid = webview1.javascriptSessionUUID ?? "unknown"
-                webview2.load(url: baseUrl + "?sid=\(sid)") { data, response, error in
-                    print("1: " + (webview2.javascriptSessionUUID ?? "unknown"))
-                    XCTAssertNotNil(data)
+                webview1.ajax(payload: #"{"service":"Server_AllowReassociation"}"#) { data, response, error in
                     XCTAssertNil(error)
-                                        
-                    webview2.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
-                        print("3: " + (webview2.javascriptSessionUUID ?? "unknown"))
-                        XCTAssertNotNil(data)
+                    guard let data = data, let token = String(data: data, encoding: .utf8) else { return XCTFail() }
+                    
+                    let webview2 = PicaroonTesting.WebView()
+                    webview2.load(url: baseUrl + "?sid=\(token)") { data, response, error in
                         XCTAssertNil(error)
+                        XCTAssertNotNil(webview2.javascriptSessionUUID)
                         
-                        XCTAssertEqual(webserver.numberOfUserSessions(), 1)
-                        XCTAssertEqual(webview1.serverActorSessionUUID, webview2.serverActorSessionUUID)
-                        
-                        expectation.fulfill()
+                        webview2.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
+                            XCTAssertNil(error)
+                            XCTAssertEqual(webserver.numberOfUserSessions(), 1)
+                            XCTAssertEqual(firstActorSessionUUID, webview2.serverActorSessionUUID)
+                            expectation.fulfill()
+                        }
                     }
                 }
             }
         }
         
-        wait(for: [expectation], timeout: 2)
+        wait(for: [expectation], timeout: 30)
+    }
+    
+    func testConnectionReassociationRejectsSessionIdInUrl() {
+        // An attacker who knows the victim's javascript session UUID, even while the victim has an
+        // outstanding token, gets their own fresh session.
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        
+        let webserver = PicaroonTesting.WebServer<PicaroonTesting.WebUserSession>(port: port)
+        
+        let victim = PicaroonTesting.WebView()
+        let baseUrl = "http://127.0.0.1:\(port)/"
+        
+        victim.load(url: baseUrl) { data, response, error in
+            victim.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
+                let victimActorSessionUUID = victim.serverActorSessionUUID
+                
+                victim.ajax(payload: #"{"service":"Server_AllowReassociation"}"#) { data, response, error in
+                    let attacker = PicaroonTesting.WebView()
+                    let leaked = victim.javascriptSessionUUID ?? "unknown"
+                    attacker.load(url: baseUrl + "?sid=\(leaked)") { data, response, error in
+                        XCTAssertNotEqual(attacker.javascriptSessionUUID, leaked)
+                        
+                        attacker.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
+                            XCTAssertNotEqual(victimActorSessionUUID, attacker.serverActorSessionUUID)
+                            XCTAssertEqual(webserver.numberOfUserSessions(), 2)
+                            expectation.fulfill()
+                        }
+                    }
+                }
+            }
+        }
+        
+        wait(for: [expectation], timeout: 30)
+    }
+    
+    func testConnectionReassociationTokenIsSingleUse() {
+        let expectation = XCTestExpectation(description: "success")
+        
+        let port = Int.random(in: 8000..<65500)
+        
+        let webserver = PicaroonTesting.WebServer<PicaroonTesting.WebUserSession>(port: port)
+        
+        let webview1 = PicaroonTesting.WebView()
+        let baseUrl = "http://127.0.0.1:\(port)/"
+        
+        webview1.load(url: baseUrl) { data, response, error in
+            webview1.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
+                let firstActorSessionUUID = webview1.serverActorSessionUUID
+                
+                webview1.ajax(payload: #"{"service":"Server_AllowReassociation"}"#) { data, response, error in
+                    guard let data = data, let token = String(data: data, encoding: .utf8) else { return XCTFail() }
+                    
+                    let webview2 = PicaroonTesting.WebView()
+                    webview2.load(url: baseUrl + "?sid=\(token)") { data, response, error in
+                        
+                        // replaying the same url (log, Referer, history) gets nothing
+                        let webview3 = PicaroonTesting.WebView()
+                        webview3.load(url: baseUrl + "?sid=\(token)") { data, response, error in
+                            XCTAssertNil(error)
+                            
+                            webview3.ajax(payload: #"{"service":"Server_GetSettings"}"#) { data, response, error in
+                                XCTAssertNotEqual(firstActorSessionUUID, webview3.serverActorSessionUUID)
+                                XCTAssertEqual(webserver.numberOfUserSessions(), 2)
+                                expectation.fulfill()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        wait(for: [expectation], timeout: 30)
     }
         
     /*

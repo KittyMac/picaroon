@@ -387,44 +387,20 @@ public class Connection: Actor, AnyConnection {
         // Here's how we attempt to link sessions to web clients:
         // 1. Picaroon assigns a HTTP only cookieSessionUUID. These cookies are not accessible from javascript and
         //    provide the main linking of UserSession actor to the web session
-        // 2. The client javascript can choose to send a "Session-Id" in Ajax request JSON.
-        //    This value is used to help transition a user session from one web session to another (because page reloads
-        //    will result in the cookieSessionUUID potentially changing.
-        // 3. The url may have a sessionId embedded as "sid" in the url parameters. This sessionId may or may not
-        //    be the "Session-Id" the javascript is passing in. An "sid" passed in basically means "find the user
-        //    session whose jsavascript session id matches it and set it to session id
-        // 3. Reassociation is only allowed when the client flags the session to expect a reassociation (say, we're
-        //    about to log in using a 3rd party service and that process will lose our http session cookie). This prevents
-        //    malicious individuals from stealing a live session just by knowing the client-side session UUID
+        // 2. The client javascript can choose to send a "Session-Id" http header. Combined with the cookie
+        //    this identifies the session at the window level (see UserSessionPer).
+        // 3. The url may carry a reassociation token as "sid" in the url parameters. A token is issued by
+        //    UserSession.unsafeAllowReassociation() (say, we're about to log in using a 3rd party service and
+        //    that process will lose our http session cookie). It is single use, short lived, and unrelated to
+        //    the session identifiers; redeeming it moves the session to this client and rotates both
+        //    identifiers. Knowing a session's identifiers is never enough to move it.
 
         let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]
-        var javascriptSessionUUID = (httpRequest.sessionId ?? httpRequest.sid)?.hitch()
-        let httpRequestSid = httpRequest.sid?.hitch()
+        let javascriptSessionUUID = httpRequest.sessionId?.hitch()
 
-        if let newJavascriptSessionUUID = javascriptSessionUUID,
-           let oldJavascriptSessionUUID = httpRequestSid,
-           oldJavascriptSessionUUID != newJavascriptSessionUUID {
-            if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
-                                                                oldJavascriptSessionUUID, newJavascriptSessionUUID) {
-                self.unsafeUserSession = userSession
-                
-                if config.debug {
-                    fputs("Connection request handled via new user session\n", stderr)
-                }
-                
-                userSession.beHandleRequest(connection: self,
-                                            httpRequest: httpRequest)
-                return
-            }
-            if config.debug {
-                fputs("Connection failed: failed sessionUUID\n", stderr)
-            }
-            return _beSendInternalError()
-        }
-
-        if let oldJavascriptSessionUUID = httpRequestSid {
-            if let userSession = userSessionManager.reassociate(cookieSessionUUID: cookieSessionUUID,
-                                                                oldJavascriptSessionUUID, oldJavascriptSessionUUID) {
+        if let reassociationToken = httpRequest.sid?.hitch() {
+            if let userSession = userSessionManager.reassociate(reassociationToken: reassociationToken,
+                                                                cookieSessionUUID: cookieSessionUUID) {
                 self.unsafeUserSession = userSession
                 
                 if config.debug {
@@ -435,8 +411,11 @@ public class Connection: Actor, AnyConnection {
                                             httpRequest: httpRequest)
                 return
             }
-
-            javascriptSessionUUID = nil
+            // A used, expired or unknown token (ie the user refreshed the page they were returned to) is
+            // not an error; carry on with the normal lookup. The sid value is never used as a session id.
+            if config.debug {
+                fputs("Connection reassociation token rejected\n", stderr)
+            }
         }
 
         // If no session uuid of any kind was supplied by the client, then this is technically an
