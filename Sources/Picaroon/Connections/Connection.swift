@@ -395,7 +395,7 @@ public class Connection: Actor, AnyConnection {
         //    the session identifiers; redeeming it moves the session to this client and rotates both
         //    identifiers. Knowing a session's identifiers is never enough to move it.
 
-        let cookieSessionUUID = httpRequest.cookies[Picaroon.userSessionCookie]
+        let cookieSessionUUID = httpRequest.cookies[config.sessionCookieName]
         let javascriptSessionUUID = httpRequest.sessionId?.hitch()
 
         if let reassociationToken = httpRequest.sid?.hitch() {

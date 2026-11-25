@@ -14,7 +14,10 @@ private let hitchCacheControlNoCache: Hitch = "Cache-Control: no-cache"
 private let hitchETag: Hitch = "ETag: "
 
 private let hitchSetCookie1: Hitch = "Set-Cookie: "
-private let hitchSetCookie2: Hitch = "; Max-Age=172800; HttpOnly\r\n"
+private let defaultCookieConfig = ServerConfig(address: "0.0.0.0", port: 0)
+private let hitchSetCookiePathMaxAge: Hitch = "; Path=/; Max-Age="
+private let hitchSetCookieHttpOnlySameSite: Hitch = "; HttpOnly; SameSite="
+private let hitchSetCookieSecure: Hitch = "; Secure"
 
 private let hitchSessionId1: Hitch = "Session-Id: "
 
@@ -214,11 +217,21 @@ public class HttpResponse {
         
         if let userSession = userSession {
             
+            // Max-Age tracks the session activity timeout; it is renewed on every session response, so
+            // the cookie never outlives activity by more than the session itself does.
+            let cookieConfig = config ?? defaultCookieConfig
             combined.append(hitchSetCookie1)
-            combined.append(Picaroon.userSessionCookie)
+            combined.append(cookieConfig.sessionCookieName)
             combined.append(.equal)
             combined.append(userSession.unsafeCookieSessionUUID)
-            combined.append(hitchSetCookie2)
+            combined.append(hitchSetCookiePathMaxAge)
+            combined.append(number: max(1, Int(cookieConfig.sessionActivityTimeout)))
+            combined.append(hitchSetCookieHttpOnlySameSite)
+            combined.append(cookieConfig.cookieSameSite.rawValue)
+            if cookieConfig.cookieSecure {
+                combined.append(hitchSetCookieSecure)
+            }
+            combined.append(hitchNewLine)
             
             for header in userSession.unsafeSessionHeaders {
                 combined.append(header)

@@ -30,6 +30,17 @@ public enum UserSessionPer: Int, Codable {
     case api = 2
 }
 
+/// SameSite attribute for the session cookie. (None is deliberately not offered; nothing in Picaroon's
+/// session model needs the session cookie on cross-site subrequests.)
+public enum CookieSameSite: String, Codable {
+    /// Sent on same-site requests and on top-level cross-site GET navigations (ie returning from a
+    /// third party login), withheld from cross-site POSTs and subresources. Recommended.
+    case lax = "Lax"
+    /// Never sent cross-site, including the redirect back from a third party login; such returns
+    /// must then always go through a reassociation token.
+    case strict = "Strict"
+}
+
 public struct ServerConfig: Codable {
     public let address: Hitch
     public let port: Int
@@ -46,7 +57,23 @@ public struct ServerConfig: Codable {
     public let sessionActivityTimeout: TimeInterval
     public let maximumSessions: Int
     
+    /// When true (the default) the session cookie is sent with Secure and the __Host- name prefix, which
+    /// stops it being set or overwritten over plain http or from a sibling subdomain. Requires the browser
+    /// to reach you over https (TLS terminated here or at a proxy). Set false only for plain http
+    /// development; browsers will otherwise silently drop the cookie and every request gets a new session.
+    public let cookieSecure: Bool
+    public let cookieSameSite: CookieSameSite
+    
     public let debug: Bool
+
+    /// The name the session cookie is sent and read under.
+    public var sessionCookieName: Hitch {
+        guard cookieSecure else { return Picaroon.userSessionCookie }
+        let name = Hitch(capacity: 7 + Picaroon.userSessionCookie.count)
+        name.append(hitchHostCookiePrefix)
+        name.append(Picaroon.userSessionCookie)
+        return name
+    }
 
     public init(address: String,
                 port: Int,
@@ -58,6 +85,8 @@ public struct ServerConfig: Codable {
                 serverTimeout: TimeInterval = 30.0,
                 maxRequestInBytes: Int = 1024 * 1024 * 8,
                 connectionMaxBackoff: Double = 0.5,
+                cookieSecure: Bool = true,
+                cookieSameSite: CookieSameSite = .lax,
                 debug: Bool = false) {
         self.address = Hitch(string: address)
         self.port = port
@@ -68,6 +97,8 @@ public struct ServerConfig: Codable {
         self.serverTimeout = serverTimeout
         self.maxRequestInBytes = maxRequestInBytes
         self.connectionMaxBackoff = connectionMaxBackoff
+        self.cookieSecure = cookieSecure
+        self.cookieSameSite = cookieSameSite
         self.debug = debug
         self.basePath = Hitch(string: basePath)
         
@@ -75,7 +106,32 @@ public struct ServerConfig: Codable {
             self.basePath.count = self.basePath.count - 1
         }
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case address, port, basePath, clientTimeout, serverTimeout, maxRequestInBytes, connectionMaxBackoff
+        case sessionPer, sessionActivityTimeout, maximumSessions, cookieSecure, cookieSameSite, debug
+    }
+
+    // Explicit so that configs serialized before the cookie settings existed still decode (to the defaults)
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        address = try container.decode(Hitch.self, forKey: .address)
+        port = try container.decode(Int.self, forKey: .port)
+        basePath = try container.decode(Hitch.self, forKey: .basePath)
+        clientTimeout = try container.decode(TimeInterval.self, forKey: .clientTimeout)
+        serverTimeout = try container.decode(TimeInterval.self, forKey: .serverTimeout)
+        maxRequestInBytes = try container.decode(Int.self, forKey: .maxRequestInBytes)
+        connectionMaxBackoff = try container.decode(Double.self, forKey: .connectionMaxBackoff)
+        sessionPer = try container.decode(UserSessionPer.self, forKey: .sessionPer)
+        sessionActivityTimeout = try container.decode(TimeInterval.self, forKey: .sessionActivityTimeout)
+        maximumSessions = try container.decode(Int.self, forKey: .maximumSessions)
+        cookieSecure = try container.decodeIfPresent(Bool.self, forKey: .cookieSecure) ?? true
+        cookieSameSite = try container.decodeIfPresent(CookieSameSite.self, forKey: .cookieSameSite) ?? .lax
+        debug = try container.decode(Bool.self, forKey: .debug)
+    }
 }
+
+private let hitchHostCookiePrefix: Hitch = "__Host-"
 
 public class Server<T: UserSession> {
     // A server which listens on an address and a port

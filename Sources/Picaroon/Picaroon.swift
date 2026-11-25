@@ -33,5 +33,7 @@ extension String {
 }
 
 public enum Picaroon {
+    /// Base name of the session cookie; when ServerConfig.cookieSecure is true it is sent as "__Host-" + this name.
+    /// Random per process: sessions live in memory, so a restart ends them all anyway.
     public static var userSessionCookie: Hitch = UUID().uuidHitch
 }
