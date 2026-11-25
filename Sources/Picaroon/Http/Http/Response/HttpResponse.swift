@@ -238,11 +238,13 @@ public class HttpResponse {
                 combined.append(hitchNewLine)
             }
             
-            if config?.sessionPer == .api {
-                combined.append(hitchSessionId1)
-                combined.append(userSession.unsafeJavascriptSessionUUID)
-                combined.append(hitchNewLine)
-            }
+            // Always tell the client which javascript session UUID handled it. For fetch/XHR (which always
+            // carry the stored Session-Id) a different value here means the client's session no longer
+            // exists (expired, ended, server restarted) and the client should adopt this one and reload.
+            // Navigation responses also carry it, but page script cannot read those headers.
+            combined.append(hitchSessionId1)
+            combined.append(userSession.unsafeJavascriptSessionUUID)
+            combined.append(hitchNewLine)
         }
         if let encoding = encoding {
             combined.append(hitchContentEncoding)

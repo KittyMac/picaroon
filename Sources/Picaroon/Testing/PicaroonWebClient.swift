@@ -17,6 +17,10 @@ public extension PicaroonTesting {
         public var javascriptSessionUUID: String? = nil
         public var serverActorSessionUUID: String?
         
+        // Set when an ajax response reported a different Session-Id than the one we sent, meaning our
+        // session no longer exists on the server. A real page should adopt the new value and reload.
+        public var sessionWasReplaced = false
+        
         var cookies = [String:String]()
         
         var lastUrl: String?
@@ -25,7 +29,7 @@ public extension PicaroonTesting {
             
         }
             
-        private func handleResponse(data: Data?, httpResponse: HTTPURLResponse?, error: String?) {
+        private func handleResponse(data: Data?, httpResponse: HTTPURLResponse?, error: String?, isAjax: Bool) {
             guard let data = data else { fatalError() }
             guard let actorSessionUUID = String(data: data, encoding: .utf8) else { fatalError() }
             
@@ -46,12 +50,21 @@ public extension PicaroonTesting {
                     guard let cookieValue: Substring = cookieParts[if: 1] else { continue }
                     cookies[String(cookieKey)] = String(cookieValue)
                 }
+                
+                // page script can only see response headers of fetch/XHR, never of its own navigation
+                if isAjax,
+                   key.lowercased() == "session-id",
+                   value != javascriptSessionUUID {
+                    javascriptSessionUUID = value
+                    sessionWasReplaced = true
+                }
             }
         }
         
-        private func handleHeaders() -> [String: String] {
+        private func handleHeaders(isAjax: Bool) -> [String: String] {
             var headers: [String: String] = [:]
-            if let javascriptSessionUUID = javascriptSessionUUID {
+            // browsers cannot attach custom headers to a navigation, only to fetch/XHR
+            if isAjax, let javascriptSessionUUID = javascriptSessionUUID {
                 headers["Session-Id"] = javascriptSessionUUID
             }
             if cookies.count > 0 {
@@ -68,7 +81,7 @@ public extension PicaroonTesting {
                 session.beRequest(url: url,
                                   httpMethod: "GET",
                                   params: [:],
-                                  headers: self.handleHeaders(),
+                                  headers: self.handleHeaders(isAjax: false),
                                   cookies: nil,
                                   timeoutRetry: nil,
                                   proxy: nil,
@@ -79,12 +92,15 @@ public extension PicaroonTesting {
                        let content = String(data: data, encoding: .utf8) {
                         print(content)
                         if content.contains("Session-Id")  {
+                            // "execute" the bootstrap: a conditional one only fills an empty slot
                             let sessionUUID = content.suffix(39).prefix(36)
-                            self.javascriptSessionUUID = String(sessionUUID)
+                            if self.javascriptSessionUUID == nil || content.contains("getItem") == false {
+                                self.javascriptSessionUUID = String(sessionUUID)
+                            }
                         }
                     }
                     
-                    self.handleResponse(data: data, httpResponse: httpResponse, error: error)
+                    self.handleResponse(data: data, httpResponse: httpResponse, error: error, isAjax: false)
                     if let callback = callback {
                         callback(data, httpResponse, error)
                     }
@@ -105,13 +121,13 @@ public extension PicaroonTesting {
                 session.beRequest(url: lastUrl,
                                   httpMethod: "POST",
                                   params: [:],
-                                  headers: self.handleHeaders(),
+                                  headers: self.handleHeaders(isAjax: true),
                                   cookies: nil,
                                   timeoutRetry: nil,
                                   proxy: nil,
                                   body: payload.data(using: .utf8),
                                   self.client) { data, httpResponse, error in
-                    self.handleResponse(data: data, httpResponse: httpResponse, error: error)
+                    self.handleResponse(data: data, httpResponse: httpResponse, error: error, isAjax: true)
                     if let callback = callback {
                         callback(data, httpResponse, error)
                     }

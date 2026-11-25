@@ -41,12 +41,21 @@ extension PicaroonTesting {
                 return
             }
 
-            // page load (including a return with ?sid=<token>): bootstrap the page with the session's
-            // current javascript UUID, which reassociation will have rotated
+            // page load. A navigation cannot carry the Session-Id header, so in .window mode this request
+            // is handled by a throwaway session; the tab's real identity is whatever it already holds in
+            // session storage, so only fill an empty slot. A return with ?sid=<token> is different: the
+            // reassociation rotated the identifiers, so the page must overwrite (and should then strip sid
+            // from its url with history.replaceState, so a refresh does not repeat this).
             if httpRequest.method == .GET {
-                connection.beSend(httpResponse:
-                                    HttpResponse(javascript: "sessionStorage.setItem('Session-Id', '{0}');" << [unsafeJavascriptSessionUUID])
-                )
+                if httpRequest.sid != nil {
+                    connection.beSend(httpResponse:
+                                        HttpResponse(javascript: "sessionStorage.setItem('Session-Id', '{0}');" << [unsafeJavascriptSessionUUID])
+                    )
+                } else {
+                    connection.beSend(httpResponse:
+                                        HttpResponse(javascript: "if (!sessionStorage.getItem('Session-Id')) sessionStorage.setItem('Session-Id', '{0}');" << [unsafeJavascriptSessionUUID])
+                    )
+                }
                 return
             }
 
