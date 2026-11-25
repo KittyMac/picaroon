@@ -806,15 +806,9 @@ public class HttpRequest {
         }
         
         if flynnTag == nil,
-            size >= 9,
-            keyEnd[-9] == .f || keyEnd[-9] == .F,
-            //keyEnd[-8] == .l || keyEnd[-8] == .L,
-            keyEnd[-7] == .y || keyEnd[-7] == .Y,
-            //keyEnd[-6] == .n || keyEnd[-6] == .N,
-            keyEnd[-5] == .n || keyEnd[-5] == .N,
-            //keyEnd[-4] == .minus,
+            size >= 3,
             keyEnd[-3] == .t || keyEnd[-3] == .T,
-            //keyEnd[-2] == .a || keyEnd[-2] == .A,
+            keyEnd[-2] == .a || keyEnd[-2] == .A,
             keyEnd[-1] == .g || keyEnd[-1] == .G {
             flynnTag = HalfHitch(sourceObject: nil,
                                  raw: buffer,
