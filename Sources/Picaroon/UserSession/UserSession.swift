@@ -127,6 +127,25 @@ open class UserSession: Actor {
         return unsafeReassociationIssuer?.issueReassociationToken(for: self, timeout: timeout)
     }
 
+    /// Issue a token which lets a navigation (a file download, a link, an iframe) reach this session.
+    /// Navigations cannot carry the Session-Id header, so in .window mode the cookie alone would land in a
+    /// fresh session; put the token in the url as `sid` instead (ie /download/report.pdf?sid=<token>).
+    ///
+    /// The token only works together with this session's own cookie, so a leaked url is useless from any
+    /// other browser. It never moves the session or rotates its identifiers. It expires after `timeout`
+    /// seconds; by default it may be used repeatedly until then (browsers sometimes re-request downloads),
+    /// or exactly once with `singleUse`. Issue tokens when they are needed (ie on click) rather than
+    /// rendering them into pages ahead of time. Returns nil if this session is no longer live.
+    ///
+    /// Call this from within the session; from elsewhere use beIssueAccessToken(timeout:singleUse:sender) { token in ... }.
+    public func unsafeIssueAccessToken(timeout: TimeInterval = 60, singleUse: Bool = false) -> Hitch? {
+        return unsafeReassociationIssuer?.issueAccessToken(for: self, timeout: timeout, singleUse: singleUse)
+    }
+
+    internal func _beIssueAccessToken(timeout: TimeInterval, singleUse: Bool) -> Hitch? {
+        return unsafeIssueAccessToken(timeout: timeout, singleUse: singleUse)
+    }
+
     internal func _beAllowReassociation() -> Hitch? {
         return unsafeAllowReassociation()
     }

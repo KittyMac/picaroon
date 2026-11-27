@@ -41,6 +41,26 @@ extension PicaroonTesting {
                 return
             }
 
+            // ajax: issue an access token so the page can navigate to a download
+            if let content = httpRequest.content,
+               content.contains("Server_IssueAccessToken") {
+                let singleUse = content.contains("singleUse")
+                guard let token = unsafeIssueAccessToken(singleUse: singleUse) else {
+                    connection.beSendInternalError()
+                    return
+                }
+                connection.beSend(httpResponse: HttpResponse(text: token))
+                return
+            }
+
+            // navigation to a "download": report which server side actor served it
+            if httpRequest.method == .GET,
+               let url = httpRequest.url,
+               url.starts(with: "/download") {
+                connection.beSend(httpResponse: HttpResponse(text: HalfHitch(string: unsafeUUID)))
+                return
+            }
+
             // page load. A navigation cannot carry the Session-Id header, so in .window mode this request
             // is handled by a throwaway session; the tab's real identity is whatever it already holds in
             // session storage, so only fill an empty slot. A return with ?sid=<token> is different: the

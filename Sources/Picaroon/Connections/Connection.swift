@@ -389,7 +389,9 @@ public class Connection: Actor, AnyConnection {
         //    provide the main linking of UserSession actor to the web session
         // 2. The client javascript can choose to send a "Session-Id" http header. Combined with the cookie
         //    this identifies the session at the window level (see UserSessionPer).
-        // 3. The url may carry a reassociation token as "sid" in the url parameters. A token is issued by
+        // 3. The url may carry a token as "sid" in the url parameters: either an access token (lets a navigation
+        //    such as a file download reach its session, see UserSession.unsafeIssueAccessToken) or a
+        //    reassociation token. A reassociation token is issued by
         //    UserSession.unsafeAllowReassociation() (say, we're about to log in using a 3rd party service and
         //    that process will lose our http session cookie). It is single use, short lived, and unrelated to
         //    the session identifiers; redeeming it moves the session to this client and rotates both
@@ -398,8 +400,8 @@ public class Connection: Actor, AnyConnection {
         let cookieSessionUUID = httpRequest.cookies[config.sessionCookieName]
         let javascriptSessionUUID = httpRequest.sessionId?.hitch()
 
-        if let reassociationToken = httpRequest.sid?.hitch() {
-            if let userSession = userSessionManager.reassociate(reassociationToken: reassociationToken,
+        if let sidToken = httpRequest.sid?.hitch() {
+            if let userSession = userSessionManager.reassociate(reassociationToken: sidToken,
                                                                 cookieSessionUUID: cookieSessionUUID) {
                 self.unsafeUserSession = userSession
                 
@@ -411,10 +413,25 @@ public class Connection: Actor, AnyConnection {
                                             httpRequest: httpRequest)
                 return
             }
+            // An access token (see UserSession.unsafeIssueAccessToken) routes a navigation, such as a file
+            // download, to the session which issued it, provided this request carries that session's cookie.
+            if let userSession = userSessionManager.access(accessToken: sidToken,
+                                                           cookieSessionUUID: cookieSessionUUID) {
+                self.unsafeUserSession = userSession
+                
+                if config.debug {
+                    fputs("Connection request handled via access token\n", stderr)
+                }
+                
+                userSession.beHandleRequest(connection: self,
+                                            httpRequest: httpRequest)
+                return
+            }
+            
             // A used, expired or unknown token (ie the user refreshed the page they were returned to) is
             // not an error; carry on with the normal lookup. The sid value is never used as a session id.
             if config.debug {
-                fputs("Connection reassociation token rejected\n", stderr)
+                fputs("Connection sid token rejected\n", stderr)
             }
         }
 

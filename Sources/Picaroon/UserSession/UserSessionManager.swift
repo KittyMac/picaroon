@@ -7,12 +7,15 @@ public typealias GetUserSessionCallback = (UserSession?) -> Void
 public protocol AnyUserSessionManager {
     func reassociate(reassociationToken: Hitch,
                      cookieSessionUUID: Hitch?) -> UserSession?
+    func access(accessToken: Hitch,
+                cookieSessionUUID: Hitch?) -> UserSession?
     func get(_ cookieSessionUUID: Hitch?, _ javascriptSessionUUID: Hitch?) -> UserSession?
     func end(_ userSession: UserSession)
 }
 
 internal protocol ReassociationTokenIssuer: AnyObject {
     func issueReassociationToken(for userSession: UserSession, timeout: TimeInterval) -> Hitch?
+    func issueAccessToken(for userSession: UserSession, timeout: TimeInterval, singleUse: Bool) -> Hitch?
 }
 
 /// Session identifiers are always minted by the server. Identifiers supplied by the client
@@ -41,6 +44,18 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager, Reassoci
     }
     private var reassociationTokens: [Hitch: ReassociationToken] = [:]
     private var reassociationTokenBySession: [ObjectIdentifier: Hitch] = [:]
+
+    // Access tokens let a navigation (file download, link, iframe), which cannot carry the Session-Id
+    // header, reach the session that issued it. Kept apart from reassociation tokens so neither kind can
+    // ever be redeemed as the other.
+    private struct AccessToken {
+        weak var userSession: UserSession?
+        let expiresEpoch: TimeInterval
+        let singleUse: Bool
+    }
+    private var accessTokens: [Hitch: AccessToken] = [:]
+    private var accessTokensBySession: [ObjectIdentifier: [Hitch]] = [:]
+    static var maximumAccessTokensPerSession: Int { return 64 }
 
     private var lock = NSLock()
 
@@ -100,6 +115,7 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager, Reassoci
     /// session can never drop another session's entry that happens to share a key.
     private func unsafeUnindex(_ userSession: UserSession) {
         unsafeRevokeReassociationToken(for: userSession)
+        unsafeRevokeAccessTokens(for: userSession)
 
         let sessionUUID = userSession.unsafeSessionUUID
         if sessionsByCombinedSessionUUID[sessionUUID] === userSession {
@@ -195,6 +211,81 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager, Reassoci
         return userSession
     }
 
+    // MARK: - Access tokens
+
+    private func unsafeRevokeAccessTokens(for userSession: UserSession) {
+        if let tokens = accessTokensBySession.removeValue(forKey: ObjectIdentifier(userSession)) {
+            for token in tokens {
+                accessTokens.removeValue(forKey: token)
+            }
+        }
+    }
+
+    private func unsafeRemoveAccessToken(_ token: Hitch, _ userSession: UserSession?) {
+        accessTokens.removeValue(forKey: token)
+        guard let userSession = userSession else { return }
+        let key = ObjectIdentifier(userSession)
+        if var tokens = accessTokensBySession[key] {
+            tokens.removeAll { $0 == token }
+            accessTokensBySession[key] = tokens.isEmpty ? nil : tokens
+        }
+    }
+
+    func issueAccessToken(for userSession: UserSession, timeout: TimeInterval, singleUse: Bool) -> Hitch? {
+        lock.lock()
+        defer {
+            lock.unlock()
+        }
+
+        guard unsafeIsIndexed(userSession) else { return nil }
+
+        let key = ObjectIdentifier(userSession)
+        var tokens = accessTokensBySession[key] ?? []
+
+        // bound the memory any one session can pin; the oldest outstanding token goes first
+        while tokens.count >= Self.maximumAccessTokensPerSession {
+            accessTokens.removeValue(forKey: tokens.removeFirst())
+        }
+
+        let token = UUID().uuidHitch
+        accessTokens[token] = AccessToken(userSession: userSession,
+                                          expiresEpoch: Date().timeIntervalSince1970 + max(0, timeout),
+                                          singleUse: singleUse)
+        tokens.append(token)
+        accessTokensBySession[key] = tokens
+        return token
+    }
+
+    /// Routes a request carrying an access token to the session which issued it. Unlike reassociation the
+    /// session is not moved and its identifiers are not rotated, and the request must carry that session's
+    /// own cookie: a leaked url is useless from any other browser. A failed attempt (wrong or missing
+    /// cookie) does not consume the token; a successful one does only if it was issued single use.
+    public func access(accessToken: Hitch,
+                       cookieSessionUUID: Hitch?) -> UserSession? {
+        lock.lock()
+        defer {
+            lock.unlock()
+        }
+
+        guard let accessToken = Self.validated(accessToken),
+              let entry = accessTokens[accessToken] else { return nil }
+
+        guard let userSession = entry.userSession,
+              Date().timeIntervalSince1970 <= entry.expiresEpoch,
+              unsafeIsIndexed(userSession) else {
+            unsafeRemoveAccessToken(accessToken, entry.userSession)
+            return nil
+        }
+
+        guard let cookieSessionUUID = Self.validated(cookieSessionUUID),
+              cookieSessionUUID == userSession.unsafeCookieSessionUUID else { return nil }
+
+        if entry.singleUse {
+            unsafeRemoveAccessToken(accessToken, userSession)
+        }
+        return userSession
+    }
+
     private func checkExpiredSessions() {
         lock.lock()
 
@@ -212,6 +303,11 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager, Reassoci
             if let userSession = entry.userSession {
                 reassociationTokenBySession.removeValue(forKey: ObjectIdentifier(userSession))
             }
+        }
+
+        // Remove expired access tokens
+        for (token, entry) in accessTokens where entry.expiresEpoch < now || entry.userSession == nil {
+            unsafeRemoveAccessToken(token, entry.userSession)
         }
 
         // Remove the sessions with the shorted inactivity timeouts
