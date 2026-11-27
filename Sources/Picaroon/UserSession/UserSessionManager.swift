@@ -16,6 +16,7 @@ public protocol AnyUserSessionManager {
 internal protocol ReassociationTokenIssuer: AnyObject {
     func issueReassociationToken(for userSession: UserSession, timeout: TimeInterval) -> Hitch?
     func issueAccessToken(for userSession: UserSession, timeout: TimeInterval, singleUse: Bool) -> Hitch?
+    func cookieLifetime(for userSession: UserSession) -> TimeInterval
 }
 
 /// Session identifiers are always minted by the server. Identifiers supplied by the client
@@ -209,6 +210,28 @@ public class UserSessionManager<T: UserSession>: AnyUserSessionManager, Reassoci
         unsafeIndex(userSession)
 
         return userSession
+    }
+
+    // MARK: - Cookie lifetime
+
+    /// How long the browser should keep this session's cookie (its Max-Age). The cookie is shared by every
+    /// session using it (in .window mode: every tab, plus the throwaway session each page load creates),
+    /// so it must outlive the longest-lived of them, not just the one sending this response. Otherwise a
+    /// default 1 hour session's response would cut short a tab whose session was extended (ie to 24 hours
+    /// after login). Every session response renews it, so it never expires before an active session does.
+    func cookieLifetime(for userSession: UserSession) -> TimeInterval {
+        lock.lock()
+        defer {
+            lock.unlock()
+        }
+
+        var lifetime = userSession.unsafeSessionActivityTimeout()
+        if let sharing = sessionsByCookieSessionUUID[userSession.unsafeCookieSessionUUID] {
+            for other in sharing {
+                lifetime = max(lifetime, other.unsafeSessionActivityTimeout())
+            }
+        }
+        return lifetime
     }
 
     // MARK: - Access tokens

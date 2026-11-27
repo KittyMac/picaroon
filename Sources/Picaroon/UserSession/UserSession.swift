@@ -57,6 +57,10 @@ open class UserSession: Actor {
         return Date().timeIntervalSince1970 > (lastActivityEpoch + safeSessionActivityTimeout)
     }
     
+    func unsafeSessionActivityTimeout() -> TimeInterval {
+        return safeSessionActivityTimeout
+    }
+    
     func unsafeActivityTimeoutEpoch() -> TimeInterval {
         return lastActivityEpoch + safeSessionActivityTimeout
     }

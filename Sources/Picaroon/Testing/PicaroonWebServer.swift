@@ -41,6 +41,14 @@ extension PicaroonTesting {
                 return
             }
 
+            // ajax: "log in", extending this session the way an application might
+            if let content = httpRequest.content,
+               content.contains("Server_Login") {
+                safeSessionActivityTimeout = 60 * 60 * 24
+                connection.beSend(httpResponse: HttpResponse(text: HalfHitch(string: unsafeUUID)))
+                return
+            }
+
             // ajax: issue an access token so the page can navigate to a download
             if let content = httpRequest.content,
                content.contains("Server_IssueAccessToken") {

@@ -217,15 +217,17 @@ public class HttpResponse {
         
         if let userSession = userSession {
             
-            // Max-Age tracks the session activity timeout; it is renewed on every session response, so
-            // the cookie never outlives activity by more than the session itself does.
+            // Max-Age follows the session activity timeout of the longest-lived session sharing this cookie
+            // (sessions may change their own safeSessionActivityTimeout, ie after login). It is renewed on
+            // every session response, so the cookie never expires before an active session does.
             let cookieConfig = config ?? defaultCookieConfig
+            let cookieLifetime = userSession.unsafeReassociationIssuer?.cookieLifetime(for: userSession) ?? userSession.unsafeSessionActivityTimeout()
             combined.append(hitchSetCookie1)
             combined.append(cookieConfig.sessionCookieName)
             combined.append(.equal)
             combined.append(userSession.unsafeCookieSessionUUID)
             combined.append(hitchSetCookiePathMaxAge)
-            combined.append(number: max(1, Int(cookieConfig.sessionActivityTimeout)))
+            combined.append(number: max(1, Int(cookieLifetime)))
             combined.append(hitchSetCookieHttpOnlySameSite)
             combined.append(cookieConfig.cookieSameSite.rawValue)
             if cookieConfig.cookieSecure {
