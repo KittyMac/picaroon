@@ -303,7 +303,7 @@ public class HttpResponse {
             
             if (type != .none) {
                 combined.append(hitchContentType)
-                combined.append(HttpContentType.txt.rawValue)
+                combined.append(type.hitch)
                 combined.append(hitchNewLine)
             }
             
