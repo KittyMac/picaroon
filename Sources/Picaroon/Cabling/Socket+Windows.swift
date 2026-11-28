@@ -38,6 +38,9 @@ public class Socket {
 
     /// Error from the most recent failed accept(); only meaningful right after accept() returns nil.
     public private(set) var lastAcceptError: Int32 = 0
+
+    /// See the POSIX Socket. Not yet honoured on Windows.
+    public var closeOnSendTimeout = false
         
     public init?(socketFd: Int32,
                  blocking: Bool = true) {
@@ -168,6 +171,28 @@ public class Socket {
         return cptr - startPtr
     }
     
+    /// Enables SO_KEEPALIVE with the system default timings (per socket tuning is not implemented
+    /// on Windows).
+    @discardableResult
+    public func setKeepAlive(idleSeconds: Int32,
+                             intervalSeconds: Int32,
+                             count: Int32) -> Bool {
+        guard socketFd >= 0 else { return false }
+        var one: Int32 = 1
+        return setsockopt(SOCKET(socketFd), SOL_SOCKET, SO_KEEPALIVE, &one, Int32(MemoryLayout<Int32>.size)) == 0
+    }
+
+    /// Checks each socket in turn and, if none is readable, sleeps for the timeout (WSAPoll would
+    /// be the single call equivalent of the POSIX version).
+    public static func pollReadable(_ sockets: [Socket],
+                                    timeoutMilliseconds timeout: Int32) -> [Bool] {
+        let result = sockets.map { $0.poll() > 0 }
+        if result.contains(true) == false && timeout > 0 {
+            Flynn.usleep(UInt64(timeout) * 1000)
+        }
+        return result
+    }
+
     @discardableResult
     public func poll() -> Int {
         guard socketFd >= 0 else { return -1 }

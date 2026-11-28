@@ -36,6 +36,19 @@ private let posix_accept = Android.accept
 #error("Unknown platform")
 #endif
 
+// TCP keepalive tuning options. These are not reliably exported by the Swift overlays, so the
+// values from <netinet/tcp.h> are spelled out here.
+private let tcpProtocol: Int32 = 6 // IPPROTO_TCP
+#if canImport(Darwin)
+private let tcpKeepIdle: Int32 = 0x10    // TCP_KEEPALIVE
+private let tcpKeepInterval: Int32 = 0x101 // TCP_KEEPINTVL
+private let tcpKeepCount: Int32 = 0x102    // TCP_KEEPCNT
+#else
+private let tcpKeepIdle: Int32 = 4     // TCP_KEEPIDLE
+private let tcpKeepInterval: Int32 = 5 // TCP_KEEPINTVL
+private let tcpKeepCount: Int32 = 6    // TCP_KEEPCNT
+#endif
+
 
 
 public class Socket {
@@ -49,6 +62,13 @@ public class Socket {
 
     /// errno from the most recent failed accept(); only meaningful right after accept() returns nil.
     public private(set) var lastAcceptError: Int32 = 0
+
+    /// When true, a send() that runs into the write timeout (see setWriteTimeout) closes the socket
+    /// and reports failure, rather than returning a short count for the caller to retry later. Server
+    /// connections want this: a peer which has stopped reading should be dropped, not waited on.
+    /// Clients which retry partial writes on their own schedule (WebSocketClient) leave it off.
+    /// Set it before the socket is shared with other threads.
+    public var closeOnSendTimeout = false
 
     public init?(socketFd: Int32,
                  blocking: Bool = true) {
@@ -217,6 +237,44 @@ public class Socket {
         return true
     }
     
+    /// Enables TCP keepalive so that a peer which vanished without closing (power loss, NAT state
+    /// dropped) is detected and the socket errors out, instead of being held open indefinitely.
+    @discardableResult
+    public func setKeepAlive(idleSeconds: Int32,
+                             intervalSeconds: Int32,
+                             count: Int32) -> Bool {
+        guard let fd = acquireFd() else { return false }
+        defer { releaseFd() }
+
+        let size = socklen_t(MemoryLayout<Int32>.size)
+        var one: Int32 = 1
+        var idle = idleSeconds
+        var interval = intervalSeconds
+        var probes = count
+
+        guard setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &one, size) == 0 else { return false }
+        // Tuning is best effort; keepalive with the system defaults is still better than none.
+        _ = setsockopt(fd, tcpProtocol, tcpKeepIdle, &idle, size)
+        _ = setsockopt(fd, tcpProtocol, tcpKeepInterval, &interval, size)
+        _ = setsockopt(fd, tcpProtocol, tcpKeepCount, &probes, size)
+        return true
+    }
+
+    /// Polls many sockets for readability with a single poll() call, waiting up to `timeout`
+    /// milliseconds for any of them. Returns, per socket, whether it is readable or in an error or
+    /// hangup state. Closed sockets are skipped (reported false).
+    public static func pollReadable(_ sockets: [Socket],
+                                    timeoutMilliseconds timeout: Int32) -> [Bool] {
+        var fds = sockets.map { pollfd(fd: $0.fd(), events: Int16(POLLIN), revents: 0) }
+        let result = fds.withUnsafeMutableBufferPointer { ptr in
+            posix_poll(ptr.baseAddress, nfds_t(ptr.count), timeout)
+        }
+        guard result > 0 else {
+            return [Bool](repeating: false, count: sockets.count)
+        }
+        return fds.map { $0.fd >= 0 && $0.revents != 0 }
+    }
+
     public func close() {
         guard closing.exchange(true) == false else { return }
 
@@ -331,6 +389,10 @@ public class Socket {
             
             if (bytesWritten < 0) {
                 if errno == EWOULDBLOCK || errno == EAGAIN {
+                    if closeOnSendTimeout {
+                        self.close()
+                        return -1
+                    }
                     return cptr - startPtr
                 }
                 self.close()

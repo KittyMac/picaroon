@@ -30,24 +30,13 @@ public class Connection: Actor, AnyConnection {
     private class WatchSocket {
         let connection: Connection
         let socket: Socket
+        // Only touched by the watch thread
         var date: Date
         
         init(connection: Connection, socket: Socket, date: Date) {
             self.connection = connection
             self.socket = socket
             self.date = date
-        }
-        
-        func shouldRead() -> Bool {
-            guard connection.unsafeMessagesCount < 2 else { return false }
-            // Wake the connection when it has data, and also periodically when it does not, so that
-            // it gets a chance to enforce its client and server timeouts on idle sockets.
-            if socket.poll() > 0 ||
-                abs(date.timeIntervalSinceNow) > Connection.timeoutCheckInterval {
-                date = Date()
-                return true
-            }
-            return false
         }
     }
     
@@ -79,29 +68,47 @@ public class Connection: Actor, AnyConnection {
             Flynn.threadSetName("Picaroon.Connection")
             while true {
                 autoreleasepool {
+                    // Take a snapshot under the lock and do the slow work (polling, dispatching,
+                    // closing) outside it, so new connections from accept() never wait behind a
+                    // pass over every open socket.
                     watchLock.lock()
-                    
-                    var shouldSleep = true
-                    watchSockets = watchSockets.filter({ watchSocket in
-                        // if the socket is in error or is ready to read data
-                        if watchSocket.shouldRead() {
-                            watchSocket.connection.beCheckForMoreData()
-                            shouldSleep = false
-                        }
-                        // if the socket has closed, drop our strong reference to the
-                        // connection AND remove it from the ConnectionManager's active
-                        // table. Both retainers must release or the connection (and its
-                        // multi-megabyte buffer + file descriptor) leaks.
-                        if watchSocket.socket.isClosed() {
-                            ConnectionManager_CloseConnection(connection: watchSocket.connection)
-                            return false
-                        }
-                        return true
-                    })
+                    let snapshot = watchSockets
                     watchLock.unlock()
                     
-                    if shouldSleep {
-                        Flynn.usleep(50_000)
+                    // Connections which already have work queued sit this pass out. Their data is
+                    // still there next pass, and leaving them in the poll set would make poll()
+                    // return immediately and spin this thread.
+                    let candidates = snapshot.filter { $0.connection.unsafeMessagesCount < 2 }
+                    
+                    // One poll() for every socket; it also serves as this thread's sleep.
+                    let readable = Socket.pollReadable(candidates.map { $0.socket },
+                                                       timeoutMilliseconds: 50)
+                    
+                    // Wake connections which have data (or an error), and also idle ones
+                    // periodically so they get a chance to enforce their timeouts.
+                    let now = Date()
+                    for (watchSocket, isReadable) in zip(candidates, readable) {
+                        if isReadable || now.timeIntervalSince(watchSocket.date) > timeoutCheckInterval {
+                            watchSocket.date = now
+                            watchSocket.connection.beCheckForMoreData()
+                        }
+                    }
+                    
+                    // If the socket has closed, drop our strong reference to the connection AND
+                    // remove it from the ConnectionManager's active table. Both retainers must
+                    // release or the connection (and its multi-megabyte buffer + file descriptor)
+                    // leaks. Only the snapshot's closed sockets are removed here: one which closes
+                    // after the snapshot is reaped on the next pass, never dropped unreaped.
+                    let closed = snapshot.filter { $0.socket.isClosed() }
+                    if closed.isEmpty == false {
+                        let closedIds = Set(closed.map { ObjectIdentifier($0) })
+                        watchLock.lock()
+                        watchSockets.removeAll { closedIds.contains(ObjectIdentifier($0)) }
+                        watchLock.unlock()
+                        
+                        for watchSocket in closed {
+                            ConnectionManager_CloseConnection(connection: watchSocket.connection)
+                        }
                     }
                 }
             }
@@ -150,6 +157,17 @@ public class Connection: Actor, AnyConnection {
         self.config = config
         
         socket.setReadTimeout(milliseconds: 50)
+        
+        // A client which stops reading must not hold a scheduler thread forever: bound each send
+        // and drop the connection when it is exceeded.
+        if config.writeTimeout > 0 {
+            socket.closeOnSendTimeout = true
+            socket.setWriteTimeout(milliseconds: UInt(config.writeTimeout * 1000))
+        }
+        
+        // Detect peers which disappeared without closing (most relevant while a long request is in
+        // flight, when only serverTimeout would otherwise end it).
+        socket.setKeepAlive(idleSeconds: 60, intervalSeconds: 10, count: 3)
 
         clientTimeout = config.clientTimeout
         serverTimeout = config.serverTimeout

@@ -50,7 +50,15 @@ public struct ServerConfig: Codable {
     public let clientTimeout: TimeInterval
     public let serverTimeout: TimeInterval
     
+    /// Longest a single send to a client may block before the connection is dropped. 0 disables it.
+    public let writeTimeout: TimeInterval
+    
     public let maxRequestInBytes: Int
+    
+    /// Most connections open at once; beyond it new connections get a 503 and are closed.
+    /// 0 (the default) picks a limit just under the process's file descriptor limit, leaving
+    /// headroom for files, outbound requests and logging. Negative means unlimited.
+    public let maxConnections: Int
     public let connectionMaxBackoff: Double
 
     public let sessionPer: UserSessionPer
@@ -83,7 +91,9 @@ public struct ServerConfig: Codable {
                 maximumSessions: Int = 1_000_000,
                 clientTimeout: TimeInterval = 5.0,
                 serverTimeout: TimeInterval = 30.0,
+                writeTimeout: TimeInterval = 10.0,
                 maxRequestInBytes: Int = 1024 * 1024 * 8,
+                maxConnections: Int = 0,
                 connectionMaxBackoff: Double = 0.5,
                 cookieSecure: Bool = true,
                 cookieSameSite: CookieSameSite = .lax,
@@ -95,7 +105,9 @@ public struct ServerConfig: Codable {
         self.maximumSessions = maximumSessions
         self.clientTimeout = clientTimeout
         self.serverTimeout = serverTimeout
+        self.writeTimeout = writeTimeout
         self.maxRequestInBytes = maxRequestInBytes
+        self.maxConnections = maxConnections
         self.connectionMaxBackoff = connectionMaxBackoff
         self.cookieSecure = cookieSecure
         self.cookieSameSite = cookieSameSite
@@ -110,6 +122,7 @@ public struct ServerConfig: Codable {
     private enum CodingKeys: String, CodingKey {
         case address, port, basePath, clientTimeout, serverTimeout, maxRequestInBytes, connectionMaxBackoff
         case sessionPer, sessionActivityTimeout, maximumSessions, cookieSecure, cookieSameSite, debug
+        case writeTimeout, maxConnections
     }
 
     // Explicit so that configs serialized before the cookie settings existed still decode (to the defaults)
@@ -120,7 +133,9 @@ public struct ServerConfig: Codable {
         basePath = try container.decode(Hitch.self, forKey: .basePath)
         clientTimeout = try container.decode(TimeInterval.self, forKey: .clientTimeout)
         serverTimeout = try container.decode(TimeInterval.self, forKey: .serverTimeout)
+        writeTimeout = try container.decodeIfPresent(TimeInterval.self, forKey: .writeTimeout) ?? 10.0
         maxRequestInBytes = try container.decode(Int.self, forKey: .maxRequestInBytes)
+        maxConnections = try container.decodeIfPresent(Int.self, forKey: .maxConnections) ?? 0
         connectionMaxBackoff = try container.decode(Double.self, forKey: .connectionMaxBackoff)
         sessionPer = try container.decode(UserSessionPer.self, forKey: .sessionPer)
         sessionActivityTimeout = try container.decode(TimeInterval.self, forKey: .sessionActivityTimeout)
@@ -132,6 +147,35 @@ public struct ServerConfig: Codable {
 }
 
 private let hitchHostCookiePrefix: Hitch = "__Host-"
+
+extension ServerConfig {
+    /// The connection limit actually enforced, resolving maxConnections' automatic and unlimited
+    /// settings. 0 means unlimited.
+    public var effectiveMaxConnections: Int {
+        if maxConnections > 0 { return maxConnections }
+        if maxConnections < 0 { return 0 }
+        
+        guard let descriptorLimit = ServerConfig.softDescriptorLimit() else { return 0 }
+        // Leave room for everything else the process opens. With a tiny limit, still allow a few.
+        return max(32, descriptorLimit - 128)
+    }
+    
+    private static func softDescriptorLimit() -> Int? {
+        #if os(Linux) || canImport(Darwin)
+        var limit = rlimit()
+        #if os(Linux)
+        let result = getrlimit(__rlimit_resource_t(RLIMIT_NOFILE.rawValue), &limit)
+        #else
+        let result = getrlimit(RLIMIT_NOFILE, &limit)
+        #endif
+        // RLIM_INFINITY clamps to Int.max, which is effectively unlimited
+        guard result == 0 else { return nil }
+        return Int(clamping: limit.rlim_cur)
+        #else
+        return nil
+        #endif
+    }
+}
 
 public class Server<T: UserSession> {
     // A server which listens on an address and a port
@@ -168,6 +212,9 @@ public class Server<T: UserSession> {
         // (1ms up to 100ms) while it keeps failing, and log at most every 10 seconds.
         var consecutiveAcceptFailures: UInt64 = 0
         var lastAcceptFailureLog: TimeInterval = 0
+        
+        let connectionLimit = config.effectiveMaxConnections
+        var lastConnectionLimitLog: TimeInterval = 0
 
         repeat {
             autoreleasepool {
@@ -180,6 +227,21 @@ public class Server<T: UserSession> {
                         fputs("read on \(self.config.address.description) \(self.config.port)\n", stderr)
                     }
                     consecutiveAcceptFailures = 0
+                    
+                    // Over the connection limit: answer 503 and close, rather than taking on a
+                    // connection we may not have the descriptors or memory to serve.
+                    if connectionLimit > 0 && ConnectionManager_ActiveCount() >= connectionLimit {
+                        let now = ProcessInfo.processInfo.systemUptime
+                        if now - lastConnectionLimitLog > 10 {
+                            lastConnectionLimitLog = now
+                            Flynn.syslog("Picaroon", "connection limit of \(connectionLimit) reached on port \(self.config.port); rejecting new connections")
+                        }
+                        newSocket.setWriteTimeout(milliseconds: 1000)
+                        HttpStaticResponse.serviceUnavailable.send(config: self.config, socket: newSocket, userSession: nil)
+                        newSocket.close()
+                        return
+                    }
+                    
                     ConnectionManager_OpenConnection(socket: newSocket,
                                                      clientAddress: clientAddress,
                                                      config: self.config,

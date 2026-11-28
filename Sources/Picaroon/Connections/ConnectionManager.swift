@@ -21,6 +21,13 @@ func ConnectionManager_OpenConnection(socket: Socket,
     lock.unlock()
 }
 
+/// Number of connections currently open (accepted and not yet reaped).
+internal func ConnectionManager_ActiveCount() -> Int {
+    lock.lock()
+    defer { lock.unlock() }
+    return activeConnections.count
+}
+
 internal func ConnectionManager_CloseConnection(connection: Connection) {
     // Close the socket as well as dropping it from the active table. Otherwise
     // server-initiated closes (timeout, request-too-large) remove the connection
