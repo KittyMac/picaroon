@@ -156,8 +156,18 @@ public class Server<T: UserSession> {
         if config.debug {
             fputs("listen on \(config.address.description) \(config.port)\n", stderr)
         }
-        serverSocket.listen(address: config.address.description,
-                            port: config.port)
+        guard serverSocket.listen(address: config.address.description,
+                                  port: config.port) == 0 else {
+            Flynn.syslog("Picaroon", "failed to listen on \(config.address.description):\(config.port), errno \(errno)")
+            return false
+        }
+
+        // accept() fails immediately and repeatedly when the process is out of file descriptors
+        // (EMFILE/ENFILE): the pending connection stays queued, so retrying at once spins a core at
+        // 100% while the listen backlog fills and new clients time out. Back off exponentially
+        // (1ms up to 100ms) while it keeps failing, and log at most every 10 seconds.
+        var consecutiveAcceptFailures: UInt64 = 0
+        var lastAcceptFailureLog: TimeInterval = 0
 
         repeat {
             autoreleasepool {
@@ -169,11 +179,24 @@ public class Server<T: UserSession> {
                     if self.config.debug {
                         fputs("read on \(self.config.address.description) \(self.config.port)\n", stderr)
                     }
+                    consecutiveAcceptFailures = 0
                     ConnectionManager_OpenConnection(socket: newSocket,
                                                      clientAddress: clientAddress,
                                                      config: self.config,
                                                      staticStorageHandler: self.staticStorageHandler,
                                                      userSessionManager: self.userSessionManager)
+                } else {
+                    consecutiveAcceptFailures += 1
+                    
+                    let now = ProcessInfo.processInfo.systemUptime
+                    if now - lastAcceptFailureLog > 10 {
+                        lastAcceptFailureLog = now
+                        Flynn.syslog("Picaroon", "accept failed on port \(self.config.port), errno \(serverSocket.lastAcceptError) (\(consecutiveAcceptFailures) consecutive)")
+                    }
+                    
+                    // Flynn.usleep takes microseconds
+                    let backoff: UInt64 = min(100_000, 1_000 << min(consecutiveAcceptFailures - 1, 7))
+                    Flynn.usleep(backoff)
                 }
             }
         } while self.listening

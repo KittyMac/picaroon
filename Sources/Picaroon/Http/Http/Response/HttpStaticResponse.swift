@@ -15,6 +15,7 @@ public final class HttpStaticResponse: HttpResponse {
     public static let requestTooLarge = HttpStaticResponse(status: .requestTooLarge, type: .txt)
     public static let internalServerError = HttpStaticResponse(status: .internalServerError, type: .txt)
     public static let serviceUnavailable = HttpStaticResponse(status: .serviceUnavailable, type: .txt)
+    public static let notImplemented = HttpStaticResponse(status: .notImplemented, type: .txt)
     
     let baked = Hitch()
     

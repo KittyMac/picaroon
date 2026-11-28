@@ -35,6 +35,9 @@ public class Socket {
     
     @usableFromInline
     var socketFd: Int32
+
+    /// Error from the most recent failed accept(); only meaningful right after accept() returns nil.
+    public private(set) var lastAcceptError: Int32 = 0
         
     public init?(socketFd: Int32,
                  blocking: Bool = true) {
@@ -248,6 +251,11 @@ public class Socket {
             return $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
                 return Int32(WinSDK.accept(SOCKET(socketFd), $0, &sockAddrInSize))
             }
+        }
+        
+        guard clientFd >= 0 else {
+            lastAcceptError = WSAGetLastError()
+            return nil
         }
         
         let socket = Socket(socketFd: clientFd,

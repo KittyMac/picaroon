@@ -39,15 +39,20 @@ public class Connection: Actor, AnyConnection {
         }
         
         func shouldRead() -> Bool {
-            let result = socket.poll()
-            if (result > 0 && connection.unsafeMessagesCount < 2) ||
-                abs(date.timeIntervalSinceNow) > 60 {
+            guard connection.unsafeMessagesCount < 2 else { return false }
+            // Wake the connection when it has data, and also periodically when it does not, so that
+            // it gets a chance to enforce its client and server timeouts on idle sockets.
+            if socket.poll() > 0 ||
+                abs(date.timeIntervalSinceNow) > Connection.timeoutCheckInterval {
                 date = Date()
                 return true
             }
             return false
         }
     }
+    
+    /// How often an idle connection is woken to check its timeouts
+    private static let timeoutCheckInterval: TimeInterval = 1.0
     private static let watchLock = NSLock()
     private static var watchSockets: [WatchSocket] = []
     private static var watchRunning = false
@@ -186,6 +191,15 @@ public class Connection: Actor, AnyConnection {
                           socket: socket,
                           userSession: unsafeUserSession)
         
+        didSendResponse()
+    }
+    
+    // The request in flight has been answered: idle time from here on is measured against
+    // clientTimeout (waiting for the next request) rather than serverTimeout.
+    private func didSendResponse() {
+        isProcessingRequest = false
+        lastCommunicationTime = ProcessInfo.processInfo.systemUptime
+        
         if closeNextSend {
             socket.close()
         }
@@ -201,9 +215,7 @@ public class Connection: Actor, AnyConnection {
                               socket: socket,
                               userSession: unsafeUserSession)
             
-            if closeNextSend {
-                socket.close()
-            }
+            didSendResponse()
             
         } else {
             _beSendNotModified()
@@ -291,6 +303,7 @@ public class Connection: Actor, AnyConnection {
         }
         
         guard socket.poll() != 0 else {
+            checkForTimeout()
             return
         }
         
@@ -304,23 +317,7 @@ public class Connection: Actor, AnyConnection {
             return
         }
         if bytesRead == 0 {
-            if (isProcessingRequest == true && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > serverTimeout) ||
-                (isProcessingRequest == false && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > clientTimeout) {
-                
-                if config.debug {
-                    if (isProcessingRequest == true && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > serverTimeout) {
-                        fputs("Connection failed: server timeout\n", stderr)
-                    } else if (isProcessingRequest == false && ProcessInfo.processInfo.systemUptime - lastCommunicationTime > clientTimeout) {
-                        fputs("Connection failed: client timeout\n", stderr)
-                    } else {
-                        fputs("Connection failed: unknown end of data\n", stderr)
-                    }
-                }
-                
-                _beSendInternalError()
-                ConnectionManager_CloseConnection(connection: self)
-                return
-            }
+            checkForTimeout()
             return
         }
 
@@ -335,6 +332,23 @@ public class Connection: Actor, AnyConnection {
             }
             
             _beSendTooLargeError()
+            ConnectionManager_CloseConnection(connection: self)
+            return
+        }
+
+        // Reject requests which can never parse (unsupported method, malformed headers, unsupported
+        // body framing). Without this they look identical to an incomplete request and we would
+        // wait for more data forever.
+        if let rejection = HttpRequest.validate(config: config,
+                                                request: buffer,
+                                                size: currentPtr - buffer) {
+            if config.debug {
+                fputs("Connection failed: rejecting malformed request (\(rejection.rawValue))\n", stderr)
+            }
+            
+            closeNextSend = true
+            currentPtr = buffer
+            _beSend(httpResponse: Connection.rejection(for: rejection))
             ConnectionManager_CloseConnection(connection: self)
             return
         }
@@ -455,5 +469,40 @@ public class Connection: Actor, AnyConnection {
         }
 
         return _beSendInternalError()
+    }
+    
+    private static func rejection(for status: HttpStatus) -> HttpResponse {
+        switch status {
+        case .notImplemented: return HttpStaticResponse.notImplemented
+        case .requestTooLarge: return HttpStaticResponse.requestTooLarge
+        default: return HttpStaticResponse.badRequest
+        }
+    }
+    
+    // Closes the connection if it has been idle for longer than allowed. While a request is being
+    // handled the limit is serverTimeout; otherwise it is clientTimeout, which covers both a client
+    // trickling in a partial request and an idle keep-alive connection.
+    private func checkForTimeout() {
+        let idle = ProcessInfo.processInfo.systemUptime - lastCommunicationTime
+        
+        if isProcessingRequest {
+            guard idle > serverTimeout else { return }
+            if config.debug {
+                fputs("Connection failed: server timeout\n", stderr)
+            }
+            _beSendInternalError()
+        } else {
+            guard idle > clientTimeout else { return }
+            if config.debug {
+                fputs("Connection failed: client timeout\n", stderr)
+            }
+            // A partial request gets told why; an idle keep-alive connection is simply closed.
+            if currentPtr > buffer {
+                closeNextSend = true
+                _beSend(httpResponse: HttpStaticResponse.requestTimeout)
+            }
+        }
+        
+        ConnectionManager_CloseConnection(connection: self)
     }
 }

@@ -47,6 +47,9 @@ public class Socket {
 
     private let closing = AtomicBool(false)
 
+    /// errno from the most recent failed accept(); only meaningful right after accept() returns nil.
+    public private(set) var lastAcceptError: Int32 = 0
+
     public init?(socketFd: Int32,
                  blocking: Bool = true) {
         lockedSocketFd = socketFd
@@ -426,6 +429,11 @@ public class Socket {
             return $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
                 return posix_accept(fd, $0, &sockAddrInSize)
             }
+        }
+        
+        guard clientFd >= 0 else {
+            lastAcceptError = errno
+            return nil
         }
         
         let socket = Socket(socketFd: clientFd,
